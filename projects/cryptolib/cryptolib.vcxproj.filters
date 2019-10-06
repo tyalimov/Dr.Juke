@@ -29,5 +29,8 @@
     <ClCompile Include="..\..\libs\cryptolib\csp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\libs\cryptolib\pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
