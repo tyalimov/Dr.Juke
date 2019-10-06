@@ -1,2 +1,10 @@
 # Dr.Juke
-Simple antivirus tool
+Для сборки необходимо иметь:
+Visual Studio 2019
+Windows 10 SDK
+WDK 
+Использованы бибиотеки:
+boost
+CryptoPP
+curl
+
