@@ -12,5 +12,6 @@
     CryptoPP
     curl
     Google Test
+    sqlite3
 
 
