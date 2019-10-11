@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "netlib", "projects\netlib\n
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sqllib", "projects\sqllib\sqllib.vcxproj", "{808257FD-A903-401C-B314-E9B2D5E3E1D4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "loglib", "projects\loglib\loglib.vcxproj", "{6B825E96-BF37-4876-9910-F550420EA5B9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -55,6 +57,14 @@ Global
 		{808257FD-A903-401C-B314-E9B2D5E3E1D4}.Release|x64.Build.0 = Release|x64
 		{808257FD-A903-401C-B314-E9B2D5E3E1D4}.Release|x86.ActiveCfg = Release|Win32
 		{808257FD-A903-401C-B314-E9B2D5E3E1D4}.Release|x86.Build.0 = Release|Win32
+		{6B825E96-BF37-4876-9910-F550420EA5B9}.Debug|x64.ActiveCfg = Debug|x64
+		{6B825E96-BF37-4876-9910-F550420EA5B9}.Debug|x64.Build.0 = Debug|x64
+		{6B825E96-BF37-4876-9910-F550420EA5B9}.Debug|x86.ActiveCfg = Debug|Win32
+		{6B825E96-BF37-4876-9910-F550420EA5B9}.Debug|x86.Build.0 = Debug|Win32
+		{6B825E96-BF37-4876-9910-F550420EA5B9}.Release|x64.ActiveCfg = Release|x64
+		{6B825E96-BF37-4876-9910-F550420EA5B9}.Release|x64.Build.0 = Release|x64
+		{6B825E96-BF37-4876-9910-F550420EA5B9}.Release|x86.ActiveCfg = Release|Win32
+		{6B825E96-BF37-4876-9910-F550420EA5B9}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,6 +74,7 @@ Global
 		{5DA2A62C-5C81-4D1C-925E-FDA5842A91ED} = {AF006283-E199-4E60-A798-430192F91443}
 		{564E8B5C-DBA3-4AAF-85DF-71D313189C71} = {AF006283-E199-4E60-A798-430192F91443}
 		{808257FD-A903-401C-B314-E9B2D5E3E1D4} = {AF006283-E199-4E60-A798-430192F91443}
+		{6B825E96-BF37-4876-9910-F550420EA5B9} = {AF006283-E199-4E60-A798-430192F91443}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BEFB16B9-0EC6-41D4-B63D-D3E8837A862C}

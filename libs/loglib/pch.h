@@ -10,12 +10,9 @@
 // add headers that you want to pre-compile here
 #include "framework.h"
 
-#include <modes.h> // CBC mode for AES
-#include <aes.h>   // AES algorithm
-#include <filters.h>
-#include <files.h>
-#include <eccrypto.h> // Elliptic curves
+#include <iostream>
 
-#include <string>
+#include "boost/log/trivial.hpp"
+#include "boost/log/utility/setup.hpp"
 
 #endif //PCH_H

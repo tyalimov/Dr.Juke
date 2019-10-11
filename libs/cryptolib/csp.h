@@ -1,5 +1,0 @@
-class Csp
-{
-	void doSmth();
-};
-

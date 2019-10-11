@@ -15,21 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\libs\cryptolib\pch.h">
+    <ClInclude Include="..\..\libs\loglib\framework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\cryptolib\framework.h">
+    <ClInclude Include="..\..\libs\loglib\pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\cryptolib\BasicSigner.h">
+    <ClInclude Include="..\..\libs\loglib\loglib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\libs\cryptolib\pch.cpp">
+    <ClCompile Include="..\..\libs\loglib\loglib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libs\cryptolib\BasicSigner.cpp">
+    <ClCompile Include="..\..\libs\loglib\pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
