@@ -76,7 +76,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(ExternalSdk)boost;$(SolutionDir)libs;$(ExternalSdk)CryptoPP;$(ExternalSdk)json;$(ExternalSdk)Libcurl\include;$(ExternalSdk)SQLite\include</AdditionalIncludeDirectories>
@@ -94,7 +94,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(ExternalSdk)boost;$(SolutionDir)libs;$(ExternalSdk)CryptoPP;$(ExternalSdk)json;$(ExternalSdk)Libcurl\include;$(ExternalSdk)SQLite\include</AdditionalIncludeDirectories>
@@ -114,7 +114,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(ExternalSdk)boost;$(SolutionDir)libs;$(ExternalSdk)CryptoPP;$(ExternalSdk)json;$(ExternalSdk)Libcurl\include;$(ExternalSdk)SQLite\include</AdditionalIncludeDirectories>
@@ -136,7 +136,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <TreatWarningAsError>false</TreatWarningAsError>
+      <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(ExternalSdk)boost;$(SolutionDir)libs;$(ExternalSdk)CryptoPP;$(ExternalSdk)json;$(ExternalSdk)Libcurl\include;$(ExternalSdk)SQLite\include</AdditionalIncludeDirectories>
