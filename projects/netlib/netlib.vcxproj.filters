@@ -29,5 +29,8 @@
     <ClInclude Include="..\..\libs\netlib\framework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\netlib\netlib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

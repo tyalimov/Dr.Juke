@@ -1,8 +1,6 @@
 ﻿#include <filesystem>
 #include "loglib.h"
 
-namespace fs = std::filesystem;
-
 namespace av::log
 {
 	namespace 
@@ -10,7 +8,7 @@ namespace av::log
 		LogLibraryStatus  g_InitStatus = LogLibraryStatus::kUninitialized;
 		const std::string g_LogFormatString("[%TimeStamp%][%Severity%]:  %Message%");
 
-	    void InitializeConsoleLog(const LogParameters &params)
+	    void InitializeConsoleLog()
 	    {
 			boost::log::register_simple_formatter_factory
 	        <boost::log::trivial::severity_level, char>("Severity");
@@ -23,7 +21,7 @@ namespace av::log
 				boost::log::keywords::auto_flush = true
 			);
 	    }
-	    void InitializeFileLog(const LogParameters& params)
+	    void InitializeFileLog(const LogParameters &params)
 	    {
 			boost::log::add_file_log
 	        (
@@ -35,9 +33,9 @@ namespace av::log
 				boost::log::keywords::auto_flush          = true
 			);
 	    }
-        void InitializeBothLog(const LogParameters& params)
+        void InitializeBothLog(const LogParameters &params)
 	    {
-			InitializeConsoleLog(params);
+			InitializeConsoleLog();
 			InitializeFileLog(params);
 	    }
         void FinalizeLog()
@@ -62,9 +60,9 @@ namespace av::log
 
         switch (output)
         {
-		case LogOutput::kFile:    InitializeFileLog(params);    break;
-		case LogOutput::kConsole: InitializeConsoleLog(params); break;
-		case LogOutput::kBoth:    InitializeBothLog(params);    break;
+		case LogOutput::kFile:    InitializeFileLog(params); break;
+		case LogOutput::kConsole: InitializeConsoleLog();    break;
+		case LogOutput::kBoth:    InitializeBothLog(params); break;
 		}
 		
 		FinalizeLog();

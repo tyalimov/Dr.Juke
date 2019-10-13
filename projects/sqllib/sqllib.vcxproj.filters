@@ -21,15 +21,12 @@
     <ClInclude Include="..\..\libs\sqllib\pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\sqllib\database.h">
+    <ClInclude Include="..\..\libs\sqllib\sqllib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\sqllib\pch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libs\sqllib\database.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

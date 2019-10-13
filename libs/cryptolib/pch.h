@@ -1,21 +1,15 @@
-// pch.h: This is a precompiled header file.
-// Files listed below are compiled only once, improving build performance for future builds.
-// This also affects IntelliSense performance, including code completion and many code browsing features.
-// However, files listed here are ALL re-compiled if any one of them is updated between builds.
-// Do not add files here that you will be updating frequently as this negates the performance advantage.
+#pragma once
 
-#ifndef PCH_H
-#define PCH_H
-
-// add headers that you want to pre-compile here
 #include "framework.h"
+#include "cryptolib.h"
 
-#include <modes.h> // CBC mode for AES
-#include <aes.h>   // AES algorithm
-#include <filters.h>
-#include <files.h>
-#include <eccrypto.h> // Elliptic curves
+#pragma warning (push, 0)
+#   include <modes.h>    // CBC mode for AES
+#   include <aes.h>      // AES algorithm
+#   include <filters.h>
+#   include <files.h>    // FileSource
+#   include <eccrypto.h> // Elliptic curves
+#pragma warning (pop)
 
 #include <string>
 
-#endif //PCH_H

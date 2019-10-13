@@ -24,6 +24,9 @@
     <ClInclude Include="..\..\libs\cryptolib\BasicSigner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\cryptolib\cryptolib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\cryptolib\pch.cpp">
