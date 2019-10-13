@@ -1,0 +1,13 @@
+#pragma once
+
+#include <undecorate.h>
+
+#pragma region Includes
+
+#pragma endregion 
+
+#pragma warning( push )                                   
+#   pragma warning(disable : 4081)                         
+#   pragma comment("lib", UNDECORATE_LIBRARY("sqlite3"))
+#pragma warning( pop ) 
+
