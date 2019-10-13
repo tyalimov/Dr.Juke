@@ -48,3 +48,17 @@
 *.db
 *.opendb
 *.suo
+
+!packages
+!packages/*
+!packages/*/*
+!packages/*/*/*
+!packages/*/*/*/*
+!packages/*/*/*/*/*
+!packages/*/*/*/*/*/*
+!packages/*/*/*/*/*/*/*
+!packages/*/*/*/*/*/*/*/*
+!packages/*/*/*/*/*/*/*/*/*
+!packages/*/*/*/*/*/*/*/*/*/*
+!packages/*/*/*/*/*/*/*/*/*/*/*
+!packages/*/*/*/*/*/*/*/*/*/*/*/*
