@@ -1,7 +1,7 @@
 ﻿#include <filesystem>
 #include "loglib.h"
 
-namespace av::log
+namespace drjuke::log
 {
 	namespace 
     {

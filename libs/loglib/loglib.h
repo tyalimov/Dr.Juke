@@ -8,7 +8,7 @@
 #   include <boost/log/utility/setup.hpp>
 #pragma warning (pop)
 
-namespace av::log 
+namespace drjuke::log 
 {
     namespace fs = std::filesystem;
 

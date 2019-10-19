@@ -35,6 +35,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{FAF96337
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "drjuke_tests", "projects\drjuke_tests\drjuke_tests.vcxproj", "{12AF3CD4-A87A-4E25-88F7-D873EA40466F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tasklib", "projects\tasklib\tasklib.vcxproj", "{496508EF-ACA8-4319-A779-E6B72BB6630B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -123,6 +125,14 @@ Global
 		{12AF3CD4-A87A-4E25-88F7-D873EA40466F}.Release|x64.Build.0 = Release|x64
 		{12AF3CD4-A87A-4E25-88F7-D873EA40466F}.Release|x86.ActiveCfg = Release|Win32
 		{12AF3CD4-A87A-4E25-88F7-D873EA40466F}.Release|x86.Build.0 = Release|Win32
+		{496508EF-ACA8-4319-A779-E6B72BB6630B}.Debug|x64.ActiveCfg = Debug|x64
+		{496508EF-ACA8-4319-A779-E6B72BB6630B}.Debug|x64.Build.0 = Debug|x64
+		{496508EF-ACA8-4319-A779-E6B72BB6630B}.Debug|x86.ActiveCfg = Debug|Win32
+		{496508EF-ACA8-4319-A779-E6B72BB6630B}.Debug|x86.Build.0 = Debug|Win32
+		{496508EF-ACA8-4319-A779-E6B72BB6630B}.Release|x64.ActiveCfg = Release|x64
+		{496508EF-ACA8-4319-A779-E6B72BB6630B}.Release|x64.Build.0 = Release|x64
+		{496508EF-ACA8-4319-A779-E6B72BB6630B}.Release|x86.ActiveCfg = Release|Win32
+		{496508EF-ACA8-4319-A779-E6B72BB6630B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -138,6 +148,7 @@ Global
 		{B8959D9F-DB88-4544-8B60-C4D3AEEF9052} = {21055E19-82A0-4FB8-B60A-9EC62064577B}
 		{515249BF-2849-4A94-A916-A0FA38989633} = {21055E19-82A0-4FB8-B60A-9EC62064577B}
 		{12AF3CD4-A87A-4E25-88F7-D873EA40466F} = {FAF96337-21D5-4AFF-ACDA-85F98CF2FFEE}
+		{496508EF-ACA8-4319-A779-E6B72BB6630B} = {AF006283-E199-4E60-A798-430192F91443}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BEFB16B9-0EC6-41D4-B63D-D3E8837A862C}

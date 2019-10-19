@@ -1,5 +1,5 @@
 
-namespace av::crypto
+namespace drjuke::crypto
 {
 	class Signer
 	{

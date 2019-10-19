@@ -1,6 +1,6 @@
 #include "BasicSigner.h"
 
-namespace av::crypto
+namespace drjuke::crypto
 {
 	void Signer::doSmth()
 	{
