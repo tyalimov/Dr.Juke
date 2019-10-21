@@ -1,3 +1,9 @@
+# Electron (AVUserInterface)
+apps/AVUserInterface/node_modules
+apps/AVUserInterface/package-lock.json
+apps/AVUserInterface/.vscode
+
+
 # VS folders
 .vs/*
 
