@@ -15,12 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\libs\loglib\logging.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\libs\loglib\logging.cpp">
+    <ClCompile Include="..\..\apps\AVHook\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

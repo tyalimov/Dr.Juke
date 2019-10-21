@@ -1,3 +1,15 @@
+# VS folders
+.vs/*
+
+# Build folder
+build/*
+
+# Intermediate folders
+projects/*/Debug/*
+projects/*/Release/*
+projects/*/x64/*
+
+
 # Prerequisites
 *.d
 
