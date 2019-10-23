@@ -1,6 +1,9 @@
 ﻿#pragma once
 
-#include <json.hpp>
+#pragma warning( push , 0 )
+#   include <json.hpp>
+#pragma warning( pop )
+
 #include <filesystem>
 #include <string>
 
@@ -17,6 +20,6 @@ namespace drjuke::scansvc
 		virtual ~BasicAnalyzer()                        = default;
 		virtual AnalyzeReport analyze(const Path &path) = 0;
 		virtual void prepare()                          = 0;
-		virtual std::string getName()           = 0;
+		virtual std::string getName()                   = 0;
 	};
 }

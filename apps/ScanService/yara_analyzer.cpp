@@ -8,7 +8,7 @@ namespace drjuke::scansvc
     namespace
     {
         // TODO: Перенести в common.h
-		const std::string kYaraRulesLocation = R"(D:\Dr.Juke_resources)";
+		const std::string kYaraRulesLocation = R"(D:\Dr.Juke_resources\CVE_Rules)";
     }
 
 
@@ -46,21 +46,13 @@ namespace drjuke::scansvc
             if (!dir_entry.is_directory() && dir_entry.path().extension() == ".yar")
             {
 				std::cout << dir_entry.path() << std::endl;
-				//m_detector.addRuleFile(dir_entry.path().generic_string());
+				m_detector.addRuleFile(dir_entry.path().generic_string());
             }
         }
-
-        m_detector.addRules(R"(
-        rule example {
-            strings:
-                $s = "Hello"
-            condition:
-                $s
-        })");
 	}
 
     std::string YaraAnalyzer::getName()
     {
-		return "YARA analyzer";
+		return "YARA";
     }
 }

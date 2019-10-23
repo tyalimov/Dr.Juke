@@ -14,23 +14,17 @@ int main(int argc, const char *argv[])
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 
-	std::cout << 1 << "\n";
-
 	using BasicAnalyzerPtr = std::shared_ptr<BasicAnalyzer>;
 
 	const std::vector<BasicAnalyzerPtr> kAnalyzers
 	{
-		std::make_shared<YaraAnalyzer>(YaraAnalyzer())
+        std::make_shared<YaraAnalyzer>()
 	};
-
-	std::cout << 2 << "\n";
 
 	try
 	{
-		for (auto& analyzer : kAnalyzers)
+		for (auto &analyzer : kAnalyzers)
 		{
-			std::cout << 3 << "\n";
-
 			analyzer->prepare();
             
 			std::cout << "Analyzer - [" << analyzer->getName() << "]\n";

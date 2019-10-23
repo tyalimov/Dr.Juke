@@ -16,8 +16,6 @@
             "имя"
         ]
     }
-
- 
  */
 
 namespace drjuke::scansvc
