@@ -14,7 +14,7 @@ int main(int argc, const char *argv[])
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 
-	using BasicAnalyzerPtr = std::shared_ptr<BasicAnalyzer>;
+	using BasicAnalyzerPtr = std::shared_ptr<IAnalyzer>;
 
 	const std::vector<BasicAnalyzerPtr> kAnalyzers
 	{
@@ -25,10 +25,10 @@ int main(int argc, const char *argv[])
 	{
 		for (auto &analyzer : kAnalyzers)
 		{
-			analyzer->prepare();
+			analyzer->loadResources();
             
 			std::cout << "Analyzer - [" << analyzer->getName() << "]\n";
-			std::cout << analyzer->analyze(argv[1]).dump() << "\n\n";
+			std::cout << analyzer->getReport(argv[1])->toJson().dump() << "\n\n";
 		}
 	}
     catch (const std::exception &ex)

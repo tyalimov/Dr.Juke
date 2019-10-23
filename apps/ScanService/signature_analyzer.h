@@ -5,7 +5,7 @@
 
 namespace drjuke::scansvc
 {
-    class SignatureAnalyzer : public BasicAnalyzer
+    class SignatureAnalyzer : public IAnalyzer
     {
         
     };

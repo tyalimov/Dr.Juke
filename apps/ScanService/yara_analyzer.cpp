@@ -1,52 +1,27 @@
 ﻿#include "yara_analyzer.h"
-#include <iostream>
+
+#include <common/constants.h>
+
+using drjuke::constants::scansvc::kYaraRulesLocation;
 
 namespace drjuke::scansvc
 {
-	using DirIter = std::filesystem::recursive_directory_iterator;
-
-    namespace
+    IReportPtr YaraAnalyzer::getReport(const Path &path)
     {
-        // TODO: Перенести в common.h
-		const std::string kYaraRulesLocation = R"(D:\Dr.Juke_resources\CVE_Rules)";
+        m_detector.analyze(path.generic_string());
+        
+        return std::make_shared<YaraReport>(m_detector.getDetectedRules());
     }
 
-
-    AnalyzeReport YaraAnalyzer::analyze(const Path &path)
-    {
-		AnalyzeReport report;
-
-		report["status"]              = false;
-		report["total_rules_matched"] = 0;
-		report["matched_rules"]       = Json::array();
-
-		bool infected = m_detector.analyze(path.generic_string());
-
-		report["status"] = infected ? "infected" : "normal";
-
-        if (infected)
-        {
-            auto matched_rules = m_detector.getDetectedRules();
-			report["total_rules_matched"] = matched_rules.size();
-
-            for (const auto &rule : matched_rules)
-            {
-				report["matched_rules"].push_back(rule.getName());
-            }
-        }
-
-		return report;
-    }
-
-	void YaraAnalyzer::prepare()
+	void YaraAnalyzer::loadResources()
 	{
         // Загружаем все файлы из заданной директории в детектор
-        for (const auto &dir_entry : DirIter(kYaraRulesLocation))
+        for (const auto &dir_entry : DirIterator(kYaraRulesLocation))
         {
             if (!dir_entry.is_directory() && dir_entry.path().extension() == ".yar")
             {
-				//std::cout << dir_entry.path() << std::endl;
-				m_detector.addRuleFile(dir_entry.path().generic_string());
+                // TODO: залоггировать
+                m_detector.addRuleFile(dir_entry.path().generic_string());
             }
         }
 	}
@@ -54,5 +29,16 @@ namespace drjuke::scansvc
     std::string YaraAnalyzer::getName()
     {
 		return "YARA";
+    }
+
+	YaraReport::YaraReport(const std::vector<yaracpp::YaraRule> &rules)
+    {
+        m_report["infected"]      = !rules.empty();
+        m_report["total_matched"] = rules.size();
+
+        for (const auto &rule : rules)
+        {
+            m_report["matched_rules"].push_back(rule.getName());
+        }
     }
 }
