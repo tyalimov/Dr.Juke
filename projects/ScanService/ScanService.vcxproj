@@ -18,6 +18,17 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\apps\ScanService\basic_analyzer.h" />
+    <ClInclude Include="..\..\apps\ScanService\signature_analyzer.h" />
+    <ClInclude Include="..\..\apps\ScanService\yara_analyzer.h" />
+    <ClInclude Include="..\..\apps\ScanService\yara_engine.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\apps\ScanService\main.cpp" />
+    <ClCompile Include="..\..\apps\ScanService\signature_analyzer.cpp" />
+    <ClCompile Include="..\..\apps\ScanService\yara_analyzer.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{199D2946-86CE-45F3-88CB-05AD2417DEF7}</ProjectGuid>
@@ -150,15 +161,6 @@
       <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="basic_analyzer.h" />
-    <ClInclude Include="yara_engine.h" />
-    <ClInclude Include="yara_analyzer.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="yara_analyzer.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -6,7 +6,6 @@
 
 /*
      Вид отчета от анализатора:
-    
     {
         status: "infected/normal"
         total_rules_matched : <число>

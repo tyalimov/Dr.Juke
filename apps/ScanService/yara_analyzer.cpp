@@ -45,7 +45,7 @@ namespace drjuke::scansvc
         {
             if (!dir_entry.is_directory() && dir_entry.path().extension() == ".yar")
             {
-				std::cout << dir_entry.path() << std::endl;
+				//std::cout << dir_entry.path() << std::endl;
 				m_detector.addRuleFile(dir_entry.path().generic_string());
             }
         }
