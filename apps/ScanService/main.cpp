@@ -1,4 +1,4 @@
-#include "basic_analyzer.h"
+#include "i_analyzer.h"
 #include "yara_analyzer.h"
 
 #include <iostream>
