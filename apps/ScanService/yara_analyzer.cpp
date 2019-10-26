@@ -13,8 +13,8 @@ namespace drjuke::scansvc
         return std::make_shared<YaraReport>(m_detector.getDetectedRules());
     }
 
-	void YaraAnalyzer::loadResources()
-	{
+    void YaraAnalyzer::loadResources()
+    {
         // Загружаем все файлы из заданной директории в детектор
         for (const auto &dir_entry : DirIterator(kYaraRulesLocation))
         {
@@ -28,7 +28,7 @@ namespace drjuke::scansvc
 
     std::string YaraAnalyzer::getName()
     {
-		return "YARA";
+		return "Yara";
     }
 
 	YaraReport::YaraReport(const std::vector<yaracpp::YaraRule> &rules)

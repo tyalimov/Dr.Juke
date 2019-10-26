@@ -14,9 +14,7 @@ int main(int argc, const char *argv[])
 	UNREFERENCED_PARAMETER(argc);
 	UNREFERENCED_PARAMETER(argv);
 
-	using BasicAnalyzerPtr = std::shared_ptr<IAnalyzer>;
-
-	const std::vector<BasicAnalyzerPtr> kAnalyzers
+	const std::vector<IAnalyzerPtr> kAnalyzers
 	{
         std::make_shared<YaraAnalyzer>()
 	};

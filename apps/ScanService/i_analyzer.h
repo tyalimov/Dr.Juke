@@ -17,10 +17,10 @@ namespace drjuke::scansvc
         Json m_report;
     public:
         virtual ~IReport() = default;
-		[[nodiscard]] virtual Json toJson() { return m_report; }
+        [[nodiscard]] virtual Json toJson() { return m_report; }
     };
 
-	using IReportPtr = std::shared_ptr<IReport>;
+    using IReportPtr = std::shared_ptr<IReport>;
 
     class IAnalyzer
     {
@@ -31,4 +31,5 @@ namespace drjuke::scansvc
         virtual std::string getName()                  = 0;
     };
 
+    using IAnalyzerPtr = std::shared_ptr<IAnalyzer>;
 }
