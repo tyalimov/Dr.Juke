@@ -2,9 +2,9 @@
 
 namespace drjuke::scansvc
 {
-    IReportPtr SignatureAnalyzer::getReport(const Path &path)
-    {
-    }
+    //IReportPtr SignatureAnalyzer::getReport(const Path &path)
+    //{
+    //}
 
     void SignatureAnalyzer::loadResources()
     {
