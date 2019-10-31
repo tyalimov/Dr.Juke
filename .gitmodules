@@ -1,0 +1,6 @@
+[submodule "injdrv/src/DetoursNT"]
+	path = injdrv/src/DetoursNT
+	url = git@github.com:wbenny/DetoursNT.git
+[submodule "injdrv/include/phnt"]
+	path = injdrv/include/phnt
+	url = git@github.com:processhacker/phnt.git
