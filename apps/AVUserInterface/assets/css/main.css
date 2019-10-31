@@ -1,4 +1,4 @@
-.av-panel {
+.av-btn-panel {
     display: flex;
     flex-wrap: wrap;
     flex-direction: row;
@@ -43,4 +43,41 @@ header {
 
 main {
     flex: 1 0 auto;
+}
+
+/* draggable */
+.av-btn-panel, .av-st-panel, header, footer {
+    -webkit-app-region: drag;
+    -webkit-user-select: none;
+}
+
+li, button {
+    -webkit-app-region: no-drag;
+}
+
+@media (min-width: 1101px) {
+    .av-btn {
+        display: flex;
+        flex-basis: 250px;
+        margin: 25px 50px;
+        height: 130px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .av-btn {
+        display: flex;
+        flex-basis: 175px;
+        margin: 15px 20px;
+        height: 120px;
+    }
+}
+
+@media (max-width: 700px) {
+    .av-btn {
+        display: flex;
+        flex-basis: 150px;
+        margin: 10px 10px;
+        height: 120px;
+    }
 }

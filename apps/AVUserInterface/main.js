@@ -9,14 +9,20 @@ function createWindow() {
     win = new BrowserWindow({
         width: 1200,
         height: 800,
+        minWidth: 600, 
+        show: false,
         frame: false,
         webPreferences: {
             nodeIntegration: true
         }
-    })
+    });
+
+    win.once('ready-to-show', () =>{
+        win.show();
+    });
 
     // and load the index.html of the app.
-    win.loadFile('main.html')
+    win.loadFile('main.html');
 
     // Emitted when the window is closed.
     win.on('closed', () => {
@@ -48,7 +54,3 @@ app.on('activate', () => {
         createWindow()
     }
 })
-
-app.once('ready-to-show', () =>{
-    win.show();
-});
