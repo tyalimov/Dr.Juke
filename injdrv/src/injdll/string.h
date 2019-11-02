@@ -1,75 +1,9 @@
 #pragma once
 
-//
-// Include NTDLL-related headers.
-//
-#define NTDLL_NO_INLINE_INIT_STRING
-#include <ntdll.h>
+#include "mem_util.h"
 
 namespace ownstl
 {
-	void* __cdecl memcpy(void* dst, const void* src, size_t num_bytes)
-	{
-		size_t num_4byte = num_bytes / sizeof(DWORD);
-		size_t end_4byte = num_4byte * sizeof(DWORD);
-		size_t num_1byte = num_bytes - end_4byte;
-
-		for (size_t i = 0; i < num_4byte; i++)
-			((DWORD*)dst)[i] = ((DWORD*)src)[i];
-
-		for (size_t i = end_4byte; i < num_bytes; i++)
-			((BYTE*)dst)[i] = ((BYTE*)src)[i];
-
-		return dst;
-	}
-
-	void* __cdecl memset(void* dst, const char val, size_t num_bytes)
-	{
-		size_t num_4byte = num_bytes / sizeof(DWORD);
-		size_t end_4byte = num_4byte * sizeof(DWORD);
-		size_t num_1byte = num_bytes - end_4byte;
-
-		DWORD dw_val = (val << 24) + (val << 16) + (val << 8) + val;
-		for (size_t i = 0; i < num_4byte; i++)
-			((DWORD*)dst)[i] = dw_val;
-
-		for (size_t i = end_4byte; i < num_bytes; i++)
-			((BYTE*)dst)[i] = val;
-
-		return dst;
-	}
-
-	int __cdecl memcmp(const void* left, const void* right, size_t num_bytes)
-	{
-		size_t num_4byte = num_bytes / sizeof(DWORD);
-		size_t end_4byte = num_4byte * sizeof(DWORD);
-		size_t num_1byte = num_bytes - end_4byte;
-
-		for (size_t i = 0; i < num_4byte; i++)
-		{
-			if (((DWORD*)left)[i] != ((DWORD*)right)[i])
-			{
-				if (((DWORD*)left)[i] < ((DWORD*)right)[i])
-					return -1;
-				else
-					return 1;
-			}
-		}
-
-		for (size_t i = end_4byte; i < num_bytes; i++)
-		{
-			if (((BYTE*)left)[i] != ((BYTE*)right)[i])
-			{
-				if (((BYTE*)left)[i] < ((BYTE*)right)[i])
-					return -1;
-				else
-					return 1;
-			}
-		}
-
-		return 0;
-	}
-
 	template<typename char_t>
 	class basic_string
 	{
@@ -84,7 +18,7 @@ namespace ownstl
 
 	protected: // methods
 
-		static void m_alloc_and_copy(
+		static void allocateCopy(
 			char_t** out_buf,
 			size_t* out_len,
 			const char_t* str,
@@ -104,7 +38,7 @@ namespace ownstl
 			*out_len = len_total - 1;
 		}
 
-		static basic_string m_empty_string()
+		static basic_string emptyString()
 		{
 			basic_string str(true);
 			str.m_buffer = new char_t[1];
@@ -142,26 +76,41 @@ namespace ownstl
 			return *p_left > * p_right ? 1 : -1;
 		}
 
+		static int strncmp(const char_t* left, const char_t* right, size_t n)
+		{
+			size_t i;
+			for (i = 0; i < n - 1; i++)
+			{
+				if (left[i] != right[i])
+					break;
+			}
+
+			if (left[i] == right[i])
+				return 0;
+
+			return left[i] < right[i] ? 1 : -1;
+		}
+
 		// constructors and destructors
 		basic_string(bool empty = false)
 		{
 			if (!empty)
-				* this = m_empty_string();
+				* this = emptyString();
 		}
 
 		basic_string(const char_t* str)
 		{
-			m_alloc_and_copy(&m_buffer, &m_length, str);
+			allocateCopy(&m_buffer, &m_length, str);
 		}
 
 		basic_string(const char_t* buf, size_t n)
 		{
-			m_alloc_and_copy(&m_buffer, &m_length, buf, n);
+			allocateCopy(&m_buffer, &m_length, buf, n);
 		}
 
 		basic_string(const basic_string& str)
 		{
-			m_alloc_and_copy(&m_buffer, &m_length, str.m_buffer, str.m_length);
+			allocateCopy(&m_buffer, &m_length, str.m_buffer, str.m_length);
 		}
 
 		~basic_string()
@@ -184,7 +133,7 @@ namespace ownstl
 			if (m_buffer != nullptr)
 				delete[] m_buffer;
 
-			m_alloc_and_copy(&m_buffer, &m_length, other.c_str(), other.length());
+			allocateCopy(&m_buffer, &m_length, other.c_str(), other.length());
 			return *this;
 		}
 
@@ -208,7 +157,7 @@ namespace ownstl
 
 			size_t len_total = end - begin;
 			if (len_total <= 0)
-				return m_empty_string();
+				return emptyString();
 
 			str.m_length = len_total - 1;
 			str.m_buffer = new char_t[len_total];
@@ -276,13 +225,15 @@ namespace ownstl
 			return pch == pzero ? -1 : pch - m_buffer;
 		}
 
-		size_t find(const char_t* str) const
+		size_t find(const char_t* str, size_t length) const
 		{
 			// Function to implement strstr() function using KMP algorithm
 			const char_t* X = m_buffer;
 			const char_t* Y = str;
-			size_t m = basic_string::strlen(X);
-			size_t n = basic_string::strlen(Y);
+			size_t m = m_length;
+			size_t n = length == npos
+				? basic_string::strlen(Y)
+				: length;
 
 			// Base Case 1: Y is NULL or empty
 			if (*Y == 0 || n == 0)
@@ -330,7 +281,40 @@ namespace ownstl
 
 		size_t find(const basic_string& str) const
 		{
-			return this->find(str.c_str());
+			return this->find(str.m_buffer, str.m_length);
+		}
+
+		bool startsWith(const char* str, size_t length = npos) const 
+		{
+			if (length == npos)
+				length = basic_string::strlen(str);
+
+			if (m_length < length)
+				return false;
+
+			return basic_string::strncmp(m_buffer, str, length) == 0;
+		}
+
+		bool startsWith(const basic_string& str) const 
+		{
+			return startsWith(str.m_buffer, str.m_length);
+		}
+
+		bool endsWith(const char* str, size_t length = npos) const 
+		{
+			if (length == npos)
+				length = basic_string::strlen(str);
+
+			if (m_length < length)
+				return false;
+
+			return basic_string::strncmp(
+				m_buffer + m_length - length, str, length) == 0;
+		}
+
+		bool endsWith(const basic_string& str) const 
+		{
+			return endsWith(str.m_buffer, str.m_length);
 		}
 	};
 
@@ -369,7 +353,25 @@ namespace ownstl
 	}
 
 	template<typename T>
+	bool operator==(const basic_string<T>& left, const T* right)
+	{
+		size_t right_length = basic_string<T>::strlen(right);
+		size_t left_length = left.length();
+
+		if (right_length != left_length)
+			return false;
+
+		return !memcmp(left.c_str(), right, left_length * sizeof(T));
+	}
+
+	template<typename T>
 	bool operator!=(const basic_string<T>& left, const basic_string<T>& right)
+	{
+		return !(left == right);
+	}
+
+	template<typename T>
+	bool operator!=(const basic_string<T>& left, const T* right)
 	{
 		return !(left == right);
 	}
@@ -381,108 +383,23 @@ namespace ownstl
 	}
 
 	template<typename T>
+	bool operator<(const basic_string<T>& left, const T* right)
+	{
+		return basic_string<T>::strcmp(left.c_str(), right) < 0;
+	}
+
+	template<typename T>
 	bool operator>(const basic_string<T>& left, const basic_string<T>& right)
 	{
 		return basic_string<T>::strcmp(left.c_str(), right.c_str()) > 0;
 	}
 
+	template<typename T>
+	bool operator>(const basic_string<T>& left, const T* right)
+	{
+		return basic_string<T>::strcmp(left.c_str(), right) > 0;
+	}
+
 	using string = basic_string<char>;
 	using wstring = basic_string<wchar_t>;
-
-	//
-	// Warning!
-	// Notice, that when string object is freed, the ANSI_STRING buffer is freed too
-	// Use created ANSI_STRING object only when string object is present!
-	//
-	// Don't use it like this: ANSI_STRING us = mstl::StringToAnsiString("aaaa");
-	//
-	// Usage:
-	//		string s = "12345";
-	//		ANSI_STRING as = StringToAnsiString(s);
-	//		...
-	//
-	ANSI_STRING ToAnsiString(const string& str)
-	{
-		ANSI_STRING ansi_str;
-		ansi_str.Buffer = (PCHAR)str.c_str();
-		ansi_str.Length = (USHORT)str.length();
-		ansi_str.MaximumLength = ansi_str.Length + 1;
-		return ansi_str;
-	}
-
-	// Usage:
-	//		C_ANSI_STRING(as, "12345");
-	//		string s = AnsiStringToString(as);
-	//		...
-	//
-	string FromAnsiString(const ANSI_STRING& ansi_str)
-	{
-		return string(ansi_str.Buffer, ansi_str.Length);
-	}
-
-	//
-	// Warning!
-	// Notice, that when wstring object is freed, the UNICODE_STRING buffer is freed too
-	// Use created UNICODE_STRING object only when wstring object is present!
-	//
-	// Don't use it like this: UNICODE_STRING us = mstl::WStringToUnicodeString(L"aaaa");
-	//
-	// Usage:
-	//		string ws = L"12345";
-	//		UNICODE_STRING us = WStringToUnicodeString(ws);
-	//		...
-	//
-	UNICODE_STRING ToUnicodeString(const wstring& wstr)
-	{
-		UNICODE_STRING uni_str;
-		uni_str.Buffer = (PWCHAR)wstr.c_str();
-		uni_str.Length = (USHORT)wstr.length() * sizeof(wchar_t);
-		uni_str.MaximumLength = uni_str.Length + 1 * sizeof(wchar_t);
-		return uni_str;
-	}
-
-	// Usage:
-	//
-	//  C_UNICODE_STRING(us, L"12345");
-	//	wstring ws = UnicodeStringToWString(us);
-	//	...
-	//
-	wstring FromUnicodeString(const UNICODE_STRING& uni_str)
-	{
-		return wstring(uni_str.Buffer, uni_str.Length / sizeof(wchar_t));
-	}
-
-	// Usage:
-	//
-	//	string s = "12345";
-	//	wstring ws = StringToWString(ws);
-	//	...
-	//
-	wstring ToWString(const string& str)
-	{
-		UNICODE_STRING uni_str = { 0 };
-		ANSI_STRING ansi_str = ToAnsiString(str);
-		RtlAnsiStringToUnicodeString(&uni_str, &ansi_str, TRUE);
-
-		wstring wstr = FromUnicodeString(uni_str);
-		RtlFreeUnicodeString(&uni_str);
-		return wstr;
-	}
-
-	// Usage:
-	//
-	//	wstring ws = L"12345";
-	//	string s = WStringToString(ws);
-	//	...
-	//
-	string ToString(const wstring& wstr)
-	{
-		ANSI_STRING ansi_str = { 0 };
-		UNICODE_STRING uni_str = ToUnicodeString(wstr);
-		RtlUnicodeStringToAnsiString(&ansi_str, &uni_str, TRUE);
-
-		string str = FromAnsiString(ansi_str);
-		RtlFreeAnsiString(&ansi_str);
-		return str;
-	}
 }

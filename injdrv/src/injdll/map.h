@@ -168,12 +168,13 @@ namespace ownstl
 
 		TreeMap() = default;
 
-		void insertPair(const TKey& key, const TVal& val)
+		const TVal& insertPair(const TKey& key, const TVal& val)
 		{
 			m_root = insert(m_root, key, val);
+			return val;
 		}
 
-		const TVal* findPair(const TKey& key, node* p = nullptr)
+		TVal* findPair(const TKey& key, node* p = nullptr)
 		{
 			if (p == nullptr)
 				p = m_root;

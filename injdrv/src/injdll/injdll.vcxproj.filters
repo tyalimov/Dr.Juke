@@ -21,17 +21,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="wow64log.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="wow64log.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\phnt\ntdbg.h">
       <Filter>Header Files\ntdll\phnt</Filter>
     </ClInclude>
@@ -128,20 +117,49 @@
     <ClInclude Include="..\..\include\ntdll.h">
       <Filter>Header Files\ntdll</Filter>
     </ClInclude>
-    <ClInclude Include="list.h">
+    <ClInclude Include="hooked.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="string.h">
+    <ClInclude Include="list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="map.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="mem_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="mw_tricks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="str_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="string.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="synch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="wow64log.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="hooked.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mem_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="str_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="wow64log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

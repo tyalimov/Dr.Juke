@@ -1,12 +1,7 @@
 #define _ARM_WINAPI_PARTITION_DESKTOP_SDK_AVAILABLE 1
 
 #include "wow64log.h"
-
-//
-// Include NTDLL-related headers.
-//
-#define NTDLL_NO_INLINE_INIT_STRING
-#include <ntdll.h>
+#include "hooked.h"
 
 #if defined(_M_IX86)
 #  define ARCH_A          "x86"
@@ -25,12 +20,18 @@
 #endif
 
 
-// size_t strlen(const char * str)
-// {
-//   const char *s;
-//   for (s = str; *s; ++s) {}
-//   return(s - str);
-// }
+//
+// Malware filtering
+//
+
+#include "mw_tricks.h"
+#include "str_util.h"
+using namespace ownstl;
+using namespace mwtricks;
+
+MalwareTricks* g_mw_tricks = nullptr;
+
+void SetupMalwareFiltering();
 
 //
 // Include support for ETW logging.
@@ -59,14 +60,6 @@
 //
 
 #include <detours.h>
-
-
-#include "list.h"
-#include "string.h"
-#include "map.h"
-#include "synch.h"
-
-using namespace ownstl;
 
 //
 // This is necessary for x86 builds because of SEH,
@@ -106,7 +99,7 @@ using _snwprintf_fn_t = int(__cdecl*)(
 	...
 	);
 
-inline _snwprintf_fn_t _snwprintf = nullptr;
+_snwprintf_fn_t _snwprintf = nullptr;
 
 //
 // ETW provider GUID and global provider handle.
@@ -123,109 +116,7 @@ GUID ProviderGuid = {
 
 REGHANDLE ProviderHandle;
 
-//
-// Hooking functions and prototypes.
-//
-
-inline decltype(NtQuerySystemInformation)* OrigNtQuerySystemInformation = nullptr;
-
-EXTERN_C
-NTSTATUS
-NTAPI
-HookNtQuerySystemInformation(
-	_In_ SYSTEM_INFORMATION_CLASS SystemInformationClass,
-	_Out_writes_bytes_opt_(SystemInformationLength) PVOID SystemInformation,
-	_In_ ULONG SystemInformationLength,
-	_Out_opt_ PULONG ReturnLength
-)
-{
-	//
-	// Log the function call.
-	//
-	WCHAR Buffer[128];
-	_snwprintf(Buffer,
-		RTL_NUMBER_OF(Buffer),
-		L"NtQuerySystemInformation(%i, %p, %i)",
-		SystemInformationClass,
-		SystemInformation,
-		SystemInformationLength);
-
-	EtwEventWriteString(ProviderHandle, 0, 0, Buffer);
-
-	//
-	// Call original function.
-	//
-
-	return OrigNtQuerySystemInformation(SystemInformationClass,
-		SystemInformation,
-		SystemInformationLength,
-		ReturnLength);
-}
-
 inline decltype(NtCreateThreadEx)* OrigNtCreateThreadEx = nullptr;
-
-NTSTATUS
-NTAPI
-HookNtCreateThreadEx(
-	_Out_ PHANDLE ThreadHandle,
-	_In_ ACCESS_MASK DesiredAccess,
-	_In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
-	_In_ HANDLE ProcessHandle,
-	_In_ PVOID StartRoutine, // PUSER_THREAD_START_ROUTINE
-	_In_opt_ PVOID Argument,
-	_In_ ULONG CreateFlags, // THREAD_CREATE_FLAGS_*
-	_In_ SIZE_T ZeroBits,
-	_In_ SIZE_T StackSize,
-	_In_ SIZE_T MaximumStackSize,
-	_In_opt_ PPS_ATTRIBUTE_LIST AttributeList
-)
-{
-	//
-	// Log the function call.
-	//
-
-	WCHAR Buffer[128];
-	_snwprintf(Buffer,
-		RTL_NUMBER_OF(Buffer),
-		L"NtCreateThreadEx(%p, %p)",
-		ProcessHandle,
-		StartRoutine);
-
-	EtwEventWriteString(ProviderHandle, 0, 0, Buffer);
-
-	//
-	// Call original function.
-	//
-
-	return OrigNtCreateThreadEx(ThreadHandle,
-		DesiredAccess,
-		ObjectAttributes,
-		ProcessHandle,
-		StartRoutine,
-		Argument,
-		CreateFlags,
-		ZeroBits,
-		StackSize,
-		MaximumStackSize,
-		AttributeList);
-}
-
-NTSTATUS
-NTAPI
-ThreadRoutine(
-	_In_ PVOID ThreadParameter
-)
-{
-	LARGE_INTEGER Delay;
-	Delay.QuadPart = -10 * 1000 * 100; // 100ms
-
-	for (;;)
-	{
-		// EtwEventWriteString(ProviderHandle, 0, 0, L"NtDelayExecution(100ms)");
-
-		NtDelayExecution(FALSE, &Delay);
-	}
-}
 
 NTSTATUS
 NTAPI
@@ -235,11 +126,8 @@ EnableDetours(
 {
 	DetourTransactionBegin();
 	{
-		OrigNtQuerySystemInformation = NtQuerySystemInformation;
-		DetourAttach((PVOID*)& OrigNtQuerySystemInformation, HookNtQuerySystemInformation);
-
 		OrigNtCreateThreadEx = NtCreateThreadEx;
-		DetourAttach((PVOID*)& OrigNtCreateThreadEx, HookNtCreateThreadEx);
+		DetourAttach((PVOID*)&OrigNtCreateThreadEx, HookNtCreateThreadEx);
 	}
 	DetourTransactionCommit();
 
@@ -253,12 +141,10 @@ DisableDetours(
 )
 {
 	DetourTransactionBegin();
-	{
-		DetourDetach((PVOID*)& OrigNtQuerySystemInformation, HookNtQuerySystemInformation);
+	{		
 		DetourDetach((PVOID*)& OrigNtCreateThreadEx, HookNtCreateThreadEx);
 	}
 	DetourTransactionCommit();
-
 	return STATUS_SUCCESS;
 }
 
@@ -334,21 +220,6 @@ OnProcessAttach(
 		&ProviderHandle);
 
 	//
-	// Create dummy thread - used for testing.
-	//
-
-	// RtlCreateUserThread(NtCurrentProcess(),
-	//                     NULL,
-	//                     FALSE,
-	//                     0,
-	//                     0,
-	//                     0,
-	//                     &ThreadRoutine,
-	//                     NULL,
-	//                     NULL,
-	//                     NULL);
-
-	//
 	// Get command line of the current process and send it.
 	//
 
@@ -364,6 +235,13 @@ OnProcessAttach(
 	EtwEventWriteString(ProviderHandle, 0, 0, Buffer);
 
 	//
+	// Setup malware filtering rules
+	//
+
+	g_mw_tricks = new MalwareTricks();
+	SetupMalwareFiltering();
+
+	//
 	// Hook all functions.
 	//
 
@@ -376,6 +254,12 @@ OnProcessDetach(
 	_In_ HANDLE ModuleHandle
 )
 {
+	//
+	// Cleanup
+	//
+
+	delete g_mw_tricks;
+
 	//
 	// Unhook all functions.
 	//
@@ -392,9 +276,6 @@ NtDllMain(
 	_In_ LPVOID Reserved
 )
 {
-	int a = 0;
-	string s = "aaaa";
-
 	switch (Reason)
 	{
 	case DLL_PROCESS_ATTACH:
@@ -415,4 +296,99 @@ NtDllMain(
 	}
 
 	return TRUE;
+}
+
+/////////////////////////////////
+
+#define DEFENSE_EVASION		"[Defense Evasion]"
+#define TEST				"[Test]"
+
+void MT_Test()
+{
+	MalwareTrick mt_test("[Test] MalwareTrick");
+	mt_test.addCheck([](const FunctionCall& call) {
+
+		if (call.getName() == "NtCreateFile")
+		{
+			POBJECT_ATTRIBUTES attr = (POBJECT_ATTRIBUTES)call.getArgument(2);
+			return (call.getArgument(1) & FILE_WRITE_ACCESS)
+				&& *attr->ObjectName == L"test.txt";
+		}
+
+		return false;
+		});
+
+	mt_test.addCheck([](const FunctionCall& call) {
+
+		if (call.getName() == "NtWriteFile")
+		{
+			ULONG length = call.getArgument(5);
+			string buffer = (const char*)call.getArgument(6);
+
+			return (buffer == "This is test")
+				&& length == 12;
+		}
+
+		return false;
+		});
+
+	mt_test.addCheck([](const FunctionCall& call) {
+
+		if (call.getName() == "NtCloseFile")
+			return true;
+
+		return false;
+		});
+
+	g_mw_tricks->addNewTrick(mt_test);
+}
+
+string GetProcessInformation()
+{
+	//UNICODE_STRING file_name;
+	//DWORD dwSizeNeeded = 0;
+	//
+	//NtCurrentProcessId();
+	//
+	//DWORD status = NtQueryInformationProcess(
+	//	NtCurrentProcess(), ProcessImageFileName,
+	//	&file_name, sizeof(UNICODE_STRING), &dwSizeNeeded);
+	//
+	//if (NT_SUCCESS(status))
+	//{
+	//	// Basic Info
+	//
+	//	// pid, (DWORD)pbi.UniqueProcessId;
+	//	// parent pid (DWORD)pbi.InheritedFromUniqueProcessId;
+	//	
+	//}
+	
+
+	//GetModuleFileNameA()
+	return"";
+}
+
+void SetupMalwareFiltering()
+{
+	GetProcessInformation();
+
+	MT_Test();
+
+	g_mw_tricks->onMalwareDetected([](const string& trick_name) {
+
+		if (trick_name.startsWith(DEFENSE_EVASION))
+		{
+
+		}
+
+		//WCHAR Buffer[1024];
+		//_snwprintf(Buffer,
+		//	RTL_NUMBER_OF(Buffer),
+		//	L"Arch: %s, CommandLine: '%s'",
+		//	ARCH_W,
+		//	CommandLine);
+
+		//EtwEventWriteString(ProviderHandle, 0, 0, Buffer);
+
+	});
 }

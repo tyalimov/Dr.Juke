@@ -135,10 +135,6 @@
   </ImportGroup>
   <!-- Items -->
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="wow64log.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\DetoursNT\DetoursNT\DetoursNT.vcxproj">
       <Project>{c78b9003-fc49-4bbf-8f29-52fad48bb58a}</Project>
     </ProjectReference>
@@ -176,11 +172,21 @@
     <ClInclude Include="..\..\include\phnt\phnt_windows.h" />
     <ClInclude Include="..\..\include\phnt\subprocesstag.h" />
     <ClInclude Include="..\..\include\phnt\winsta.h" />
+    <ClInclude Include="hooked.h" />
     <ClInclude Include="list.h" />
     <ClInclude Include="map.h" />
+    <ClInclude Include="mem_util.h" />
     <ClInclude Include="mw_tricks.h" />
     <ClInclude Include="string.h" />
+    <ClInclude Include="str_util.h" />
     <ClInclude Include="synch.h" />
     <ClInclude Include="wow64log.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="hooked.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="mem_util.cpp" />
+    <ClCompile Include="str_util.cpp" />
+    <ClCompile Include="wow64log.cpp" />
   </ItemGroup>
 </Project>

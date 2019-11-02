@@ -10,54 +10,52 @@ namespace mwtricks
 {
 	class FunctionCall
 	{
+	public:
+
+		using arg_t = uintptr_t;
 
 	private:
 
-		using uint = unsigned int;
-		uint m_num_args;
+		static const int N = 16;
+		unsigned m_num_args;
+		arg_t m_args[N];
+
+		template <int i, typename T = void>
+		constexpr void setArg() {}
+
+		template <int i, typename T, typename ... Types>
+		constexpr void setArg(T arg, Types... rest)
+		{
+			m_args[i] = (arg_t)arg;
+			setArg<i + 1, Types...>(rest...);
+		}
 
 		string m_function_name;
-		void** m_args;
 
 	public:
 
-		void* getArgument(uint i)
+		template <typename ...Types>
+		FunctionCall(string name, Types... args)
+		{
+			static_assert(sizeof...(args) <= N);
+			setArg<0, Types...>(args...);
+			m_num_args = sizeof...(args);
+			m_function_name = name;
+		}
+
+		~FunctionCall() = default;
+
+		arg_t getArgument(unsigned i) const
 		{
 			return m_args[i];
 		}
 
-		uint getArgumentCnt() {
+		unsigned getArgumentCnt() const {
 			return m_num_args;
 		}
 
-		const string& getName() {
+		const string& getName() const {
 			return m_function_name;
-		}
-
-		void setArgument(void* arg, uint i)
-		{
-			if (i < m_num_args)
-				m_args[i] = arg;
-		}
-
-		FunctionCall(const string& function_name, uint num_args)
-		{
-			m_num_args = num_args;
-			m_function_name = function_name;
-
-			m_args = new void* [num_args];
-			memset(m_args, 0, num_args);
-		}
-
-		~FunctionCall()
-		{
-			if (m_args)
-			{
-				delete[] m_args;
-				m_args = nullptr;
-			}
-
-			m_num_args = 0;
 		}
 	};
 
@@ -70,8 +68,9 @@ namespace mwtricks
 	private:
 
 		list<CheckCallback> m_trick;
-		CriticalSection crit;
+		CriticalSection m_crit;
 		string m_trick_name;
+		bool m_triggered = false;
 
 	public:
 
@@ -79,35 +78,40 @@ namespace mwtricks
 			m_trick_name = trick_name;
 		}
 
-		void addNewCheck(CheckCallback cb) {
+		MalwareTrick() = default;
+		~MalwareTrick() = default;
+
+		void addCheck(CheckCallback cb) {
 			m_trick.push_back(cb);
 		}
 
 		bool updateCurrentStage(const FunctionCall& target)
 		{
-			crit.acquire();
+			if (m_triggered)
+				return false;
+
+			m_crit.acquire();
 
 			CheckCallback cb = m_trick.get_first();
 			if (cb(target))
 				m_trick.pop_first();
 
-			crit.release();
-			return m_trick.size() == 0;
+			m_crit.release();
+
+			m_triggered = m_trick.size() == 0;
+			return m_triggered;
 		}
 
 		const string& getName() {
 			return m_trick_name;
 		}
-
-		MalwareTrick() = default;
-		~MalwareTrick() = default;
 	};
 
 	class MalwareTricks
 	{
 	public:
 
-		using AlertCallback = bool (*)(const string& trick_name);
+		using AlertCallback = void (*)(const string& trick_name);
 
 	private:
 
@@ -124,12 +128,15 @@ namespace mwtricks
 			m_alert_cb = callback;
 		}
 
-		bool updateCurrentStage(FunctionCall& target)
+		void updateCurrentStage(FunctionCall& target)
 		{
 			for (auto& trick : m_tricks)
 			{
 				if (trick.updateCurrentStage(target))
-					m_alert_cb(trick.getName());
+				{
+					if (m_alert_cb != nullptr)
+						m_alert_cb(trick.getName());
+				}
 			}
 		}
 
