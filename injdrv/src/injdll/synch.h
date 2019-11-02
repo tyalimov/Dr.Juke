@@ -22,6 +22,8 @@ namespace ownstl
 			RtlInitializeCriticalSection(m_crit);
 		}
 
+		CriticalSection(CriticalSection& other) = delete;
+
 		~CriticalSection()
 		{
 			if (m_crit != nullptr)

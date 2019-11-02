@@ -152,17 +152,17 @@ namespace ownstl
 		{
 			basic_string str(true);
 
-			if (end == npos)
-				end = this->length();
+			if (end == npos || end > m_length)
+				end = m_length;
 
-			size_t len_total = end - begin;
-			if (len_total <= 0)
+			if (begin > end)
 				return emptyString();
 
+			size_t len_total = end - begin;
 			str.m_length = len_total - 1;
 			str.m_buffer = new char_t[len_total];
 			memcpy(str.m_buffer, m_buffer + begin, len_total * sizeof(char_t));
-			str.m_buffer[len_total] = 0;
+			str.m_buffer[len_total - 1] = 0;
 			return str;
 		}
 
@@ -284,7 +284,7 @@ namespace ownstl
 			return this->find(str.m_buffer, str.m_length);
 		}
 
-		bool startsWith(const char* str, size_t length = npos) const 
+		bool startsWith(const char_t* str, size_t length = npos) const 
 		{
 			if (length == npos)
 				length = basic_string::strlen(str);
@@ -300,7 +300,7 @@ namespace ownstl
 			return startsWith(str.m_buffer, str.m_length);
 		}
 
-		bool endsWith(const char* str, size_t length = npos) const 
+		bool endsWith(const char_t* str, size_t length = npos) const 
 		{
 			if (length == npos)
 				length = basic_string::strlen(str);

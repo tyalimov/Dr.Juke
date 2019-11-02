@@ -40,21 +40,35 @@ namespace ownstl
 			}
 		};
 
-		node* head, *tail;
-		int m_size;
+		node* head = nullptr;
+		node* tail = nullptr;
+		int m_size = 0;
 
 	public:
-		list()
-		{
-			head = nullptr;
-			tail = nullptr;
-			m_size = 0;
-		}
+		list() = default;
 
 		~list()
 		{
 			while (m_size > 0)
 				pop_first();
+		}
+
+		list(const list& other)
+		{
+			for (const auto& data : other)
+				push_back(data);
+		}
+
+		list& operator=(const list& other)
+		{
+			if (this == &other) {
+				return *this;
+			}
+
+			for (const auto& data : other)
+				push_back(data);
+
+			return *this;
 		}
 
 		iterator begin() const {
@@ -65,7 +79,7 @@ namespace ownstl
 			return iterator(tail->next);
 		}
 
-		void push_back(T value)
+		void push_back(const T& value)
 		{
 			node* temp = new node;
 			m_size++;
@@ -89,7 +103,7 @@ namespace ownstl
 			return m_size;
 		}
 
-		void push_front(T value)
+		void push_front(const T& value)
 		{
 			node* temp = new node;
 			m_size++;

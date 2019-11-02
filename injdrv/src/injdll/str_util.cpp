@@ -133,7 +133,7 @@ namespace ownstl
 	{
 		size_t length = wstring::strlen(right);
 
-		if (length != left.Length)
+		if (length * sizeof(wchar_t) != left.Length)
 			return false;
 
 		return wstring::strncmp(left.Buffer, right, length) == 0;

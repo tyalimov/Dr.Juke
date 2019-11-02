@@ -116,7 +116,13 @@ GUID ProviderGuid = {
 
 REGHANDLE ProviderHandle;
 
-inline decltype(NtCreateThreadEx)* OrigNtCreateThreadEx = nullptr;
+
+#define DETOUR_HOOK(func)						\
+Orig##func = func;								\
+DetourAttach((PVOID*)& Orig##func, Hooked##func)
+
+#define DETOUR_UNHOOK(func)						\
+DetourDetach((PVOID*)& Orig##func, Hooked##func)
 
 NTSTATUS
 NTAPI
@@ -126,8 +132,10 @@ EnableDetours(
 {
 	DetourTransactionBegin();
 	{
-		OrigNtCreateThreadEx = NtCreateThreadEx;
-		DetourAttach((PVOID*)&OrigNtCreateThreadEx, HookNtCreateThreadEx);
+		DETOUR_HOOK(NtCreateThreadEx);
+		DETOUR_HOOK(NtCreateFile);
+		DETOUR_HOOK(NtWriteFile);
+		DETOUR_HOOK(NtClose);
 	}
 	DetourTransactionCommit();
 
@@ -141,8 +149,11 @@ DisableDetours(
 )
 {
 	DetourTransactionBegin();
-	{		
-		DetourDetach((PVOID*)& OrigNtCreateThreadEx, HookNtCreateThreadEx);
+	{
+		DETOUR_UNHOOK(NtCreateThreadEx);
+		DETOUR_UNHOOK(NtCreateFile);
+		DETOUR_UNHOOK(NtWriteFile);
+		DETOUR_UNHOOK(NtClose);
 	}
 	DetourTransactionCommit();
 	return STATUS_SUCCESS;
@@ -300,18 +311,18 @@ NtDllMain(
 
 /////////////////////////////////
 
-#define DEFENSE_EVASION		"[Defense Evasion]"
-#define TEST				"[Test]"
+#define DEFENSE_EVASION		L"[Defense Evasion]"
+#define TEST				L"[Test]"
 
 void MT_Test()
 {
-	MalwareTrick mt_test("[Test] MalwareTrick");
+	MalwareTrick mt_test(L"[Test] MalwareTrick");
 	mt_test.addCheck([](const FunctionCall& call) {
 
 		if (call.getName() == "NtCreateFile")
 		{
 			POBJECT_ATTRIBUTES attr = (POBJECT_ATTRIBUTES)call.getArgument(2);
-			return (call.getArgument(1) & FILE_WRITE_ACCESS)
+			return (call.getArgument(1) & GENERIC_WRITE)
 				&& *attr->ObjectName == L"test.txt";
 		}
 
@@ -322,8 +333,8 @@ void MT_Test()
 
 		if (call.getName() == "NtWriteFile")
 		{
-			ULONG length = call.getArgument(5);
-			string buffer = (const char*)call.getArgument(6);
+			ULONG length = call.getArgument(6);
+			string buffer = string((const char*)call.getArgument(5), length);
 
 			return (buffer == "This is test")
 				&& length == 12;
@@ -334,61 +345,42 @@ void MT_Test()
 
 	mt_test.addCheck([](const FunctionCall& call) {
 
-		if (call.getName() == "NtCloseFile")
+		if (call.getName() == "NtClose")
 			return true;
 
 		return false;
 		});
 
-	g_mw_tricks->addNewTrick(mt_test);
+	g_mw_tricks->addTrick(mt_test);
 }
 
-string GetProcessInformation()
+wstring GetProcessInformation()
 {
-	//UNICODE_STRING file_name;
-	//DWORD dwSizeNeeded = 0;
-	//
-	//NtCurrentProcessId();
-	//
-	//DWORD status = NtQueryInformationProcess(
-	//	NtCurrentProcess(), ProcessImageFileName,
-	//	&file_name, sizeof(UNICODE_STRING), &dwSizeNeeded);
-	//
-	//if (NT_SUCCESS(status))
-	//{
-	//	// Basic Info
-	//
-	//	// pid, (DWORD)pbi.UniqueProcessId;
-	//	// parent pid (DWORD)pbi.InheritedFromUniqueProcessId;
-	//	
-	//}
-	
+	WCHAR buffer[20] = { 0 };
+	UNICODE_STRING us;
+	us.Buffer = buffer;
+	us.Length = 0;
+	us.MaximumLength = 20;
+	RtlIntegerToUnicodeString(
+		(ULONG)NtCurrentProcessId(), 10, &us);
 
-	//GetModuleFileNameA()
-	return"";
+	wstring ws_pid = FromUnicodeString(us);
+	wstring ws_path = FromUnicodeString(
+		NtCurrentPeb()->ProcessParameters->ImagePathName);
+
+	return wstring(L"PID=") + ws_pid + L"\nPATH=" + ws_path + L"\n";
 }
 
 void SetupMalwareFiltering()
 {
-	GetProcessInformation();
-
 	MT_Test();
 
-	g_mw_tricks->onMalwareDetected([](const string& trick_name) {
+	g_mw_tricks->onMalwareDetected([](const wstring& trick_name) {
+		wstring ws_info = GetProcessInformation();
+		wstring ws_total = ws_info + L"\nTRICK=" + trick_name + L"\n";
+		EtwEventWriteString(ProviderHandle, 0, 0, ws_total.c_str());
 
 		if (trick_name.startsWith(DEFENSE_EVASION))
-		{
-
-		}
-
-		//WCHAR Buffer[1024];
-		//_snwprintf(Buffer,
-		//	RTL_NUMBER_OF(Buffer),
-		//	L"Arch: %s, CommandLine: '%s'",
-		//	ARCH_W,
-		//	CommandLine);
-
-		//EtwEventWriteString(ProviderHandle, 0, 0, Buffer);
-
+			LdrShutdownProcess();
 	});
 }

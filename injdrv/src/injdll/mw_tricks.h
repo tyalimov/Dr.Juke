@@ -8,6 +8,12 @@ using namespace ownstl;
 
 namespace mwtricks
 {
+	template <typename T>
+	T&& move(T& arg)
+	{
+		return static_cast<T&&>(arg);
+	}
+
 	class FunctionCall
 	{
 	public:
@@ -68,18 +74,24 @@ namespace mwtricks
 	private:
 
 		list<CheckCallback> m_trick;
-		CriticalSection m_crit;
-		string m_trick_name;
+		wstring m_trick_name;
 		bool m_triggered = false;
 
 	public:
 
-		MalwareTrick(const char* trick_name) {
+		MalwareTrick(const wchar_t* trick_name) {
 			m_trick_name = trick_name;
 		}
 
 		MalwareTrick() = default;
 		~MalwareTrick() = default;
+
+		MalwareTrick(const MalwareTrick& other)
+		{
+			m_trick_name = other.m_trick_name;
+			m_triggered = other.m_triggered;
+			m_trick = other.m_trick;
+		}
 
 		void addCheck(CheckCallback cb) {
 			m_trick.push_back(cb);
@@ -90,19 +102,15 @@ namespace mwtricks
 			if (m_triggered)
 				return false;
 
-			m_crit.acquire();
-
 			CheckCallback cb = m_trick.get_first();
 			if (cb(target))
 				m_trick.pop_first();
-
-			m_crit.release();
 
 			m_triggered = m_trick.size() == 0;
 			return m_triggered;
 		}
 
-		const string& getName() {
+		const wstring& getName() {
 			return m_trick_name;
 		}
 	};
@@ -111,16 +119,17 @@ namespace mwtricks
 	{
 	public:
 
-		using AlertCallback = void (*)(const string& trick_name);
+		using AlertCallback = void (*)(const wstring& trick_name);
 
 	private:
 
 		list<MalwareTrick> m_tricks;
 		AlertCallback m_alert_cb = nullptr;
+		CriticalSection m_crit;
 
 	public:
 
-		void addNewTrick(MalwareTrick trick) {
+		void addTrick(const MalwareTrick& trick) {
 			m_tricks.push_back(trick);
 		}
 
@@ -132,7 +141,11 @@ namespace mwtricks
 		{
 			for (auto& trick : m_tricks)
 			{
-				if (trick.updateCurrentStage(target))
+				m_crit.acquire();
+				bool status = trick.updateCurrentStage(target);
+				m_crit.release();
+
+				if (status)
 				{
 					if (m_alert_cb != nullptr)
 						m_alert_cb(trick.getName());
