@@ -22,13 +22,11 @@
     <ClInclude Include="..\..\libs\tasklib\i_task.h" />
     <ClInclude Include="..\..\libs\tasklib\tasklib.h" />
     <ClInclude Include="..\..\libs\tasklib\task_queue.h" />
-    <ClInclude Include="..\..\libs\tasklib\thread_pool.h" />
     <ClInclude Include="..\..\libs\tasklib\workers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\tasklib\tasklib.cpp" />
     <ClCompile Include="..\..\libs\tasklib\task_queue.cpp" />
-    <ClCompile Include="..\..\libs\tasklib\thread_pool.cpp" />
     <ClCompile Include="..\..\libs\tasklib\workers.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
