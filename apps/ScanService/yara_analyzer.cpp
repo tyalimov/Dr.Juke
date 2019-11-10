@@ -28,7 +28,7 @@ namespace drjuke::scansvc
 
     std::string YaraAnalyzer::getName()
     {
-		return "Yara";
+		return "Yara analyzer";
     }
 
 	YaraReport::YaraReport(const std::vector<yaracpp::YaraRule> &rules)

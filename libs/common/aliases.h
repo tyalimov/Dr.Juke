@@ -4,11 +4,16 @@
 // библиотеки. Иначе компилятор начнет гадить кирпичами
 // при каждой сборке.
 
-class std::filesystem::path;
-class nlohmann::json;
-class std::filesystem::recursive_directory_iterator;
+#pragma warning ( push, 0 )
+#   include "nlohmann/json_fwd.hpp"
+#pragma warning ( pop )
 
-// Непосредственно более лаконичные алиасы
+namespace std::filesystem
+{
+    class path;
+    class recursive_directory_iterator;
+}
+
 namespace drjuke
 {
     using Json        = nlohmann::json;

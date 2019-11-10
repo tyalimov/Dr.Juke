@@ -9,6 +9,8 @@
 
 #include <common/aliases.h>
 
+// TODO: переименовать в Base[имя], так как интерфейс здесь только анализатор
+
 namespace drjuke::scansvc
 {
     class IReport
