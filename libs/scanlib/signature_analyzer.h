@@ -20,7 +20,7 @@
     }
 */
 
-namespace drjuke::scansvc
+namespace drjuke::scanlib
 {
     class SignatureReport : public IReport
     {

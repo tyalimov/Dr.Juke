@@ -11,7 +11,7 @@
 
 // TODO: переименовать в Base[имя], так как интерфейс здесь только анализатор
 
-namespace drjuke::scansvc
+namespace drjuke::scanlib
 {
     class IReport
     {

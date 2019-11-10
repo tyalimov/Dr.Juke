@@ -8,7 +8,7 @@
 
 #define ENCODING (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING)
 
-namespace drjuke::scansvc
+namespace drjuke::scanlib
 {
 
 

@@ -7,7 +7,7 @@
 #include <wincrypt.h>
 #include <wintrust.h>
 
-namespace drjuke::scansvc
+namespace drjuke::scanlib
 {
     typedef struct 
     {

@@ -4,7 +4,7 @@
 
 using drjuke::constants::scansvc::kYaraRulesLocation;
 
-namespace drjuke::scansvc
+namespace drjuke::scanlib
 {
     IReportPtr YaraAnalyzer::getReport(const Path &path)
     {

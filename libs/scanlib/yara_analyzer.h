@@ -22,7 +22,7 @@
     }
 */
 
-namespace drjuke::scansvc
+namespace drjuke::scanlib
 {
     class YaraReport final : public IReport
     {
