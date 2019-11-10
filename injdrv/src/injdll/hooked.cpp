@@ -22,7 +22,7 @@ HookedNtCreateThreadEx(
 )
 {
 	FunctionCall call(
-		"NtCreateThreadEx",
+		L"NtCreateThreadEx",
 		ThreadHandle,
 		DesiredAccess,
 		ObjectAttributes,
@@ -55,7 +55,7 @@ NTSTATUS
 NTAPI
 HookedNtClose(IN HANDLE ObjectHandle)
 {
-	FunctionCall call("NtClose", ObjectHandle);
+	FunctionCall call(L"NtClose", ObjectHandle);
 	g_mw_tricks->updateCurrentStage(call);
 	return OrigNtClose(ObjectHandle);
 }
@@ -77,7 +77,7 @@ HookedNtCreateFile(
 )
 {
 	FunctionCall call(
-		"NtCreateFile",
+		L"NtCreateFile",
 		FileHandle,
 		DesiredAccess,
 		ObjectAttributes,
@@ -121,7 +121,7 @@ HookedNtWriteFile(
 )
 {
 	FunctionCall call(
-		"NtWriteFile",
+		L"NtWriteFile",
 		FileHandle,
 		Event,
 		ApcRoutine,
@@ -145,4 +145,105 @@ HookedNtWriteFile(
 		ByteOffset,
 		Key
 	);
+}
+
+NTSTATUS
+NTAPI
+HookedNtCreateUserProcess(
+	_Out_ PHANDLE ProcessHandle,
+	_Out_ PHANDLE ThreadHandle,
+	_In_ ACCESS_MASK ProcessDesiredAccess,
+	_In_ ACCESS_MASK ThreadDesiredAccess,
+	_In_opt_ POBJECT_ATTRIBUTES ProcessObjectAttributes,
+	_In_opt_ POBJECT_ATTRIBUTES ThreadObjectAttributes,
+	_In_ ULONG ProcessFlags, // PROCESS_CREATE_FLAGS_*
+	_In_ ULONG ThreadFlags, // THREAD_CREATE_FLAGS_*
+	_In_opt_ PVOID ProcessParameters, // PRTL_USER_PROCESS_PARAMETERS
+	_Inout_ PPS_CREATE_INFO CreateInfo,
+	_In_opt_ PPS_ATTRIBUTE_LIST AttributeList
+)
+{
+	FunctionCall call(
+		L"NtCreateUserProcess",
+		 ProcessHandle,
+		 ThreadHandle,
+		ProcessDesiredAccess,
+		ThreadDesiredAccess,
+		ProcessObjectAttributes,
+		ThreadObjectAttributes,
+		ProcessFlags, // PROCESS_CREATE_FLAGS_*
+		ThreadFlags, // THREAD_CREATE_FLAGS_*
+		ProcessParameters, // PRTL_USER_PROCESS_PARAMETERS
+		CreateInfo,
+		AttributeList
+	);
+
+	g_mw_tricks->updateCurrentStage(call);
+	return OrigNtCreateUserProcess(
+		ProcessHandle,
+		ThreadHandle,
+		ProcessDesiredAccess,
+		ThreadDesiredAccess,
+		ProcessObjectAttributes,
+		ThreadObjectAttributes,
+		ProcessFlags, // PROCESS_CREATE_FLAGS_*
+		ThreadFlags, // THREAD_CREATE_FLAGS_*
+		ProcessParameters, // PRTL_USER_PROCESS_PARAMETERS
+		CreateInfo,
+		AttributeList
+	);
+}
+
+NTSTATUS
+NTAPI
+HookedLdrLoadDll(
+	_In_opt_ PWSTR DllPath,
+	_In_opt_ PULONG DllCharacteristics,
+	_In_ PUNICODE_STRING DllName,
+	_Out_ PVOID* DllHandle
+)
+{
+	NTSTATUS status = OrigLdrLoadDll(
+		DllPath,
+		DllCharacteristics,
+		DllName,
+		DllHandle
+	);
+	FunctionCall call(
+		L"LdrLoadDll",
+		DllPath,
+		DllCharacteristics,
+		DllName,
+		DllHandle
+	);
+
+	g_mw_tricks->updateCurrentStage(call);
+	return status;
+}
+
+NTSTATUS
+NTAPI
+HookedLdrGetDllHandle(
+	_In_opt_ PWSTR DllPath,
+	_In_opt_ PULONG DllCharacteristics,
+	_In_ PUNICODE_STRING DllName,
+	_Out_ PVOID* DllHandle
+)
+{
+	NTSTATUS status = OrigLdrGetDllHandle(
+		DllPath,
+		DllCharacteristics,
+		DllName,
+		DllHandle
+	);
+	FunctionCall call(
+		L"LdrLoadDll",
+		DllPath,
+		DllCharacteristics,
+		DllName,
+		DllHandle
+	);
+
+	g_mw_tricks->updateCurrentStage(call);
+	return status;
 }

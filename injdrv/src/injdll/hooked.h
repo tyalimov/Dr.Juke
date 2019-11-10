@@ -8,11 +8,29 @@
 #define ORIG_DECL(name) \
 inline decltype(name)* Orig##name = nullptr;
 
+ORIG_DECL(NtCreateUserProcess);
 ORIG_DECL(NtCreateThreadEx);
 ORIG_DECL(NtCreateFile);
 ORIG_DECL(NtWriteFile);
 ORIG_DECL(NtClose);
+ORIG_DECL(LdrLoadDll);
+ORIG_DECL(LdrGetDllHandle);
 
+NTSTATUS
+NTAPI
+HookedNtCreateUserProcess(
+	_Out_ PHANDLE ProcessHandle,
+	_Out_ PHANDLE ThreadHandle,
+	_In_ ACCESS_MASK ProcessDesiredAccess,
+	_In_ ACCESS_MASK ThreadDesiredAccess,
+	_In_opt_ POBJECT_ATTRIBUTES ProcessObjectAttributes,
+	_In_opt_ POBJECT_ATTRIBUTES ThreadObjectAttributes,
+	_In_ ULONG ProcessFlags, // PROCESS_CREATE_FLAGS_*
+	_In_ ULONG ThreadFlags, // THREAD_CREATE_FLAGS_*
+	_In_opt_ PVOID ProcessParameters, // PRTL_USER_PROCESS_PARAMETERS
+	_Inout_ PPS_CREATE_INFO CreateInfo,
+	_In_opt_ PPS_ATTRIBUTE_LIST AttributeList
+);
 
 NTSTATUS
 NTAPI
@@ -63,3 +81,35 @@ HookedNtWriteFile(
 	PLARGE_INTEGER   ByteOffset,
 	PULONG           Key
 );
+
+NTSTATUS
+NTAPI
+HookedLdrLoadDll(
+	_In_opt_ PWSTR DllPath,
+	_In_opt_ PULONG DllCharacteristics,
+	_In_ PUNICODE_STRING DllName,
+	_Out_ PVOID* DllHandle
+);
+
+NTSTATUS
+NTAPI
+HookedLdrGetDllHandle(
+	_In_opt_ PWSTR DllPath,
+	_In_opt_ PULONG DllCharacteristics,
+	_In_ PUNICODE_STRING DllName,
+	_Out_ PVOID* DllHandle
+);
+
+using PCreateProcessW = BOOL (*)(
+	_In_opt_ LPCWSTR lpApplicationName,
+	_Inout_opt_ LPWSTR lpCommandLine,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
+	_In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
+	_In_ BOOL bInheritHandles,
+	_In_ DWORD dwCreationFlags,
+	_In_opt_ LPVOID lpEnvironment,
+	_In_opt_ LPCWSTR lpCurrentDirectory,
+	_In_ LPSTARTUPINFOW lpStartupInfo,
+	_Out_ LPPROCESS_INFORMATION lpProcessInformation
+);
+

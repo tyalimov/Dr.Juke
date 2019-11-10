@@ -8,12 +8,6 @@ using namespace ownstl;
 
 namespace mwtricks
 {
-	template <typename T>
-	T&& move(T& arg)
-	{
-		return static_cast<T&&>(arg);
-	}
-
 	class FunctionCall
 	{
 	public:
@@ -36,12 +30,12 @@ namespace mwtricks
 			setArg<i + 1, Types...>(rest...);
 		}
 
-		string m_function_name;
+		wstring m_function_name;
 
 	public:
 
 		template <typename ...Types>
-		FunctionCall(string name, Types... args)
+		FunctionCall(wstring name, Types... args)
 		{
 			static_assert(sizeof...(args) <= N);
 			setArg<0, Types...>(args...);
@@ -60,7 +54,7 @@ namespace mwtricks
 			return m_num_args;
 		}
 
-		const string& getName() const {
+		const wstring& getName() const {
 			return m_function_name;
 		}
 	};
