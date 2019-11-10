@@ -27,6 +27,9 @@
     <ClInclude Include="..\..\apps\ScanService\i_analyzer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\apps\ScanService\cert_viewer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\apps\ScanService\main.cpp">
@@ -36,6 +39,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\apps\ScanService\yara_analyzer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\ScanService\cert_viewer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

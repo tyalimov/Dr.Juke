@@ -19,12 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\apps\ScanService\cert_viewer.h" />
     <ClInclude Include="..\..\apps\ScanService\i_analyzer.h" />
     <ClInclude Include="..\..\apps\ScanService\signature_analyzer.h" />
     <ClInclude Include="..\..\apps\ScanService\yara_analyzer.h" />
     <ClInclude Include="..\..\apps\ScanService\yara_engine.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\apps\ScanService\cert_viewer.cpp" />
     <ClCompile Include="..\..\apps\ScanService\main.cpp" />
     <ClCompile Include="..\..\apps\ScanService\signature_analyzer.cpp" />
     <ClCompile Include="..\..\apps\ScanService\yara_analyzer.cpp" />
