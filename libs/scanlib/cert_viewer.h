@@ -53,6 +53,8 @@ namespace drjuke::scansvc
         SYSTEMTIME          m_date_of_timestamp;
         SPROG_PUBLISHERINFO m_publisher_info;
 
+        CertificateDetails m_details;
+
     private:
         void initialize();
         void getProgramAndPublisherInfo();

@@ -6,6 +6,7 @@
 #include <memory>
 
 #define ENCODING (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING)
+#define NO_INFO L"no information"
 
 namespace drjuke::scansvc
 {
@@ -127,23 +128,25 @@ namespace drjuke::scansvc
             return;
         }
 
+
         // Fill in Program Name if present.
-        m_publisher_info.lpszProgramName =
+        m_details.m_program_name = 
             opus_info->pwszProgramName ?
             opus_info->pwszProgramName :
-            L"";
+            NO_INFO;
 
         // Fill in Publisher Information if present.
+        m_details.m_publisher_link = 
         m_publisher_info.lpszPublisherLink =
             opus_info->pPublisherInfo ?
             getCertificateInfo(opus_info, CertificateInfo::kPublisherInfo) : 
-            L"";
+            NO_INFO;
 
         // Fill in More Info if present.
-        m_publisher_info.lpszMoreInfoLink =
+        m_details.m_more_info_link =
             opus_info->pMoreInfo ?
             getCertificateInfo(opus_info, CertificateInfo::kMoreInfo) :
-            L"";
+            NO_INFO;
     }
 
     void CertificateViewer::getDateOfTimestamps()
