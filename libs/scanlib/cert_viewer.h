@@ -2,22 +2,12 @@
 
 #include <string>
 #include <common/aliases.h>
-
 #include <windows.h>
 #include <wincrypt.h>
 #include <wintrust.h>
 
 namespace drjuke::scanlib
 {
-    typedef struct 
-    {
-        std::wstring lpszProgramName;
-        std::wstring lpszPublisherLink;
-        std::wstring lpszMoreInfoLink;
-    } 
-    SPROG_PUBLISHERINFO, 
-    *PSPROG_PUBLISHERINFO;
-
     enum class CertificateInfo
     {
         kPublisherInfo,
@@ -29,9 +19,8 @@ namespace drjuke::scanlib
         std::wstring m_program_name;
         std::wstring m_publisher_link;
         std::wstring m_more_info_link;
-
-        std::string m_timestamp;
-        std::string m_serial_number;
+        std::string  m_serial_number;
+        SYSTEMTIME   m_timestamp{0,0,0,0,0,0,0,0};
     };
 
     struct CertificateViewer
@@ -49,17 +38,15 @@ namespace drjuke::scanlib
         PCMSG_SIGNER_INFO   pCounterSignerInfo   = nullptr;
         DWORD               dwSignerInfo;
         CERT_INFO           CertInfo;     
-        SPROG_PUBLISHERINFO ProgPubInfo;
         SYSTEMTIME          m_date_of_timestamp;
-        SPROG_PUBLISHERINFO m_publisher_info;
 
         CertificateDetails m_details;
 
     private:
         void initialize();
         void getProgramAndPublisherInfo();
-        void getDateOfTimestamps();
-        void getSignerTimestamps();
+        void getTimestamp();
+        void getSignerInfo();
 
         // Вспомогательные методы
         CRYPT_ATTRIBUTE getNecessaryAttribute(PCMSG_SIGNER_INFO info, const std::string &object_id);

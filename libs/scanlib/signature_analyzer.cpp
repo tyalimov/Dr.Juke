@@ -4,17 +4,60 @@
 #pragma comment( lib, "wintrust.lib" )
 #pragma comment( lib, "crypt32.lib"  )
 
+#pragma warning( disable : 26812 ) // Unscoped enum
+
 #include <common/win_raii.h>
 
 #define ENCODING (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING)
 
 namespace drjuke::scanlib
 {
-
-
-    SignatureReport::SignatureReport()
+    namespace 
     {
+        struct SignatureStatus { enum 
+        {
+            kSuccess                      = 0,
+            kActionUnknown                = 0x800b0002,                   // Trust provider does not support the specified action
+            kSubjectNotTrusted            = 0x800b0004,                   // Subject failed the specified verification action
+            kSubjectExplicitlyDistrusted  = 0x800B0111,                   // Signer's certificate is in the Untrusted Publishers store
+            kProviderUnknown              = TRUST_E_PROVIDER_UNKNOWN,     // Trust provider is not recognized on this system
+            kSubjectFormUnknown           = TRUST_E_SUBJECT_FORM_UNKNOWN, // Trust provider does not support the form specified for the subject
+            kFileNotSigned                = TRUST_E_NOSIGNATURE,          // Файл не подписан
+            kSignatureOrFileCorrupt       = TRUST_E_BAD_DIGEST,           // Файл поврежден
+            kSubjectCertExpired           = CERT_E_EXPIRED,               // Время действия сертификата закончилось
+            kSubjectCertificateRevoked    = CERT_E_REVOKED,               // Сертификат отозван
+            kUntrustedRoot                = CERT_E_UNTRUSTEDROOT          // Корневой удостоверяющий центр является недоверенным
+        }; };
 
+        std::map<uint32_t, std::string> g_FormattedStatuses = 
+        {
+            { SignatureStatus::kSuccess                    , "The file is signed"           },
+            { SignatureStatus::kProviderUnknown            , "The file is not signed"       },
+            { SignatureStatus::kActionUnknown              , "The file is not signed"       },
+            { SignatureStatus::kSubjectFormUnknown         , "The file is not signed"       },
+            { SignatureStatus::kSubjectNotTrusted          , "The signature is not trusted" },
+            { SignatureStatus::kSubjectExplicitlyDistrusted, "The signature is not trusted" },
+            { SignatureStatus::kFileNotSigned              , "The file is not signed"       },
+            { SignatureStatus::kSignatureOrFileCorrupt     , "The file is corrupted"        },
+            { SignatureStatus::kSubjectCertExpired         , "The certificate is expired"   },
+            { SignatureStatus::kSubjectCertificateRevoked  , "The certificate is revoked"   },
+            { SignatureStatus::kUntrustedRoot              , "The Root CA is untrusted"     }
+        };
+
+        std::array<int32_t, 6> g_RequiredDetaledInfo =
+        {
+            SignatureStatus::kSuccess,
+            SignatureStatus::kSubjectNotTrusted,
+            SignatureStatus::kSubjectExplicitlyDistrusted,
+            SignatureStatus::kSubjectCertExpired,
+            SignatureStatus::kSubjectCertificateRevoked,
+            SignatureStatus::kUntrustedRoot
+        };
+    }
+
+    Json SignatureReport::toJson()
+    {
+        return Json();
     }
 
     void SignatureAnalyzer::constructWinTrustFileInfo(const wchar_t *filename)
@@ -29,6 +72,7 @@ namespace drjuke::scanlib
         m_file_info.pgKnownSubject = nullptr;
     }
 
+    // TODO: unique_ptr
     void SignatureAnalyzer::constructWinTrustData()
     {
         // TODO: перевести
@@ -78,76 +122,13 @@ namespace drjuke::scanlib
         );
     }
 
-    void SignatureAnalyzer::processSigned(const wchar_t *filename)
-    {
-        /*
-        Signed file:
-        - Hash that represents the subject is trusted.
-
-        - Trusted publisher without any verification errors.
-
-        - UI was disabled in dwUIChoice. No publisher or 
-        time stamp chain errors.
-
-        - UI was enabled in dwUIChoice and the user clicked 
-        "Yes" when asked to install and run the signed 
-        subject.
-        */
-        wprintf_s(L"The file \"%s\" is signed and the signature "
-            L"was verified.\n",
-            filename);
-    }
-
-    void SignatureAnalyzer::processNotSigned(const wchar_t *filename)
-    {
-        auto last_error = GetLastError();
-
-        if 
-        (
-            last_error == TRUST_E_NOSIGNATURE          ||
-            last_error == TRUST_E_SUBJECT_FORM_UNKNOWN ||
-            last_error == TRUST_E_PROVIDER_UNKNOWN
-        ) 
-        {
-            // Файл не подписан
-            wprintf_s(L"The file \"%s\" is not signed.\n", filename);
-        } 
-        else 
-        {
-            // The signature was not valid or there was an error 
-            // opening the file.
-            wprintf_s(L"An unknown error occurred trying to verify the signature of the \"%s\" file.\n", filename);
-        }
-    }
-
-    void SignatureAnalyzer::processDisallowded(const wchar_t *filename)
-    {
-        wprintf_s(L"The signature is present, but specifically "
-            L"disallowed.\n");
-
-        filename;
-    }
-
-    void SignatureAnalyzer::processNonTrusted(const wchar_t *filename)
-    {
-        filename;
-    }
-
-    void SignatureAnalyzer::processError(LONG status)
-    {
-        wprintf_s(L"Error is: 0x%x.\n", status);
-    }
-
-    void SignatureAnalyzer::getSertificateDetails(const wchar_t *filename)
-    {
-        auto details = CertificateViewer(filename).getDetails();
-    }
-
     IReportPtr SignatureAnalyzer::getReport(const Path &path)
     {
         // Получаем путь в приемлемом для WinAPI представлении
         const auto str_path     = path.generic_wstring();
         const auto filename_ptr = str_path.c_str();
+
+        std::string resolution;
 
         constructWinTrustFileInfo(filename_ptr);
         constructWinTrustData();
@@ -160,19 +141,29 @@ namespace drjuke::scanlib
             &m_win_trust_data
         );
 
-        switch (status) 
-        {
-            case ERROR_SUCCESS:               processSigned(filename_ptr);      break; // Файл подписан валидной подписью
-            case TRUST_E_NOSIGNATURE:         processNotSigned(filename_ptr);   break; // Файл не подписан, либо подпись невалидна
-            case TRUST_E_EXPLICIT_DISTRUST:   processDisallowded(filename_ptr); break; // Подпись не разрешена политикой безопасности
-            case TRUST_E_SUBJECT_NOT_TRUSTED: processNonTrusted(filename_ptr);  break; // Подпись не является доверенной
-            case CRYPT_E_SECURITY_SETTINGS:   processDisallowded(filename_ptr); break; // Подпись не разрешена политикой безопасности
-            default:                          processError(status);             break; // Произошла ошибка при проверке
-        }
-
         destroyWinTrustData();
 
-        return std::make_shared<SignatureReport>();
+        // TODO: Собственные исключения
+        try
+        {
+            auto str_status = g_FormattedStatuses[status];
+            auto details    = CertificateViewer(filename_ptr).getDetails();
+
+            // TODO: Залогировать
+            return std::make_shared<SignatureReport>(str_status, details);
+        }
+        catch (const std::system_error &ex)
+        {
+            UNREFERENCED_PARAMETER(ex);
+            // TODO: Залогировать
+            return std::make_shared<SignatureReport>(g_FormattedStatuses[status]);
+        }
+        catch (const std::out_of_range &ex)
+        {
+            UNREFERENCED_PARAMETER(ex);
+            // TODO: Залогировать
+            return std::make_shared<SignatureReport>("Unknown");
+        }
     }
 
     void SignatureAnalyzer::loadResources()
@@ -184,5 +175,22 @@ namespace drjuke::scanlib
     std::string SignatureAnalyzer::getName()
     {
         return "Signature analyzer";
+    }
+
+    void SignatureReport::initializeJson()
+    {
+        // TODO: задефайнить строки 
+        m_report["resolution"]              = "UNKNOWN";
+        m_report["signer"]                  = "UNKNOWN";
+        m_report["application"]             = "UNKNOWN";
+        m_report["url"]                     = "UNKNOWN";
+        m_report["datetime"]["year"]        = -1;
+        m_report["datetime"]["month"]       = -1;
+        m_report["datetime"]["day"]         = -1;
+        m_report["datetime"]["day of week"] = -1;
+        m_report["datetime"]["hour"]        = -1;
+        m_report["datetime"]["minute"]      = -1;
+        m_report["datetime"]["second"]      = -1;
+        m_report["datetime"]["millisecond"] = -1;
     }
 }

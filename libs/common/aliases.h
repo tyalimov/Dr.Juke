@@ -20,3 +20,5 @@ namespace drjuke
     using Path        = std::filesystem::path;
     using DirIterator = std::filesystem::recursive_directory_iterator;
 }
+
+namespace fs = std::filesystem;

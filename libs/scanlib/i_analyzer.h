@@ -13,6 +13,7 @@
 
 namespace drjuke::scanlib
 {
+    // TODO: Добавить виртуальный метод, осуществляющий первичную инициализацию json
     class IReport
     {
     protected:

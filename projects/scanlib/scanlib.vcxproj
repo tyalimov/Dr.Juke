@@ -26,6 +26,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\libs\scanlib\cert_viewer.h" />
     <ClInclude Include="..\..\libs\scanlib\i_analyzer.h" />
+    <ClInclude Include="..\..\libs\scanlib\scanlib.h" />
     <ClInclude Include="..\..\libs\scanlib\signature_analyzer.h" />
     <ClInclude Include="..\..\libs\scanlib\yara_analyzer.h" />
     <ClInclude Include="..\..\libs\scanlib\yara_engine.h" />
@@ -106,7 +107,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <TreatWarningAsError>true</TreatWarningAsError>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(SolutionDir)libs;$(ExternalSdk)yaracpp\include; $(ExternalSdk)json;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libs;$(ExternalSdk)yaracpp\include; $(ExternalSdk)json;$(ExternalSdk)boost;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -125,7 +126,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <TreatWarningAsError>true</TreatWarningAsError>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(SolutionDir)libs;$(ExternalSdk)yaracpp\include; $(ExternalSdk)json;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libs;$(ExternalSdk)yaracpp\include; $(ExternalSdk)json;$(ExternalSdk)boost;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -146,7 +147,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <TreatWarningAsError>true</TreatWarningAsError>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(SolutionDir)libs;$(ExternalSdk)yaracpp\include; $(ExternalSdk)json;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libs;$(ExternalSdk)yaracpp\include; $(ExternalSdk)json;$(ExternalSdk)boost;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -169,7 +170,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <TreatWarningAsError>true</TreatWarningAsError>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(SolutionDir)libs;$(ExternalSdk)yaracpp\include; $(ExternalSdk)json;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)libs;$(ExternalSdk)yaracpp\include; $(ExternalSdk)json;$(ExternalSdk)boost;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

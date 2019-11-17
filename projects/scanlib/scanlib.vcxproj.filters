@@ -41,5 +41,8 @@
     <ClInclude Include="..\..\libs\scanlib\cert_viewer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\scanlib\scanlib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

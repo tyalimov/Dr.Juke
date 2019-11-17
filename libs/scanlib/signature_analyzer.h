@@ -7,16 +7,27 @@
 #include <Softpub.h>
 
 #include <filesystem>
+#include "cert_viewer.h"
 
 /*
     Анализатор файлов, проверяющий ЭЦП исполняемых файлов.
     Формат отчета от анализатора:
     {
-        "resolution"  : (non-signed|signed|non-trusted|disallowded|error) ----- Результат проверки
-        "signer"      : <строка> -- Подписывающий, при non-signed или error - "undefined"
-        "application" : <строка> -- Название приложения, при non-signed или error - "undefined"
-        "datetime"    : <строка> -- Дата и время подписывания, при non-signed или error - "undefined"
-        "url"         : <строка>
+        "resolution"      : (non-signed|signed|non-trusted|disallowded|error) ----- Результат проверки
+        "signer"          : <строка> -- Подписывающий, при non-signed или error - "undefined"
+        "application"     : <строка> -- Название приложения, при non-signed или error - "undefined"
+        "url"             : <строка>
+        "datetime"        : Дата подписания, структура ниже.
+        {
+            "year"        : <число> - год подписания          ( от 1601 до 30827                )
+            "month"       : <число> - месяц подписания        ( от 1<январь> до 12<декабрь>     )
+            "day"         : <число> - день подписания         ( от 1 до 31                      )
+            "day of week" : <число> - день недели             ( от 0<воскресенье> до 6<суббота> )
+            "hour"        : <число> - час подписания          ( от 0 до 23                      )
+            "minute"      : <число> - минута подписания       ( от 0 до 59                      )
+            "second"      : <число> - секунда подписания      ( от 0 до 59                      )
+            "millisecond" : <число> - миллисекунда подписания ( от 0 до 999                     )
+        }
     }
 */
 
@@ -24,12 +35,29 @@ namespace drjuke::scanlib
 {
     class SignatureReport : public IReport
     {
+        CertificateDetails m_details;
+        std::string        m_status;
+
+    private:
+        void initializeJson();
+
     public:
-        SignatureReport
-        (
-        //    bool is_valid,
-        //    std::string signer
-        );
+        SignatureReport(const std::string &status, const CertificateDetails &details)
+            : m_details(details)
+            , m_status(status)
+        {
+            // TODO: Первично инициализировать json
+            // TODO: Заполнить поля из details
+        }
+
+         SignatureReport(const std::string &status)
+            : m_status(status)
+        {
+            // TODO: Первично инициализировать json
+            // TODO: Заполнить поля из details как "незаполненные"
+        }
+
+        Json toJson() override;
     };
 
     class SignatureAnalyzer : public IAnalyzer

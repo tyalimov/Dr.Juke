@@ -8,12 +8,10 @@
 #define ENCODING (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING)
 #define NO_INFO L"no information"
 
-namespace drjuke::scansvc
+namespace drjuke::scanlib
 {
     void CertificateViewer::initialize()
     {
-        ZeroMemory(&ProgPubInfo, sizeof(ProgPubInfo));
-
         fResult = CryptQueryObject
         (
             CERT_QUERY_OBJECT_FILE,
@@ -31,6 +29,7 @@ namespace drjuke::scansvc
 
         if (!fResult)
         {
+            // TODO: логировать
             std::cout << "CryptQueryObject failed with" << GetLastError() << std::endl;;
             return;
         }
@@ -47,6 +46,7 @@ namespace drjuke::scansvc
 
         if (!fResult)
         {
+            // TODO: логировать
             std::cout << "CryptMsgGetParam failed with " << GetLastError() << std::endl;
             return;
         }
@@ -56,6 +56,7 @@ namespace drjuke::scansvc
 
         if (!pSignerInfo)
         {
+            // TODO: логировать
             std::cout << "Unable to allocate memory for Signer Info" << std::endl;
             return;
         }
@@ -72,6 +73,7 @@ namespace drjuke::scansvc
 
         if (!fResult)
         {
+            // TODO: логировать
             std::cout << "CryptMsgGetParam failed with " << GetLastError() << std::endl;
             return;
         }
@@ -137,7 +139,6 @@ namespace drjuke::scansvc
 
         // Fill in Publisher Information if present.
         m_details.m_publisher_link = 
-        m_publisher_info.lpszPublisherLink =
             opus_info->pPublisherInfo ?
             getCertificateInfo(opus_info, CertificateInfo::kPublisherInfo) : 
             NO_INFO;
@@ -149,7 +150,7 @@ namespace drjuke::scansvc
             NO_INFO;
     }
 
-    void CertificateViewer::getDateOfTimestamps()
+    void CertificateViewer::getTimestamp()
     {
         FILETIME local_filetime;
         FILETIME filetime;
@@ -176,10 +177,10 @@ namespace drjuke::scansvc
 
         // Convert to local time.
         FileTimeToLocalFileTime(&filetime, &local_filetime);
-        FileTimeToSystemTime(&local_filetime, &m_date_of_timestamp);
+        FileTimeToSystemTime(&local_filetime, &m_details.m_timestamp);
     } 
 
-    void CertificateViewer::getSignerTimestamps()
+    void CertificateViewer::getSignerInfo()
     {    
         DWORD dw_size{0};
 
@@ -232,6 +233,8 @@ namespace drjuke::scansvc
             std::cout << "CryptDecodeObject failed with " << GetLastError() << std::endl;
             return;
         }
+
+        //pCounterSignerInfo->Issuer
     }
 
     CRYPT_ATTRIBUTE CertificateViewer::getNecessaryAttribute(PCMSG_SIGNER_INFO info, const std::string &object_id)
@@ -275,14 +278,12 @@ namespace drjuke::scansvc
     {
         initialize();
         getProgramAndPublisherInfo();
-        getDateOfTimestamps();
-        getSignerTimestamps();
+        getTimestamp();
+        getSignerInfo();
     }
 
-    CertificateDetails CertificateViewer::getDetails()
+    CertificateDetails CertificateViewer::getDetails() const
     {
-        CertificateDetails details;
-
-        return details;
+        return m_details;
     }
 }
