@@ -24,7 +24,7 @@
 
 namespace drjuke::scanlib
 {
-    class YaraReport final : public IReport
+    class YaraReport final : public BaseReport
     {
     public:
         explicit YaraReport
@@ -33,14 +33,14 @@ namespace drjuke::scanlib
 		);
     };
 
-    class YaraAnalyzer final : public IAnalyzer 
+    class YaraAnalyzer final : public BaseAnalyzer 
     {
     private:
         yaracpp::YaraDetector m_detector;
     
     public:
    
-        IReportPtr getReport(const Path& path) override;
+        BaseReportPtr getReport(const Path& path) override;
         void loadResources()                   override;
         std::string getName()                  override;
     };

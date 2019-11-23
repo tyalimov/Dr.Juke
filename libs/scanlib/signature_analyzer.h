@@ -13,7 +13,7 @@
     Анализатор файлов, проверяющий ЭЦП исполняемых файлов.
     Формат отчета от анализатора:
     {
-        "resolution"      : (non-signed|signed|non-trusted|disallowded|error) ----- Результат проверки
+        "status"          : (non-signed|signed|non-trusted|disallowded|error) ----- Результат проверки
         "signer"          : <строка> -- Подписывающий, при non-signed или error - "undefined"
         "application"     : <строка> -- Название приложения, при non-signed или error - "undefined"
         "url"             : <строка>
@@ -33,7 +33,7 @@
 
 namespace drjuke::scanlib
 {
-    class SignatureReport : public IReport
+    class SignatureReport : public BaseReport
     {
         CertificateDetails m_details;
         std::string        m_status;
@@ -60,7 +60,7 @@ namespace drjuke::scanlib
         Json toJson() override;
     };
 
-    class SignatureAnalyzer : public IAnalyzer
+    class SignatureAnalyzer : public BaseAnalyzer
     {
     private:
         WINTRUST_FILE_INFO m_file_info;
@@ -90,7 +90,7 @@ namespace drjuke::scanlib
 
     public:
 
-        IReportPtr getReport(const Path& path) override;
+        BaseReportPtr getReport(const Path& path) override;
         void loadResources()                   override;
         std::string getName()                  override;
     };

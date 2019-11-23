@@ -6,7 +6,7 @@ using drjuke::constants::scansvc::kYaraRulesLocation;
 
 namespace drjuke::scanlib
 {
-    IReportPtr YaraAnalyzer::getReport(const Path &path)
+    BaseReportPtr YaraAnalyzer::getReport(const Path &path)
     {
         m_detector.analyze(path.generic_string());
         

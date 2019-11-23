@@ -14,25 +14,25 @@
 namespace drjuke::scanlib
 {
     // TODO: Добавить виртуальный метод, осуществляющий первичную инициализацию json
-    class IReport
+    class BaseReport
     {
     protected:
         Json m_report;
     public:
-        virtual ~IReport() = default;
+        virtual ~BaseReport() = default;
         [[nodiscard]] virtual Json toJson() { return m_report; }
     };
 
-    using IReportPtr = std::shared_ptr<IReport>;
+    using BaseReportPtr = std::shared_ptr<BaseReport>;
 
-    class IAnalyzer
+    class BaseAnalyzer
     {
     public:
-        virtual ~IAnalyzer()                           = default;
-        virtual IReportPtr getReport(const Path &path) = 0;
+        virtual ~BaseAnalyzer()                           = default;
+        virtual BaseReportPtr getReport(const Path &path) = 0;
         virtual void loadResources()                   = 0;
         virtual std::string getName()                  = 0;
     };
 
-    using IAnalyzerPtr = std::shared_ptr<IAnalyzer>;
+    using BaseAnalyzerPtr = std::shared_ptr<BaseAnalyzer>;
 }

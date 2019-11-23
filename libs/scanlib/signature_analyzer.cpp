@@ -122,7 +122,7 @@ namespace drjuke::scanlib
         );
     }
 
-    IReportPtr SignatureAnalyzer::getReport(const Path &path)
+    BaseReportPtr SignatureAnalyzer::getReport(const Path &path)
     {
         // Получаем путь в приемлемом для WinAPI представлении
         const auto str_path     = path.generic_wstring();
