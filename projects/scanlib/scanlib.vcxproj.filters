@@ -24,6 +24,9 @@
     <ClCompile Include="..\..\libs\scanlib\yara_analyzer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\libs\scanlib\scanlib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\scanlib\yara_engine.h">
@@ -35,13 +38,13 @@
     <ClInclude Include="..\..\libs\scanlib\signature_analyzer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\scanlib\i_analyzer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\libs\scanlib\cert_viewer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libs\scanlib\scanlib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\scanlib\base_analyzer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -8,7 +8,10 @@
 
 #include <common/win_raii.h>
 
-#define ENCODING (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING)
+namespace 
+{
+    constexpr auto g_EncodingType = (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING);
+}
 
 namespace drjuke::scanlib
 {
@@ -55,15 +58,13 @@ namespace drjuke::scanlib
         };
     }
 
-    Json SignatureReport::toJson()
+    Json SignatureReport::makeJson()
     {
         return Json();
     }
 
-    void SignatureAnalyzer::constructWinTrustFileInfo(const wchar_t *filename)
+    void DigitalSignatureAnalyzer::constructWinTrustFileInfo(const wchar_t *filename)
     {
-        //WINTRUST_FILE_INFO info;
-
         memset(&m_file_info, 0, sizeof(m_file_info));
 
         m_file_info.cbStruct       = sizeof(WINTRUST_FILE_INFO);
@@ -73,7 +74,7 @@ namespace drjuke::scanlib
     }
 
     // TODO: unique_ptr
-    void SignatureAnalyzer::constructWinTrustData()
+    void DigitalSignatureAnalyzer::constructWinTrustData()
     {
         // TODO: перевести
         /*
@@ -95,7 +96,7 @@ namespace drjuke::scanlib
         EKU.
         */
 
-        memset(&m_win_trust_data, 0, sizeof(m_win_trust_data)); // Default all fields to 0.
+        memset(&m_win_trust_data, 0, sizeof(m_win_trust_data)); // Инициализировать все в 0.
 
         m_win_trust_data.cbStruct             = sizeof(m_win_trust_data); // Размер структуры
         m_win_trust_data.pPolicyCallbackData  = nullptr;                  // Use default code signing EKU.
@@ -110,7 +111,7 @@ namespace drjuke::scanlib
         m_win_trust_data.pFile                = &m_file_info;             // Непосредственно данные файла
     }
 
-    void SignatureAnalyzer::destroyWinTrustData()
+    void DigitalSignatureAnalyzer::destroyWinTrustData()
     {
         m_win_trust_data.dwStateAction = WTD_STATEACTION_CLOSE;
 
@@ -122,7 +123,7 @@ namespace drjuke::scanlib
         );
     }
 
-    BaseReportPtr SignatureAnalyzer::getReport(const Path &path)
+    BaseReportPtr DigitalSignatureAnalyzer::getReport(const Path &path)
     {
         // Получаем путь в приемлемом для WinAPI представлении
         const auto str_path     = path.generic_wstring();
@@ -166,13 +167,13 @@ namespace drjuke::scanlib
         }
     }
 
-    void SignatureAnalyzer::loadResources()
+    void DigitalSignatureAnalyzer::loadResources()
     {
         // Не делать ничего, так как для проверки 
         // ЭЦП используется исключительно WinAPI
     }
 
-    std::string SignatureAnalyzer::getName()
+    std::string DigitalSignatureAnalyzer::getName()
     {
         return "Signature analyzer";
     }

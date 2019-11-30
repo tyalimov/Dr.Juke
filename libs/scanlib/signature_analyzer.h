@@ -1,12 +1,12 @@
 ﻿#pragma once
 
-#include "i_analyzer.h"
-
 #include <windows.h>
 #include <wintrust.h>
 #include <Softpub.h>
 
 #include <filesystem>
+
+#include "base_analyzer.h"
 #include "cert_viewer.h"
 
 /*
@@ -57,10 +57,10 @@ namespace drjuke::scanlib
             // TODO: Заполнить поля из details как "незаполненные"
         }
 
-        Json toJson() override;
+        Json makeJson() override;
     };
 
-    class SignatureAnalyzer : public BaseAnalyzer
+    class DigitalSignatureAnalyzer : public BaseAnalyzer
     {
     private:
         WINTRUST_FILE_INFO m_file_info;
@@ -69,7 +69,7 @@ namespace drjuke::scanlib
 
     public:
 
-        SignatureAnalyzer()
+        DigitalSignatureAnalyzer()
             : m_file_info()
             , m_win_trust_data()
             , m_wvt_policy_guid(WINTRUST_ACTION_GENERIC_VERIFY_V2)
@@ -91,7 +91,7 @@ namespace drjuke::scanlib
     public:
 
         BaseReportPtr getReport(const Path& path) override;
-        void loadResources()                   override;
-        std::string getName()                  override;
+        void loadResources()                      override;
+        std::string getName()                     override;
     };
 }

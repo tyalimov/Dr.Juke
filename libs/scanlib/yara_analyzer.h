@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "yara_engine.h"
-#include "i_analyzer.h"
+#include "base_analyzer.h"
 #include <filesystem>
 
 #define FIELD_RESULT         "infected" 

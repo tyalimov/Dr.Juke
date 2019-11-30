@@ -27,16 +27,13 @@ namespace drjuke::scanlib
     {
     private:
         std::wstring        m_target_filename;
-        HCERTSTORE          hStore               = nullptr;
-        HCRYPTMSG           hMsg                 = nullptr; 
+        
         PCCERT_CONTEXT      pCertContext         = nullptr;
-        BOOL                fResult;   
-        DWORD               dwEncoding;
-        DWORD               dwContentType;
-        DWORD               dwFormatType;
+        DWORD               m_encoding_type;
+        DWORD               m_content_type;
+        DWORD               m_format_type;
         PCMSG_SIGNER_INFO   pSignerInfo          = nullptr;
         PCMSG_SIGNER_INFO   pCounterSignerInfo   = nullptr;
-        DWORD               dwSignerInfo;
         CERT_INFO           CertInfo;     
         SYSTEMTIME          m_date_of_timestamp;
 
@@ -49,12 +46,12 @@ namespace drjuke::scanlib
         void getSignerInfo();
 
         // Вспомогательные методы
-        CRYPT_ATTRIBUTE getNecessaryAttribute(PCMSG_SIGNER_INFO info, const std::string &object_id);
+        static CRYPT_ATTRIBUTE getNecessaryAttribute(CRYPT_ATTRIBUTES attrs, const std::string &object_id);
         static std::wstring getCertificateInfo(PSPC_SP_OPUS_INFO opus_info, CertificateInfo cert_info);
 
     public:
         explicit CertificateViewer(const wchar_t *filename);
 
-        [[nodiscard]] CertificateDetails getDetails();
+        [[nodiscard]] CertificateDetails getDetails() const;
     };
 }

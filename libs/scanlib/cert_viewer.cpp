@@ -12,47 +12,54 @@ namespace drjuke::scanlib
 {
     void CertificateViewer::initialize()
     {
-        fResult = CryptQueryObject
+        
+        DWORD      signer_info_size   = 0;; // Размер структуры информации о подписавшем
+        HCRYPTMSG  crypt_message      = nullptr ;
+        HCERTSTORE certificate_store  = nullptr;
+        
+        // Получаем информацию о криптографическом объекте
+        auto status = CryptQueryObject
         (
-            CERT_QUERY_OBJECT_FILE,
-            m_target_filename.c_str(),
-            CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED,
-            CERT_QUERY_FORMAT_FLAG_BINARY,
-            0,
-            &dwEncoding,
-            &dwContentType,
-            &dwFormatType,
-            &hStore,
-            &hMsg,
+            CERT_QUERY_OBJECT_FILE,                     // Тип объекта (файл или блоб)
+            m_target_filename.c_str(),                  // Путь к файлу
+            CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED, // Что внутри, ожидаем подписанный файл
+            CERT_QUERY_FORMAT_FLAG_BINARY,              // В каком формате находится объект
+            0,                                          // Всегда 0
+            &m_encoding_type,                           // Как закодировано
+            &m_content_type,
+            &m_format_type,
+            &certificate_store,                         // Здесь будет хендл на хранилище сертификатов
+            &crypt_message,                             // Сюда записывается открытое сообщение
             nullptr
         );
 
-        if (!fResult)
+        if (!status)
         {
             // TODO: логировать
             std::cout << "CryptQueryObject failed with" << GetLastError() << std::endl;;
             return;
         }
 
-        // Get signer information size.
-        fResult = CryptMsgGetParam
+
+        // Получаем размер структуры, которую вернет функция
+        status = CryptMsgGetParam
         (
-            hMsg, 
+            crypt_message, 
             CMSG_SIGNER_INFO_PARAM, 
             0, 
             nullptr, 
-            &dwSignerInfo
+            &signer_info_size
         );
 
-        if (!fResult)
+        if (!status)
         {
             // TODO: логировать
             std::cout << "CryptMsgGetParam failed with " << GetLastError() << std::endl;
             return;
         }
 
-        // Allocate memory for signer information.
-        pSignerInfo = static_cast<PCMSG_SIGNER_INFO>(LocalAlloc(LPTR, dwSignerInfo));
+        // Выделяем память под SIGNER_INFO
+        pSignerInfo = static_cast<PCMSG_SIGNER_INFO>(malloc(signer_info_size)); // TODO: unique_ptr
 
         if (!pSignerInfo)
         {
@@ -61,17 +68,17 @@ namespace drjuke::scanlib
             return;
         }
 
-        // Get Signer Information.
-        fResult = CryptMsgGetParam
+        // Получаем информацию о подписавшем
+        status = CryptMsgGetParam
         (
-            hMsg, 
+            crypt_message, 
             CMSG_SIGNER_INFO_PARAM, 
             0, 
             static_cast<PVOID>(pSignerInfo), 
-            &dwSignerInfo
+            &signer_info_size
         );
 
-        if (!fResult)
+        if (!status)
         {
             // TODO: логировать
             std::cout << "CryptMsgGetParam failed with " << GetLastError() << std::endl;
@@ -83,7 +90,7 @@ namespace drjuke::scanlib
     {
         PSPC_SP_OPUS_INFO opus_info = nullptr;  
         DWORD dwData{0};
-        auto attribute = getNecessaryAttribute(pSignerInfo, SPC_SP_OPUS_INFO_OBJID);
+        auto attribute = getNecessaryAttribute(pSignerInfo->AuthAttrs, SPC_SP_OPUS_INFO_OBJID);
 
         // Get Size of SPC_SP_OPUS_INFO structure.
         BOOL status = CryptDecodeObject
@@ -152,11 +159,21 @@ namespace drjuke::scanlib
 
     void CertificateViewer::getTimestamp()
     {
-        FILETIME local_filetime;
-        FILETIME filetime;
-        DWORD    info_size{sizeof(FILETIME)};
+        FILETIME        local_filetime;
+        FILETIME        filetime;
+        DWORD           info_size = sizeof(FILETIME);
+        CRYPT_ATTRIBUTE attribute;
 
-        auto attribute = getNecessaryAttribute(pSignerInfo, szOID_RSA_signingTime);
+        try
+        {
+            attribute = getNecessaryAttribute(pSignerInfo->AuthAttrs, szOID_RSA_signingTime);
+        }
+        catch (const std::runtime_error&)
+        {
+            // TODO: поставить not found в отчете
+            std::cout << "getTimestamp - no attribute" << std::endl;
+            return;
+        }
 
         BOOL status = CryptDecodeObject
         (
@@ -182,14 +199,23 @@ namespace drjuke::scanlib
 
     void CertificateViewer::getSignerInfo()
     {    
-        DWORD dw_size{0};
-
+        DWORD dw_size = 0;
         pCounterSignerInfo = nullptr;
+        CRYPT_ATTRIBUTE attribute;
 
-        CRYPT_ATTRIBUTE attribute = getNecessaryAttribute(pSignerInfo, szOID_RSA_counterSign);
+        try
+        {
+            attribute = getNecessaryAttribute(pSignerInfo->AuthAttrs, szOID_RSA_counterSign);
+        }
+        catch (const std::runtime_error&)
+        {
+            // TODO: поставить not found в отчете
+            std::cout << "getSignerInfo - no attribute" << std::endl;
+            return;
+        }
 
         // Get size of CMSG_SIGNER_INFO structure.
-        fResult = CryptDecodeObject
+        auto status = CryptDecodeObject
         (
             ENCODING,
             PKCS7_SIGNER_INFO,
@@ -200,7 +226,7 @@ namespace drjuke::scanlib
             &dw_size
         );
 
-        if (!fResult)
+        if (!status)
         {
             std::cout << "CryptDecodeObject failed with " << GetLastError() << std::endl;
             return;
@@ -217,7 +243,7 @@ namespace drjuke::scanlib
 
         // Decode and get CMSG_SIGNER_INFO structure
         // for timestamp certificate.
-        fResult = CryptDecodeObject
+        status = CryptDecodeObject
         (
             ENCODING,
             PKCS7_SIGNER_INFO,
@@ -228,7 +254,7 @@ namespace drjuke::scanlib
             &dw_size
         );
 
-        if (!fResult)
+        if (!status)
         {
             std::cout << "CryptDecodeObject failed with " << GetLastError() << std::endl;
             return;
@@ -237,19 +263,19 @@ namespace drjuke::scanlib
         //pCounterSignerInfo->Issuer
     }
 
-    CRYPT_ATTRIBUTE CertificateViewer::getNecessaryAttribute(PCMSG_SIGNER_INFO info, const std::string &object_id)
+    CRYPT_ATTRIBUTE CertificateViewer::getNecessaryAttribute(CRYPT_ATTRIBUTES attrs, const std::string &object_id)
     {
-        for (DWORD i = 0; i < info->UnauthAttrs.cAttr; i++)
+        for (DWORD i = 0; i < attrs.cAttr; i++)
         {
-            auto obj_id = info->UnauthAttrs.rgAttr[i].pszObjId;
+            auto obj_id = attrs.rgAttr[i].pszObjId;
 
             if (std::string(obj_id) == object_id)
             {
-                return info->UnauthAttrs.rgAttr[i];
+                return attrs.rgAttr[i];
             }
         }
 
-        return CRYPT_ATTRIBUTE();
+        throw std::runtime_error("Specified attribute not found");
         // TODO: Выбросить исключение, если ничего не нашли.
     }
 

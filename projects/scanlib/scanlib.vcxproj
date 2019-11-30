@@ -20,12 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\scanlib\cert_viewer.cpp" />
+    <ClCompile Include="..\..\libs\scanlib\scanlib.cpp" />
     <ClCompile Include="..\..\libs\scanlib\signature_analyzer.cpp" />
     <ClCompile Include="..\..\libs\scanlib\yara_analyzer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\scanlib\cert_viewer.h" />
-    <ClInclude Include="..\..\libs\scanlib\i_analyzer.h" />
+    <ClInclude Include="..\..\libs\scanlib\base_analyzer.h" />
     <ClInclude Include="..\..\libs\scanlib\scanlib.h" />
     <ClInclude Include="..\..\libs\scanlib\signature_analyzer.h" />
     <ClInclude Include="..\..\libs\scanlib\yara_analyzer.h" />
