@@ -8,7 +8,7 @@
 
 #ifdef _M_IX86
 #   define PLATFORM_NAME         "x86" 
-#   define BOOST_PLATFORM_NAME   "x86" 
+#   define BOOST_PLATFORM_NAME   "x32" 
 #else
 #   define PLATFORM_NAME         "x64"
 #   define BOOST_PLATFORM_NAME   "x64" 
@@ -26,6 +26,4 @@
     library_name "_" PLATFORM_NAME "_" LINKAGE_STATUS CONFIGURATION_NAME ".lib"
 
 #define BOOST_UNDECORATE_LIBRARY(library_name) \
-    library_name "-vc142" "-mt" "-" BOOST_LINKAGE_STATUS "-" BOOST_PLATFORM_NAME "-1_71" ".lib"
-
-//#pragma comment (lib, "boost_log-vc142-mt-x64-1_71.lib")
+    "boost_" library_name "-vc142" "-mt" "-" BOOST_LINKAGE_STATUS "-" BOOST_PLATFORM_NAME "-1_71" ".lib"

@@ -1,38 +1,18 @@
-#include "i_analyzer.h"
-#include "yara_analyzer.h"
+#include "vector.h"
 
-#include <iostream>
-#include <vector>
-#include <memory>
-
-using namespace drjuke::scansvc;
-
-//program filename
+int Kek(const stl::Vector<int>& lol)
+{
+    return lol;
+}
 
 int main(int argc, const char *argv[])
 {
-	UNREFERENCED_PARAMETER(argc);
-	UNREFERENCED_PARAMETER(argv);
+    stl::Vector<int> karvalol;
 
-	const std::vector<IAnalyzerPtr> kAnalyzers
-	{
-        std::make_shared<YaraAnalyzer>()
-	};
-
-	try
-	{
-		for (auto &analyzer : kAnalyzers)
-		{
-			analyzer->loadResources();
-            
-			std::cout << "Analyzer - [" << analyzer->getName() << "]\n";
-			std::cout << analyzer->getReport(argv[1])->toJson().dump() << "\n\n";
-		}
-	}
-    catch (const std::exception &ex)
+    for (auto it : karvalol)
     {
-		std::cout << ex.what() << std::endl;
+        it += 1;
     }
 
-	return 0;
+    return 0;
 }

@@ -4,9 +4,9 @@
 
 using drjuke::constants::scansvc::kYaraRulesLocation;
 
-namespace drjuke::scansvc
+namespace drjuke::scanlib
 {
-    IReportPtr YaraAnalyzer::getReport(const Path &path)
+    BaseReportPtr YaraAnalyzer::getReport(const Path &path)
     {
         m_detector.analyze(path.generic_string());
         
@@ -28,7 +28,7 @@ namespace drjuke::scansvc
 
     std::string YaraAnalyzer::getName()
     {
-		return "Yara";
+		return "Yara analyzer";
     }
 
 	YaraReport::YaraReport(const std::vector<yaracpp::YaraRule> &rules)
