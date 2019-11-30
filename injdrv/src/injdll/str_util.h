@@ -13,10 +13,14 @@ namespace ownstl
 	ANSI_STRING ToAnsiString(const string& str);
 
 	string FromAnsiString(const ANSI_STRING& ansi_str);
+
+	string FromAnsiString(const ANSI_STRING* ansi_str);
 	
 	UNICODE_STRING ToUnicodeString(const wstring& wstr);
 
 	wstring FromUnicodeString(const UNICODE_STRING& uni_str);
+
+	wstring FromUnicodeString(const UNICODE_STRING* uni_str);
 
 	wstring ToWString(const string& str);
 

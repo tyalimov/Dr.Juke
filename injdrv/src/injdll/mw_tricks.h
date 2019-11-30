@@ -18,6 +18,9 @@ namespace mwtricks
 
 		static const int N = 16;
 		unsigned m_num_args;
+		bool m_is_pre = true;
+		wstring m_function_name;
+		arg_t m_ret_val = NULL;
 		arg_t m_args[N];
 
 		template <int i, typename T = void>
@@ -30,24 +33,35 @@ namespace mwtricks
 			setArg<i + 1, Types...>(rest...);
 		}
 
-		wstring m_function_name;
-
 	public:
 
 		template <typename ...Types>
-		FunctionCall(wstring name, Types... args)
+		FunctionCall(wstring name, bool is_pre, arg_t ret_val, Types... args)
 		{
 			static_assert(sizeof...(args) <= N);
 			setArg<0, Types...>(args...);
 			m_num_args = sizeof...(args);
 			m_function_name = name;
+			m_ret_val = ret_val;
+			m_is_pre = is_pre;
 		}
 
 		~FunctionCall() = default;
 
-		arg_t getArgument(unsigned i) const
-		{
+		arg_t getArgument(unsigned i) const	{
 			return m_args[i];
+		}
+
+		arg_t getReturnValue() const {
+			return m_ret_val;
+		}
+
+		bool isPre() const {
+			return m_is_pre;
+		}
+
+		bool isPost() const {
+			return !m_is_pre;
 		}
 
 		unsigned getArgumentCnt() const {
@@ -109,7 +123,7 @@ namespace mwtricks
 		}
 	};
 
-	class MalwareTricks
+	class MalwareTrickChain
 	{
 	public:
 

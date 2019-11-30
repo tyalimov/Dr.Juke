@@ -11,8 +11,6 @@ inline decltype(name)* Orig##name = nullptr;
 ORIG_DECL(NtCreateUserProcess);
 ORIG_DECL(NtCreateThreadEx);
 ORIG_DECL(NtCreateFile);
-ORIG_DECL(NtWriteFile);
-ORIG_DECL(NtClose);
 ORIG_DECL(LdrLoadDll);
 ORIG_DECL(LdrGetDllHandle);
 
@@ -50,10 +48,6 @@ HookedNtCreateThreadEx(
 
 NTSTATUS
 NTAPI
-HookedNtClose(IN HANDLE ObjectHandle);
-
-NTSTATUS
-NTAPI
 HookedNtCreateFile(
 	OUT PHANDLE           FileHandle,
 	IN ACCESS_MASK        DesiredAccess,
@@ -66,20 +60,6 @@ HookedNtCreateFile(
 	IN ULONG              CreateOptions,
 	IN PVOID              EaBuffer,
 	IN ULONG              EaLength
-);
-
-NTSTATUS
-NTAPI
-HookedNtWriteFile(
-	HANDLE           FileHandle,
-	HANDLE           Event,
-	PIO_APC_ROUTINE  ApcRoutine,
-	PVOID            ApcContext,
-	PIO_STATUS_BLOCK IoStatusBlock,
-	PVOID            Buffer,
-	ULONG            Length,
-	PLARGE_INTEGER   ByteOffset,
-	PULONG           Key
 );
 
 NTSTATUS
@@ -99,17 +79,3 @@ HookedLdrGetDllHandle(
 	_In_ PUNICODE_STRING DllName,
 	_Out_ PVOID* DllHandle
 );
-
-using PCreateProcessW = BOOL (*)(
-	_In_opt_ LPCWSTR lpApplicationName,
-	_Inout_opt_ LPWSTR lpCommandLine,
-	_In_opt_ LPSECURITY_ATTRIBUTES lpProcessAttributes,
-	_In_opt_ LPSECURITY_ATTRIBUTES lpThreadAttributes,
-	_In_ BOOL bInheritHandles,
-	_In_ DWORD dwCreationFlags,
-	_In_opt_ LPVOID lpEnvironment,
-	_In_opt_ LPCWSTR lpCurrentDirectory,
-	_In_ LPSTARTUPINFOW lpStartupInfo,
-	_Out_ LPPROCESS_INFORMATION lpProcessInformation
-);
-

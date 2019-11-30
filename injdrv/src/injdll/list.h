@@ -10,7 +10,7 @@ namespace ownstl
 		struct node
 		{
 			T data;
-			node* next;
+			node* next = NULL;
 		};
 
 		friend class iterator;

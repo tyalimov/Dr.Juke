@@ -3,7 +3,21 @@
 
 using namespace mwtricks;
 
-extern MalwareTricks* g_mw_tricks;
+extern MalwareTrickChain* g_mw_tricks;
+
+template <typename TFunc, typename TRetVal, typename ...TArgs>
+TRetVal HookHandler(const wchar_t* f_name, TFunc f, TArgs&... args)
+{
+	TRetVal ret_val;
+	FunctionCall call_pre(f_name, true, NULL, args...);
+
+	g_mw_tricks->updateCurrentStage(call_pre);
+	ret_val = f(args...);
+
+	FunctionCall call_post(f_name, false, NULL,  args...);
+	g_mw_tricks->updateCurrentStage(call_post);
+	return ret_val;
+}
 
 NTSTATUS
 NTAPI
@@ -21,8 +35,9 @@ HookedNtCreateThreadEx(
 	_In_opt_ PPS_ATTRIBUTE_LIST AttributeList
 )
 {
-	FunctionCall call(
+	return HookHandler<decltype(OrigNtCreateThreadEx), NTSTATUS>(
 		L"NtCreateThreadEx",
+		OrigNtCreateThreadEx,
 		ThreadHandle,
 		DesiredAccess,
 		ObjectAttributes,
@@ -34,30 +49,7 @@ HookedNtCreateThreadEx(
 		StackSize,
 		MaximumStackSize,
 		AttributeList
-	);
-
-	g_mw_tricks->updateCurrentStage(call);
-	return OrigNtCreateThreadEx(
-		ThreadHandle,
-		DesiredAccess,
-		ObjectAttributes,
-		ProcessHandle,
-		StartRoutine,
-		Argument,
-		CreateFlags,
-		ZeroBits,
-		StackSize,
-		MaximumStackSize,
-		AttributeList);
-}
-
-NTSTATUS
-NTAPI
-HookedNtClose(IN HANDLE ObjectHandle)
-{
-	FunctionCall call(L"NtClose", ObjectHandle);
-	g_mw_tricks->updateCurrentStage(call);
-	return OrigNtClose(ObjectHandle);
+		);
 }
 
 NTSTATUS
@@ -76,8 +68,9 @@ HookedNtCreateFile(
 	IN ULONG              EaLength
 )
 {
-	FunctionCall call(
+	return HookHandler<decltype(OrigNtCreateFile), NTSTATUS>(
 		L"NtCreateFile",
+		OrigNtCreateFile,
 		FileHandle,
 		DesiredAccess,
 		ObjectAttributes,
@@ -89,62 +82,7 @@ HookedNtCreateFile(
 		CreateOptions,
 		EaBuffer,
 		EaLength
-	);
-	g_mw_tricks->updateCurrentStage(call);
-	return OrigNtCreateFile(
-		FileHandle,
-		DesiredAccess,
-		ObjectAttributes,
-		IoStatusBlock,
-		AllocationSize,
-		FileAttributes,
-		ShareAccess,
-		CreateDisposition,
-		CreateOptions,
-		EaBuffer,
-		EaLength
-	);
-}
-
-NTSTATUS
-NTAPI
-HookedNtWriteFile(
-	HANDLE           FileHandle,
-	HANDLE           Event,
-	PIO_APC_ROUTINE  ApcRoutine,
-	PVOID            ApcContext,
-	PIO_STATUS_BLOCK IoStatusBlock,
-	PVOID            Buffer,
-	ULONG            Length,
-	PLARGE_INTEGER   ByteOffset,
-	PULONG           Key
-)
-{
-	FunctionCall call(
-		L"NtWriteFile",
-		FileHandle,
-		Event,
-		ApcRoutine,
-		ApcContext,
-		IoStatusBlock,
-		Buffer,
-		Length,
-		ByteOffset,
-		Key
-	);
-
-	g_mw_tricks->updateCurrentStage(call);
-	return OrigNtWriteFile(
-		FileHandle,
-		Event,
-		ApcRoutine,
-		ApcContext,
-		IoStatusBlock,
-		Buffer,
-		Length,
-		ByteOffset,
-		Key
-	);
+		);
 }
 
 NTSTATUS
@@ -163,23 +101,9 @@ HookedNtCreateUserProcess(
 	_In_opt_ PPS_ATTRIBUTE_LIST AttributeList
 )
 {
-	FunctionCall call(
+	return HookHandler<decltype(OrigNtCreateUserProcess), NTSTATUS>(
 		L"NtCreateUserProcess",
-		 ProcessHandle,
-		 ThreadHandle,
-		ProcessDesiredAccess,
-		ThreadDesiredAccess,
-		ProcessObjectAttributes,
-		ThreadObjectAttributes,
-		ProcessFlags, // PROCESS_CREATE_FLAGS_*
-		ThreadFlags, // THREAD_CREATE_FLAGS_*
-		ProcessParameters, // PRTL_USER_PROCESS_PARAMETERS
-		CreateInfo,
-		AttributeList
-	);
-
-	g_mw_tricks->updateCurrentStage(call);
-	return OrigNtCreateUserProcess(
+		OrigNtCreateUserProcess,
 		ProcessHandle,
 		ThreadHandle,
 		ProcessDesiredAccess,
@@ -191,7 +115,7 @@ HookedNtCreateUserProcess(
 		ProcessParameters, // PRTL_USER_PROCESS_PARAMETERS
 		CreateInfo,
 		AttributeList
-	);
+		);
 }
 
 NTSTATUS
@@ -203,22 +127,14 @@ HookedLdrLoadDll(
 	_Out_ PVOID* DllHandle
 )
 {
-	NTSTATUS status = OrigLdrLoadDll(
-		DllPath,
-		DllCharacteristics,
-		DllName,
-		DllHandle
-	);
-	FunctionCall call(
+	return HookHandler<decltype(OrigLdrLoadDll), NTSTATUS>(
 		L"LdrLoadDll",
+		OrigLdrLoadDll,
 		DllPath,
 		DllCharacteristics,
 		DllName,
 		DllHandle
-	);
-
-	g_mw_tricks->updateCurrentStage(call);
-	return status;
+		);
 }
 
 NTSTATUS
@@ -230,20 +146,12 @@ HookedLdrGetDllHandle(
 	_Out_ PVOID* DllHandle
 )
 {
-	NTSTATUS status = OrigLdrGetDllHandle(
+	return HookHandler<decltype(OrigLdrGetDllHandle), NTSTATUS>(
+		L"LdrGetDllHandle",
+		OrigLdrGetDllHandle,
 		DllPath,
 		DllCharacteristics,
 		DllName,
 		DllHandle
-	);
-	FunctionCall call(
-		L"LdrLoadDll",
-		DllPath,
-		DllCharacteristics,
-		DllName,
-		DllHandle
-	);
-
-	g_mw_tricks->updateCurrentStage(call);
-	return status;
+		);
 }

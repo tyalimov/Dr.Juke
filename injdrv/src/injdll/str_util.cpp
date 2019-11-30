@@ -31,9 +31,14 @@ namespace ownstl
 	string FromAnsiString(const ANSI_STRING& ansi_str)
 	{
 		return string(ansi_str.Buffer, ansi_str.Length);
-
 	}
-	//
+
+	string FromAnsiString(const ANSI_STRING* ansi_str)
+	{
+		return string(ansi_str->Buffer, ansi_str->Length);
+	}
+
+//
 // Warning!
 // Notice, that when wstring object is freed, the UNICODE_STRING buffer is freed too
 // Use created UNICODE_STRING object only when wstring object is present!
@@ -63,6 +68,11 @@ namespace ownstl
 	wstring FromUnicodeString(const UNICODE_STRING& uni_str)
 	{
 		return wstring(uni_str.Buffer, uni_str.Length / sizeof(wchar_t));
+	}
+
+	wstring FromUnicodeString(const UNICODE_STRING* uni_str)
+	{
+		return wstring(uni_str->Buffer, uni_str->Length / sizeof(wchar_t));
 	}
 
 	// Usage:

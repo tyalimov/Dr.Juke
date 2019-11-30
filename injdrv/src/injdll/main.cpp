@@ -29,7 +29,7 @@
 using namespace ownstl;
 using namespace mwtricks;
 
-MalwareTricks* g_mw_tricks = nullptr;
+MalwareTrickChain* g_mw_tricks = nullptr;
 
 void SetupMalwareFiltering();
 
@@ -137,8 +137,6 @@ EnableDetours(
 		DETOUR_HOOK(NtCreateThreadEx);
 		DETOUR_HOOK(NtCreateUserProcess);
 		DETOUR_HOOK(NtCreateFile);
-		DETOUR_HOOK(NtWriteFile);
-		DETOUR_HOOK(NtClose);
 	}
 	DetourTransactionCommit();
 
@@ -153,10 +151,11 @@ DisableDetours(
 {
 	DetourTransactionBegin();
 	{
+		DETOUR_UNHOOK(LdrGetDllHandle);
+		DETOUR_UNHOOK(LdrLoadDll);
 		DETOUR_UNHOOK(NtCreateThreadEx);
+		DETOUR_UNHOOK(NtCreateUserProcess);
 		DETOUR_UNHOOK(NtCreateFile);
-		DETOUR_UNHOOK(NtWriteFile);
-		DETOUR_UNHOOK(NtClose);
 	}
 	DetourTransactionCommit();
 	return STATUS_SUCCESS;
@@ -252,7 +251,7 @@ OnProcessAttach(
 	// Setup malware filtering rules
 	//
 
-	g_mw_tricks = new MalwareTricks();
+	g_mw_tricks = new MalwareTrickChain();
 	SetupMalwareFiltering();
 
 	//
@@ -326,12 +325,9 @@ NtDllMain(
 	return TRUE;
 }
 
-/////////////////////////////////
-
-#define PASSWORD_THEFT		L"[IE Password theft] "
-#define INIT				L"[Init] "
-
-PCreateProcessW lpCreateProcessW = nullptr;
+//------------------------------------------------------------//
+//           Malware filtering rules                          //
+//------------------------------------------------------------//
 
 wstring GetProcessPid() {
 	WCHAR buffer[20] = { 0 };
@@ -350,46 +346,17 @@ wstring GetProcessImagePath() {
 		NtCurrentPeb()->ProcessParameters->ImagePathName);
 }
 
-wstring GetProcessInformation() {
-	return wstring(L"PID=") + GetProcessPid()
-		+ L" " + L"PATH=" + GetProcessImagePath();
+wstring GetProcessInfo() {
+	return GetProcessPid() + L" | " + GetProcessImagePath();
 }
 
-void MT_Theft()
+#define TEST L"[TEST] "
+#define CONSOLE_INPUT L"[CONSOLE INPUT] "
+#define CAPTURE_NETWORK L"[CAPTURE NETWORK] "
+
+void MT_Test()
 {
-	MalwareTrick mt_test(PASSWORD_THEFT L"Via vaultcli.dll");
-	mt_test.addCheck([](const FunctionCall& call) {
-
-		if (call.getName() == L"LdrLoadDll")
-		{
-			PUNICODE_STRING DllName = (PUNICODE_STRING)call.getArgument(2);
-			PVOID* DllHandle = (PVOID *)call.getArgument(3);
-
-			if (*DllName == L"kernel32" || *DllName == L"kernel32.dll")
-			{
-				ANSI_STRING RoutineName;
-				RtlInitAnsiString(&RoutineName, (PSTR)"CreateProcessW");
-				LdrGetProcedureAddress(*DllHandle, &RoutineName, 0, (PVOID*)&lpCreateProcessW);
-
-				if (lpCreateProcessW == nullptr)
-				{
-					wstring info = GetProcessInformation() + INIT + L"failed\n";
-					EtwEventWriteString(ProviderHandle, 0, 0, info.c_str());
-					return false;
-				}
-				else
-				{
-					wstring info = GetProcessInformation() + INIT + L"successfull\n";
-					EtwEventWriteString(ProviderHandle, 0, 0, info.c_str());
-					return true;
-				}
-			}
-		}
-
-		return false;
-
-		});
-
+	MalwareTrick mt_test(TEST);
 	mt_test.addCheck([](const FunctionCall& call) {
 
 		if (call.getName() == L"LdrLoadDll")
@@ -397,42 +364,19 @@ void MT_Theft()
 			PUNICODE_STRING DllName = (PUNICODE_STRING)call.getArgument(2);
 			PVOID* DllHandle = (PVOID*)call.getArgument(3);
 
-			if (*DllName == L"vaultcli" || *DllName == L"vaultcli.dll")
-			{
-				if (lpCreateProcessW != nullptr)
-				{
-					STARTUPINFOW info = { sizeof(info) };
-					PROCESS_INFORMATION processInfo;
+			wstring name = !DllName ? L"<null>" : FromUnicodeString(DllName);
+			wchar_t buf[128] = { 0 };
 
-					EtwEventWriteString(ProviderHandle, 0, 0, L"Creating signtool process");
-					wstring cmd = wstring(L"C:\\signtool.exe verify \"") + GetProcessImagePath() + L"\""; //L"C:\\Windows\\Explorer.exe"; 
-					BOOL ok = lpCreateProcessW(NULL, (PWSTR)cmd.c_str(),
-						NULL, NULL, TRUE, 0, NULL, NULL, &info, &processInfo);
+			if (call.isPre())
+				_snwprintf(buf, sizeof(buf), L"Before Loading %s\n", name);
+			else
+				_snwprintf(buf, sizeof(buf), L"After Loading %s. Handle=0x%08X\n", name, DllHandle);
 
-					if (ok)
-					{
-						NtWaitForSingleObject(processInfo.hProcess, FALSE, NULL);
-
-						DWORD exit_code;
-						NtGetExitCodeProcess(processInfo.hProcess, &exit_code);
-						NtClose(processInfo.hProcess);
-						NtClose(processInfo.hThread);
-
-						wchar_t buf[64];
-						_snwprintf(buf,
-							RTL_NUMBER_OF(buf),
-							L"Signtool process returned %d",
-							exit_code);
-
-						EtwEventWriteString(ProviderHandle, 0, 0, buf);
-						if (exit_code != 0)
-							return true;
-					}
-				}
-			}
+			EtwEventWriteString(ProviderHandle, 0, 0, buf);
 		}
 
 		return false;
+
 		});
 
 	g_mw_tricks->addTrick(mt_test);
@@ -440,32 +384,25 @@ void MT_Theft()
 
 void SetupMalwareFiltering()
 {
-	MT_Theft();
+	MT_Test();
 
 	g_mw_tricks->onMalwareDetected([](const wstring& trick_name) {
-		wstring ws_info = GetProcessInformation();
-		wstring ws_total = ws_info + L"\nTRICK=" + trick_name + L"\n";
+		wstring ws_info = GetProcessInfo();
+		wstring ws_total = ws_info + L" | " + trick_name + L"\n";
 		EtwEventWriteString(ProviderHandle, 0, 0, ws_total.c_str());
 
-		if (trick_name.startsWith(PASSWORD_THEFT))
-		{
-			EtwEventWriteString(ProviderHandle, 0, 0, L"Shutdown process lalala");
-			NTSTATUS status = NtSuspendProcess(NtCurrentProcess());
-			if (NT_SUCCESS(status))
-			{
-				EtwEventWriteString(ProviderHandle, 0, 0, L"Success");
-			}
-			else
-			{
-				wchar_t buf[64];
-				_snwprintf(buf,
-					RTL_NUMBER_OF(buf),
-					L"Failed, err=%d",
-					RtlNtStatusToDosError(status));
-			}
-
-		}
-		else
-			EtwEventWriteString(ProviderHandle, 0, 0, L"Not shutdown process");
+		//if (trick_name.startsWith(PASSWORD_THEFT))
+		//{
+		//	EtwEventWriteString(ProviderHandle, 0, 0, L"Shutdown process");
+		//	NTSTATUS status = NtSuspendProcess(NtCurrentProcess());
+		//	if (NT_ERROR(status))
+		//	{
+		//		wchar_t buf[64];
+		//		_snwprintf(buf,
+		//			RTL_NUMBER_OF(buf),
+		//			L"Failed, err=%d",
+		//			RtlNtStatusToDosError(status));
+		//	}
+		//}
 	});
 }
