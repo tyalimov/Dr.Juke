@@ -4,9 +4,10 @@
 //
 #define NTDLL_NO_INLINE_INIT_STRING
 #include <ntdll.h>
+#include <winsock2.h>
 
 #define ORIG_DECL(name) \
-inline decltype(name)* Orig##name = nullptr;
+inline decltype(name)* Orig_##name = nullptr;
 
 ORIG_DECL(NtCreateUserProcess);
 ORIG_DECL(NtCreateThreadEx);
@@ -14,9 +15,16 @@ ORIG_DECL(NtCreateFile);
 ORIG_DECL(LdrLoadDll);
 ORIG_DECL(LdrGetDllHandle);
 
+ORIG_DECL(socket);
+ORIG_DECL(closesocket);
+ORIG_DECL(connect);
+ORIG_DECL(accept);
+ORIG_DECL(recv);
+ORIG_DECL(recvfrom);
+
 NTSTATUS
 NTAPI
-HookedNtCreateUserProcess(
+Hooked_NtCreateUserProcess(
 	_Out_ PHANDLE ProcessHandle,
 	_Out_ PHANDLE ThreadHandle,
 	_In_ ACCESS_MASK ProcessDesiredAccess,
@@ -32,7 +40,7 @@ HookedNtCreateUserProcess(
 
 NTSTATUS
 NTAPI
-HookedNtCreateThreadEx(
+Hooked_NtCreateThreadEx(
 	_Out_ PHANDLE ThreadHandle,
 	_In_ ACCESS_MASK DesiredAccess,
 	_In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
@@ -48,7 +56,7 @@ HookedNtCreateThreadEx(
 
 NTSTATUS
 NTAPI
-HookedNtCreateFile(
+Hooked_NtCreateFile(
 	OUT PHANDLE           FileHandle,
 	IN ACCESS_MASK        DesiredAccess,
 	IN POBJECT_ATTRIBUTES ObjectAttributes,
@@ -64,7 +72,7 @@ HookedNtCreateFile(
 
 NTSTATUS
 NTAPI
-HookedLdrLoadDll(
+Hooked_LdrLoadDll(
 	_In_opt_ PWSTR DllPath,
 	_In_opt_ PULONG DllCharacteristics,
 	_In_ PUNICODE_STRING DllName,
@@ -73,9 +81,47 @@ HookedLdrLoadDll(
 
 NTSTATUS
 NTAPI
-HookedLdrGetDllHandle(
+Hooked_LdrGetDllHandle(
 	_In_opt_ PWSTR DllPath,
 	_In_opt_ PULONG DllCharacteristics,
 	_In_ PUNICODE_STRING DllName,
 	_Out_ PVOID* DllHandle
+);
+
+int WSAAPI Hooked_connect(
+  SOCKET         s,
+  const sockaddr *name,
+  int            namelen
+);
+
+int WSAAPI Hooked_accept(
+  SOCKET         s,
+  sockaddr *addr,
+  int*          addrlen
+);
+
+int WSAAPI Hooked_recv(
+  SOCKET s,
+  char   *buf,
+  int    len,
+  int    flags
+);
+
+int WSAAPI Hooked_recvfrom(
+  SOCKET   s,
+  char     *buf,
+  int      len,
+  int      flags,
+  sockaddr *from,
+  int      *fromlen
+);
+
+SOCKET WSAAPI Hooked_socket(
+  int af,
+  int type,
+  int protocol
+);
+
+int WSAAPI Hooked_closesocket(
+  IN SOCKET s
 );

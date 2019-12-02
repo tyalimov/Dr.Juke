@@ -177,6 +177,7 @@
     <ClInclude Include="map.h" />
     <ClInclude Include="mem_util.h" />
     <ClInclude Include="mw_tricks.h" />
+    <ClInclude Include="net_filter.h" />
     <ClInclude Include="string.h" />
     <ClInclude Include="str_util.h" />
     <ClInclude Include="synch.h" />

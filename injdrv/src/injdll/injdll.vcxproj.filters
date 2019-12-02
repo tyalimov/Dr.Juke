@@ -144,6 +144,9 @@
     <ClInclude Include="wow64log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="net_filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hooked.cpp">

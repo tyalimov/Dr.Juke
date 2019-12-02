@@ -10,7 +10,7 @@ namespace ownstl
 		struct node
 		{
 			T data;
-			node* next = NULL;
+			node* next;
 		};
 
 		friend class iterator;
@@ -45,18 +45,25 @@ namespace ownstl
 		int m_size = 0;
 
 	public:
+
 		list() = default;
 
 		~list()
 		{
-			while (m_size > 0)
-				pop_first();
+			this->clear();
 		}
 
 		list(const list& other)
 		{
+			this->clear();
 			for (const auto& data : other)
 				push_back(data);
+		}
+
+		void clear()
+		{
+			while (m_size > 0)
+				pop_first();
 		}
 
 		list& operator=(const list& other)
@@ -65,6 +72,7 @@ namespace ownstl
 				return *this;
 			}
 
+			this->clear();
 			for (const auto& data : other)
 				push_back(data);
 

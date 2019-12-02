@@ -128,27 +128,27 @@ namespace ownstl
 			return balance(p);
 		}
 
-		node* insert(node* p, const TKey& k, const TVal& v)
+		node* _insert(node* p, const TKey& k, const TVal& v)
 		{
 			if (p && p->key == k)
 				return p;
 			if (!p)
 				return new node(k, v);
 			if (k < p->key)
-				p->left = insert(p->left, k, v);
+				p->left = _insert(p->left, k, v);
 			else 
-				p->right = insert(p->right, k, v);
+				p->right = _insert(p->right, k, v);
 
 			return balance(p);
 		}
 
-		node* remove(node* p, const TKey& k)
+		node* _remove(node* p, const TKey& k)
 		{
 			if (!p) return 0;
 			if (k < p->key)
-				p->left = remove(p->left, k);
+				p->left = _remove(p->left, k);
 			else if (k > p->key)
-				p->right = remove(p->right, k);
+				p->right = _remove(p->right, k);
 			else //  k == p->key 
 			{
 				node* q = p->left;
@@ -168,13 +168,13 @@ namespace ownstl
 
 		TreeMap() = default;
 
-		const TVal& insertPair(const TKey& key, const TVal& val)
+		const TVal& insert(const TKey& key, const TVal& val)
 		{
-			m_root = insert(m_root, key, val);
+			m_root = _insert(m_root, key, val);
 			return val;
 		}
 
-		TVal* findPair(const TKey& key, node* p = nullptr)
+		TVal* find(const TKey& key, node* p = nullptr)
 		{
 			if (p == nullptr)
 				p = m_root;
@@ -183,18 +183,18 @@ namespace ownstl
 				return &p->val;
 
 			else if (key < p->key && p->left)
-				return findPair(key, p->left);
+				return find(key, p->left);
 
 			else if (key > p->key && p->right)
-				return findPair(key, p->right);
+				return find(key, p->right);
 
 			else
 				return nullptr;
 		}
 
-		bool removePair(const TKey& key)
+		bool remove(const TKey& key)
 		{
-			return (bool)remove(m_root, key);
+			return (bool)_remove(m_root, key);
 		}
 
 		template <typename C>

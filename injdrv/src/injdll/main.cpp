@@ -117,12 +117,20 @@ GUID ProviderGuid = {
 REGHANDLE ProviderHandle;
 
 
-#define DETOUR_HOOK(func)						\
-Orig##func = func;								\
-DetourAttach((PVOID*)& Orig##func, Hooked##func)
+#define DETOUR_HOOK(func)							\
+Orig_##func = func;									\
+DetourAttach((PVOID*)& Orig_##func, Hooked_##func)
 
-#define DETOUR_UNHOOK(func)						\
-DetourDetach((PVOID*)& Orig##func, Hooked##func)
+#define DETOUR_UNHOOK(func)							\
+DetourDetach((PVOID*)& Orig_##func, Hooked_##func) 	
+
+#define DETOUR_HOOK_ON_DLL_LOAD(func, DllHandle, VarRoutineName)				\
+RtlInitAnsiString(&VarRoutineName, (PSTR)#func);							\
+LdrGetProcedureAddress(DllHandle, &VarRoutineName, 0, (PVOID*)& Orig_##func);\
+DetourAttach((PVOID*)& Orig_##func, Hooked_##func)
+
+
+
 
 NTSTATUS
 NTAPI
@@ -160,6 +168,7 @@ DisableDetours(
 	DetourTransactionCommit();
 	return STATUS_SUCCESS;
 }
+
 
 NTSTATUS
 NTAPI
@@ -293,6 +302,7 @@ BOOL NtGetExitCodeProcess(HANDLE hProcess, LPDWORD lpExitCode)
 
 	return status;
 }
+#include "net_filter.h"
 
 EXTERN_C
 BOOL
@@ -359,18 +369,19 @@ void MT_Test()
 	MalwareTrick mt_test(TEST);
 	mt_test.addCheck([](const FunctionCall& call) {
 
-		if (call.getName() == L"LdrLoadDll")
+		if (call.getName().endsWith(L"LdrLoadDll"))
 		{
 			PUNICODE_STRING DllName = (PUNICODE_STRING)call.getArgument(2);
-			PVOID* DllHandle = (PVOID*)call.getArgument(3);
-
 			wstring name = !DllName ? L"<null>" : FromUnicodeString(DllName);
+			PVOID* pDllHandle = (PVOID*)call.getArgument(3);
+			PVOID DllHandle = !pDllHandle ? NULL : *pDllHandle;
+
 			wchar_t buf[128] = { 0 };
 
 			if (call.isPre())
 				_snwprintf(buf, sizeof(buf), L"Before Loading %s\n", name);
 			else
-				_snwprintf(buf, sizeof(buf), L"After Loading %s. Handle=0x%08X\n", name, DllHandle);
+				_snwprintf(buf, sizeof(buf), L"After Loading %s. Handle=0x%08X\n", name.c_str(), DllHandle);
 
 			EtwEventWriteString(ProviderHandle, 0, 0, buf);
 		}
@@ -382,9 +393,105 @@ void MT_Test()
 	g_mw_tricks->addTrick(mt_test);
 }
 
+void MT_DllUnload()
+{
+	MalwareTrick mt_dll_unload(TEST);
+	mt_dll_unload.addCheck([](const FunctionCall& call) {
+
+		if (call.getName().endsWith(L"LdrUnloadDll") && call.isPre())
+		{
+			PUNICODE_STRING DllName = (PUNICODE_STRING)call.getArgument(2);
+			wstring DllNameStr = !DllName ? L"<null>" : FromUnicodeString(DllName);
+			if (DllNameStr == L"ws2_32.dll" || DllNameStr == L"ws2_32")
+			{
+				DetourTransactionBegin();
+				{
+					DETOUR_UNHOOK(socket);
+					DETOUR_UNHOOK(closesocket);
+					DETOUR_UNHOOK(connect);
+					DETOUR_UNHOOK(accept);
+					DETOUR_UNHOOK(recv);
+					DETOUR_UNHOOK(recvfrom);
+				}
+				DetourTransactionCommit();
+			}
+		}
+
+		return false;
+		});
+
+	g_mw_tricks->addTrick(mt_dll_unload);
+}
+
+void MT_NetFilterWS2_32()
+{
+	MalwareTrick mt_ws2_32(TEST);
+	mt_ws2_32.addCheck([](const FunctionCall& call) {
+
+		if (call.getName().endsWith(L"LdrLoadDll") && call.isPost())
+		{
+			PUNICODE_STRING DllName = (PUNICODE_STRING)call.getArgument(2);
+			wstring DllNameStr = !DllName ? L"<null>" : FromUnicodeString(DllName);
+			PVOID* pDllHandle = (PVOID*)call.getArgument(3);
+			PVOID DllHandle = !pDllHandle ? NULL : *pDllHandle;
+
+			if (NT_SUCCESS(call.getReturnValue()) && DllHandle)
+			{
+				LPVOID proc_addr = NULL;
+				if (DllNameStr == L"ws2_32.dll" || DllNameStr == L"ws2_32")
+				{
+					DetourTransactionBegin();
+					{
+						ANSI_STRING RoutineName;
+						DETOUR_HOOK_ON_DLL_LOAD(socket, DllHandle, RoutineName);
+						DETOUR_HOOK_ON_DLL_LOAD(closesocket, DllHandle, RoutineName);
+						DETOUR_HOOK_ON_DLL_LOAD(connect, DllHandle, RoutineName);
+						DETOUR_HOOK_ON_DLL_LOAD(accept, DllHandle, RoutineName);
+						DETOUR_HOOK_ON_DLL_LOAD(recv, DllHandle, RoutineName);
+						DETOUR_HOOK_ON_DLL_LOAD(recvfrom, DllHandle, RoutineName);
+					}
+					DetourTransactionCommit();
+					EtwEventWriteString(ProviderHandle, 0, 0, L"Loaded ws2_32.dll");
+					return true;
+				}
+			}
+
+		}
+
+		return false;
+
+		});
+
+	mt_ws2_32.addCheck([](const FunctionCall& call) {
+
+		wstring call_name = call.getName();
+		if (call_name.endsWith(L"socket") && call.isPost())
+		{
+			SOCKET s = call.getReturnValue();
+			if (s != INVALID_SOCKET)
+			{
+				int af = (int)call.getArgument(0);
+				int type = (int)call.getArgument(1);
+				int prot = (int)call.getArgument(2);
+				ws2_32::on_socket(s, af, type, prot);
+			}
+
+		}
+
+		return false;
+
+		});
+
+	g_mw_tricks->addTrick(mt_ws2_32);
+}
+
+
 void SetupMalwareFiltering()
 {
-	MT_Test();
+	//MT_Test();
+	MT_DllUnload();
+	MT_NetFilterWS2_32();
+
 
 	g_mw_tricks->onMalwareDetected([](const wstring& trick_name) {
 		wstring ws_info = GetProcessInfo();
