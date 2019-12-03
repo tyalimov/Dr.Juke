@@ -362,7 +362,10 @@ wstring GetProcessInfo() {
 
 #define TEST L"[TEST] "
 #define CONSOLE_INPUT L"[CONSOLE INPUT] "
-#define CAPTURE_NETWORK L"[CAPTURE NETWORK] "
+
+#define NETFILTER L"NetFilter"
+#define WS2_32 "ws2_32"
+#define NETFILTER_WS2_32 L"[" NETFILTER L"::" WS2_32 L"]"
 
 void MT_Test()
 {
@@ -473,7 +476,7 @@ void MT_NetFilterWS2_32()
 				int af = (int)call.getArgument(0);
 				int type = (int)call.getArgument(1);
 				int prot = (int)call.getArgument(2);
-				ws2_32::on_socket(s, af, type, prot);
+				netfilter::ws2_32::on_socket(s, af, type, prot);
 			}
 
 		}
@@ -498,6 +501,15 @@ void SetupMalwareFiltering()
 		wstring ws_total = ws_info + L" | " + trick_name + L"\n";
 		EtwEventWriteString(ProviderHandle, 0, 0, ws_total.c_str());
 
+	//	if (trick_name.startsWith(NETFILTER))
+	//	{
+	//		if (trick_name.endsWith(WS2_32))
+	//		{
+	//			EtwEventWriteString(ProviderHandle, 0, 0, NETFILTER_WS2_32);
+	//			netfilter::ws2_32::get_bad_sock_info()
+	//		}
+	//	}
+
 		//if (trick_name.startsWith(PASSWORD_THEFT))
 		//{
 		//	EtwEventWriteString(ProviderHandle, 0, 0, L"Shutdown process");
@@ -512,4 +524,9 @@ void SetupMalwareFiltering()
 		//	}
 		//}
 	});
+}
+
+__declspec(dllexport) void f()
+{
+
 }
