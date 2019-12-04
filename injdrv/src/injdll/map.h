@@ -47,7 +47,7 @@ namespace ownstl
 			node* right;
 			node(const TKey& k, const TVal& v) {
 				key = k; val = v;
-				left = right = 0;
+				left = right = nullptr;
 				height = 1;
 			}
 		};
@@ -153,9 +153,16 @@ namespace ownstl
 			{
 				node* q = p->left;
 				node* r = p->right;
-				delete p;
+
+				if (p == m_root)
+				{
+					delete p;
+					m_root = nullptr;
+				}
+
 				if (!r)
 					return q;
+
 				node* min = findmin(r);
 				min->right = removemin(r);
 				min->left = q;
@@ -192,9 +199,9 @@ namespace ownstl
 				return nullptr;
 		}
 
-		bool remove(const TKey& key)
+		void remove(const TKey& key)
 		{
-			return (bool)_remove(m_root, key);
+			_remove(m_root, key);
 		}
 
 		template <typename C>

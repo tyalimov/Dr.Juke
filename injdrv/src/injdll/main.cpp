@@ -26,6 +26,8 @@
 
 #include "mw_tricks.h"
 #include "str_util.h"
+#include "net_filter.h"
+
 using namespace ownstl;
 using namespace mwtricks;
 
@@ -81,7 +83,7 @@ _load_config_used = {
 	sizeof(_load_config_used),
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	(SIZE_T)__safe_se_handler_table,
-	(SIZE_T)& __safe_se_handler_count,
+	(SIZE_T)&__safe_se_handler_count,
 };
 
 #endif
@@ -92,14 +94,15 @@ _load_config_used = {
 // load them dynamically.
 //
 
-using _snwprintf_fn_t = int(__cdecl*)(
-	wchar_t* buffer,
-	size_t count,
-	const wchar_t* format,
-	...
-	);
+#pragma region functions_to_import
 
 _snwprintf_fn_t _snwprintf = nullptr;
+_tolower_t __tolower = nullptr;
+_towlower_t __towlower = nullptr;
+_inet_ntop_t _inet_ntop = nullptr;
+_ntohs_t _ntohs = nullptr;
+
+#pragma endregion functions_to_import
 
 //
 // ETW provider GUID and global provider handle.
@@ -116,6 +119,10 @@ GUID ProviderGuid = {
 
 REGHANDLE ProviderHandle;
 
+#define GET_PROC_ADDR(FuncName, DllHandle, FuncAddr, VarRoutineName)					\
+RtlInitAnsiString(&VarRoutineName, (PSTR)FuncName);							\
+LdrGetProcedureAddress(DllHandle, &VarRoutineName, 0, (PVOID*)& FuncAddr);	\
+RTL_ASSERT(FuncAddr != nullptr);
 
 #define DETOUR_HOOK(func)							\
 Orig_##func = func;									\
@@ -127,6 +134,7 @@ DetourDetach((PVOID*)& Orig_##func, Hooked_##func)
 #define DETOUR_HOOK_ON_DLL_LOAD(func, DllHandle, VarRoutineName)				\
 RtlInitAnsiString(&VarRoutineName, (PSTR)#func);							\
 LdrGetProcedureAddress(DllHandle, &VarRoutineName, 0, (PVOID*)& Orig_##func);\
+RTL_ASSERT(Orig_##func != nullptr); \
 DetourAttach((PVOID*)& Orig_##func, Hooked_##func)
 
 
@@ -180,15 +188,16 @@ OnProcessAttach(
 	// First, resolve address of the _snwprintf function.
 	//
 
-	ANSI_STRING RoutineName;
-	RtlInitAnsiString(&RoutineName, (PSTR)"_snwprintf");
-
 	UNICODE_STRING NtdllPath;
 	RtlInitUnicodeString(&NtdllPath, (PWSTR)L"ntdll.dll");
 
 	HANDLE NtdllHandle;
 	LdrGetDllHandle(NULL, 0, &NtdllPath, &NtdllHandle);
-	LdrGetProcedureAddress(NtdllHandle, &RoutineName, 0, (PVOID*)& _snwprintf);
+
+	ANSI_STRING RoutineName;
+	GET_PROC_ADDR("_snwprintf", NtdllHandle, _snwprintf, RoutineName);
+	GET_PROC_ADDR("tolower", NtdllHandle, __tolower, RoutineName);
+	GET_PROC_ADDR("towlower", NtdllHandle, __towlower, RoutineName);
 
 	//
 	// Make us unloadable (by FreeLibrary calls).
@@ -293,7 +302,7 @@ BOOL NtGetExitCodeProcess(HANDLE hProcess, LPDWORD lpExitCode)
 {
 	NTSTATUS status = -1; // eax
 	PROCESS_BASIC_INFORMATION ProcessInformation;
-	
+
 	status = NtQueryInformationProcess(hProcess, ProcessBasicInformation,
 		&ProcessInformation, sizeof(PROCESS_BASIC_INFORMATION), 0i64);
 
@@ -302,7 +311,6 @@ BOOL NtGetExitCodeProcess(HANDLE hProcess, LPDWORD lpExitCode)
 
 	return status;
 }
-#include "net_filter.h"
 
 EXTERN_C
 BOOL
@@ -412,9 +420,7 @@ void MT_DllUnload()
 					DETOUR_UNHOOK(socket);
 					DETOUR_UNHOOK(closesocket);
 					DETOUR_UNHOOK(connect);
-					DETOUR_UNHOOK(accept);
 					DETOUR_UNHOOK(recv);
-					DETOUR_UNHOOK(recvfrom);
 				}
 				DetourTransactionCommit();
 			}
@@ -446,12 +452,12 @@ void MT_NetFilterWS2_32()
 					DetourTransactionBegin();
 					{
 						ANSI_STRING RoutineName;
+						GET_PROC_ADDR("inet_ntop", DllHandle, _inet_ntop, RoutineName);
+						GET_PROC_ADDR("ntohs", DllHandle, _ntohs, RoutineName);
 						DETOUR_HOOK_ON_DLL_LOAD(socket, DllHandle, RoutineName);
 						DETOUR_HOOK_ON_DLL_LOAD(closesocket, DllHandle, RoutineName);
 						DETOUR_HOOK_ON_DLL_LOAD(connect, DllHandle, RoutineName);
-						DETOUR_HOOK_ON_DLL_LOAD(accept, DllHandle, RoutineName);
 						DETOUR_HOOK_ON_DLL_LOAD(recv, DllHandle, RoutineName);
-						DETOUR_HOOK_ON_DLL_LOAD(recvfrom, DllHandle, RoutineName);
 					}
 					DetourTransactionCommit();
 					EtwEventWriteString(ProviderHandle, 0, 0, L"Loaded ws2_32.dll");
@@ -468,17 +474,50 @@ void MT_NetFilterWS2_32()
 	mt_ws2_32.addCheck([](const FunctionCall& call) {
 
 		wstring call_name = call.getName();
-		if (call_name.endsWith(L"socket") && call.isPost())
+		if (call_name.startsWith(L"ws2_32.dll"))
 		{
-			SOCKET s = call.getReturnValue();
-			if (s != INVALID_SOCKET)
+			if (call_name.endsWith(L"closesocket") && call.isPost())
 			{
-				int af = (int)call.getArgument(0);
-				int type = (int)call.getArgument(1);
-				int prot = (int)call.getArgument(2);
-				netfilter::ws2_32::on_socket(s, af, type, prot);
+				SOCKET s = (SOCKET)call.getArgument(0);
+				netfilter::ws2_32::on_closesocket(s);
 			}
 
+			else if (call_name.endsWith(L"socket") && call.isPost())
+			{
+				SOCKET s = call.getReturnValue();
+				if (s != INVALID_SOCKET)
+				{
+					int af = (int)call.getArgument(0);
+					int type = (int)call.getArgument(1);
+					int prot = (int)call.getArgument(2);
+					netfilter::ws2_32::on_socket(s, af, type, prot);
+				}
+			}
+
+
+			else if (call_name.endsWith(L"connect") && call.isPost())
+			{
+				if (call.getReturnValue() == 0)
+				{
+					SOCKET s = (SOCKET)call.getArgument(0);
+					sockaddr* name = (sockaddr*)call.getArgument(1);
+					int addr_len = (int)call.getArgument(2);
+					netfilter::ws2_32::on_connect(s, name, addr_len);
+				}
+			}
+
+			else if (call_name.endsWith(L"recv") && call.isPost())
+			{
+				int flags = (int)call.getArgument(3);
+				if (flags == 0)
+				{
+					SOCKET s = (SOCKET)call.getArgument(0);
+					char* buf = (char*)call.getArgument(1);
+					int bytes_read = call.getReturnValue();
+
+					netfilter::ws2_32::on_recv(s, buf, bytes_read);
+				}
+			}
 		}
 
 		return false;
@@ -501,29 +540,29 @@ void SetupMalwareFiltering()
 		wstring ws_total = ws_info + L" | " + trick_name + L"\n";
 		EtwEventWriteString(ProviderHandle, 0, 0, ws_total.c_str());
 
-	//	if (trick_name.startsWith(NETFILTER))
-	//	{
-	//		if (trick_name.endsWith(WS2_32))
-	//		{
-	//			EtwEventWriteString(ProviderHandle, 0, 0, NETFILTER_WS2_32);
-	//			netfilter::ws2_32::get_bad_sock_info()
-	//		}
-	//	}
-
-		//if (trick_name.startsWith(PASSWORD_THEFT))
-		//{
-		//	EtwEventWriteString(ProviderHandle, 0, 0, L"Shutdown process");
-		//	NTSTATUS status = NtSuspendProcess(NtCurrentProcess());
-		//	if (NT_ERROR(status))
+		//	if (trick_name.startsWith(NETFILTER))
 		//	{
-		//		wchar_t buf[64];
-		//		_snwprintf(buf,
-		//			RTL_NUMBER_OF(buf),
-		//			L"Failed, err=%d",
-		//			RtlNtStatusToDosError(status));
+		//		if (trick_name.endsWith(WS2_32))
+		//		{
+		//			EtwEventWriteString(ProviderHandle, 0, 0, NETFILTER_WS2_32);
+		//			netfilter::ws2_32::get_bad_sock_info()
+		//		}
 		//	}
-		//}
-	});
+
+			//if (trick_name.startsWith(PASSWORD_THEFT))
+			//{
+			//	EtwEventWriteString(ProviderHandle, 0, 0, L"Shutdown process");
+			//	NTSTATUS status = NtSuspendProcess(NtCurrentProcess());
+			//	if (NT_ERROR(status))
+			//	{
+			//		wchar_t buf[64];
+			//		_snwprintf(buf,
+			//			RTL_NUMBER_OF(buf),
+			//			L"Failed, err=%d",
+			//			RtlNtStatusToDosError(status));
+			//	}
+			//}
+		});
 }
 
 __declspec(dllexport) void f()

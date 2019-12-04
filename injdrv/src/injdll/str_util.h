@@ -8,6 +8,16 @@
 
 #include "string.h"
 
+using _snwprintf_fn_t = int(__cdecl*)(
+	wchar_t* buffer,
+	size_t count,
+	const wchar_t* format,
+	...
+	);
+
+using _tolower_t = decltype(tolower)*;
+using _towlower_t = decltype(towlower)*;
+
 namespace ownstl
 {
 	ANSI_STRING ToAnsiString(const string& str);
@@ -57,4 +67,10 @@ namespace ownstl
 	bool operator==(const UNICODE_STRING& left, const UNICODE_STRING& right);
 
 	bool operator!=(const UNICODE_STRING& left, const PUNICODE_STRING& right);
+
+	///////////// lower upper
+
+	wstring ToLowerCase(wstring ws);
+
+	string ToLowerCase(string s);
 }

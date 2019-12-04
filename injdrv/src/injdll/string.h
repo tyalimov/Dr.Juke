@@ -225,10 +225,19 @@ namespace ownstl
 			return pch == pzero ? -1 : pch - m_buffer;
 		}
 
-		size_t find(const char_t* str, size_t length) const
+		size_t find(const char_t* str, size_t offset=npos, size_t length=npos) const
 		{
+			if (length == npos)
+				length = strlen(str);
+
+			if (offset == npos)
+				offset = 0;
+
+			if (offset > m_length)
+				return npos;
+
 			// Function to implement strstr() function using KMP algorithm
-			const char_t* X = m_buffer;
+			const char_t* X = m_buffer + offset;
 			const char_t* Y = str;
 			size_t m = m_length;
 			size_t n = length == npos
@@ -266,7 +275,7 @@ namespace ownstl
 					if (++j == n)
 					{
 						delete[] next;
-						return i - j + 1;
+						return i - j + 1 + offset;
 					}
 				}
 				else if (j > 0) {
@@ -279,9 +288,9 @@ namespace ownstl
 			return npos;
 		}
 
-		size_t find(const basic_string& str) const
+		size_t find(const basic_string& str, size_t offset=npos) const
 		{
-			return this->find(str.m_buffer, str.m_length);
+			return this->find(str.m_buffer, offset, str.m_length);
 		}
 
 		bool startsWith(const char_t* str, size_t length = npos) const 
@@ -316,6 +325,15 @@ namespace ownstl
 		{
 			return endsWith(str.m_buffer, str.m_length);
 		}
+
+		char_t& operator [](int idx) {
+			return m_buffer[idx];
+		}
+
+		char_t operator [](int idx) const {
+			return m_buffer[idx];
+		}
+
 	};
 
 	template<typename T>

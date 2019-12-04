@@ -1,5 +1,8 @@
 #include "str_util.h"
 
+extern _tolower_t __tolower;
+extern _towlower_t __towlower;
+
 namespace ownstl
 {
 	//
@@ -186,5 +189,25 @@ namespace ownstl
 	bool operator!=(const UNICODE_STRING& left, const PUNICODE_STRING& right)
 	{
 		return !(left == right);
+	}
+
+	wstring ToLowerCase(wstring ws)
+	{
+		size_t len = ws.length();
+		for (size_t i = 0u; i < len; i++) {
+			ws[i] = __towlower(ws[i]);
+		}
+
+		return ws;
+	}
+
+	string ToLowerCase(string s)
+	{
+		size_t len = s.length();
+		for (size_t i = 0; i < len; i++) {
+			s[i] = __tolower(s[i]);
+		}
+
+		return s;
 	}
 }

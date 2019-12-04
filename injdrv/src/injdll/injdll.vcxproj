@@ -187,6 +187,7 @@
     <ClCompile Include="hooked.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mem_util.cpp" />
+    <ClCompile Include="net_filter.cpp" />
     <ClCompile Include="str_util.cpp" />
     <ClCompile Include="wow64log.cpp" />
   </ItemGroup>

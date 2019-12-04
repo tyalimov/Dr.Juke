@@ -15,6 +15,7 @@ TRetVal HookHandler(const wchar_t* f_name, TFunc f, TArgs&... args)
 
 	FunctionCall call_post(f_name, false, ret_val,  args...);
 	g_mw_tricks->updateCurrentStage(call_post);
+	ret_val = call_post.getReturnValue();
 	return ret_val;
 }
 
@@ -175,18 +176,6 @@ int WSAAPI Hooked_connect(
 		s, name, namelen);
 }
 
-int WSAAPI Hooked_accept(
-	SOCKET         s,
-	sockaddr* addr,
-	int* addrlen)
-{
-	return HookHandler<decltype(Orig_accept), NTSTATUS>(	
-		L"ws2_32.dll!accept",
-		Orig_accept,
-		s, addr, addrlen);
-
-}
-
 int WSAAPI Hooked_recv(
 	SOCKET s,
 	char* buf,
@@ -197,20 +186,6 @@ int WSAAPI Hooked_recv(
 		L"ws2_32.dll!recv",
 		Orig_recv,
 		s, buf, len, flags);
-}
-
-int WSAAPI Hooked_recvfrom(
-	SOCKET   s,
-	char*    buf,
-	int      len,
-	int      flags,
-	sockaddr* from,
-	int* fromlen)
-{
-	return HookHandler<decltype(Orig_recvfrom), int>(
-		L"ws2_32.dll!recvfrom",
-		Orig_recvfrom,
-		s, buf, len, flags, from, fromlen);
 }
 
 SOCKET WSAAPI Hooked_socket(

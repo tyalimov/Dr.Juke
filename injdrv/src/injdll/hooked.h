@@ -18,9 +18,7 @@ ORIG_DECL(LdrGetDllHandle);
 ORIG_DECL(socket);
 ORIG_DECL(closesocket);
 ORIG_DECL(connect);
-ORIG_DECL(accept);
 ORIG_DECL(recv);
-ORIG_DECL(recvfrom);
 
 NTSTATUS
 NTAPI
@@ -94,26 +92,11 @@ int WSAAPI Hooked_connect(
   int            namelen
 );
 
-int WSAAPI Hooked_accept(
-  SOCKET         s,
-  sockaddr *addr,
-  int*          addrlen
-);
-
 int WSAAPI Hooked_recv(
   SOCKET s,
   char   *buf,
   int    len,
   int    flags
-);
-
-int WSAAPI Hooked_recvfrom(
-  SOCKET   s,
-  char     *buf,
-  int      len,
-  int      flags,
-  sockaddr *from,
-  int      *fromlen
 );
 
 SOCKET WSAAPI Hooked_socket(

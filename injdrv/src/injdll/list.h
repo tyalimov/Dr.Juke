@@ -84,7 +84,7 @@ namespace ownstl
 		}
 
 		iterator end() const {
-			return iterator(tail->next);
+			return iterator(tail ? tail->next : nullptr);
 		}
 
 		void push_back(const T& value)
@@ -106,8 +106,7 @@ namespace ownstl
 			}
 		}
 
-		int size()
-		{
+		int size() const {
 			return m_size;
 		}
 
@@ -136,7 +135,7 @@ namespace ownstl
 			}
 		}
 
-		const T& get_first()
+		const T& get_first() const
 		{
 			RTL_ASSERT(m_size > 0);
 			return head->data;
