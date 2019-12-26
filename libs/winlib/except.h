@@ -1,3 +1,13 @@
+﻿/*
+ 
+    Author – Timur Yalimov [https://github.com/tyalimov/]
+    Last Modify – 02.08.2019
+    Description:
+    
+    Файл содержит описание класса исключения.
+
+*/
+
 #pragma once
 
 #include <exception>
@@ -6,41 +16,25 @@
 
 namespace drjuke::winlib
 {
-    struct WindowsStackFrame
-    {
-        WindowsStackFrame()
-            : m_name("")
-            , m_address(0)
-        {}
-
-        WindowsStackFrame(const std::string& name,
-                          const std::string& module,
-                          std::uint64_t      address)
-            : m_name(name)
-            , m_module(module)
-            , m_address(address)
-        {}
-
-        std::string m_name;
-        std::string m_module;
-        std::uint64_t m_address;
-    };
-
     class WindowsException final
         : public std::exception
     {
     private:
-        std::string                    m_error_message;
-        std::vector<WindowsStackFrame> m_stack_trace;
-        std::uint32_t                  m_error_code;
-
-        void initializeMessage(const char *message);
-        void initializeStackTrace();
+        mutable std::string  m_message;
+        std::string          m_error_message;
+        std::uint32_t        m_error_code;
 
     public:
-        WindowsException(const char *message);
+        /// <summary> Сгенерировать исключение. Код ошибки притянется сам через GetLastError() </summary>
+        /// <param name="message"> Словестное описание ошибки </param>
+        explicit WindowsException(const char *message);
+
+        /// <summary> Вывести описание ошибки </summary>
+        [[nodiscard]] const char *what() const noexcept override final;
+
+        /// <summary> Вывести описание ошибки + стек вызовов, который к ней привел </summary>
+        [[nodiscard]] std::string dumpStackTrace() const;
+        
         ~WindowsException() override = default;
-        const char* what() const noexcept override;
-        std::string dumpStackTrace() const;
     };
 }

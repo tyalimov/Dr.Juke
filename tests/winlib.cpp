@@ -17,20 +17,18 @@ TEST(winlib, ExceptionRegular)
             GENERIC_WRITE, 
             0, 
             NULL,
-            CREATE_ALWAYS, 
+            OPEN_EXISTING, 
             FILE_ATTRIBUTE_NORMAL, 
             NULL
         ));
 
-        if (t.get() == INVALID_HANDLE_VALUE)
-        {
-            throw WindowsException("error opening file");
-        }
 
-        FAIL();
+        throw WindowsException("error opening file");
+
     }
     catch (const WindowsException& ex)
     {
+        std::cout << ex.what() << std::endl;
         std::cout << ex.dumpStackTrace() << std::endl;
         SUCCEED();
     }

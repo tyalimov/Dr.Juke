@@ -1,36 +1,55 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="interprocess">
+      <UniqueIdentifier>{09487155-349e-4f1a-80c9-85f91a033803}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
+    <Filter Include="exception">
+      <UniqueIdentifier>{8520d204-cfad-4c64-a293-f22188ba35b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="misc">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\winlib\winlib.h">
-      <Filter>Header Files</Filter>
+      <Filter>misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libs\winlib\raii.h">
-      <Filter>Header Files</Filter>
+      <Filter>misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libs\winlib\except.h">
-      <Filter>Header Files</Filter>
+      <Filter>exception</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\winlib\interprocess.h">
+      <Filter>interprocess</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\winlib\ipc_client.h">
+      <Filter>interprocess</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\winlib\stacktrace.h">
+      <Filter>exception</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\winlib\message_formatter.h">
+      <Filter>exception</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\libs\winlib\raii.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\libs\winlib\except.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>exception</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\winlib\interprocess.cpp">
+      <Filter>interprocess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\winlib\ipc_client.cpp">
+      <Filter>interprocess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\winlib\stacktrace.cpp">
+      <Filter>exception</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\winlib\message_formatter.cpp">
+      <Filter>exception</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

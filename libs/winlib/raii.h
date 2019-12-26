@@ -8,36 +8,38 @@
 
 namespace drjuke::winlib
 {
-    struct HandleDeleter
+    namespace
     {
-        using pointer = HANDLE;
-
-        void operator ()(HANDLE h) const
+        struct HandleDeleter
         {
-            CloseHandle(h);
-        }
-    };
+            using pointer = HANDLE;
 
-    struct SymHandleDeleter
-    {
-        using pointer = HANDLE;
+            void operator ()(HANDLE h) const
+            {
+                CloseHandle(h);
+            }
+        };
 
-        void operator ()(HANDLE h) const
+        struct SymHandleDeleter
         {
-            SymCleanup(h);
-        }
-    };
+            using pointer = HANDLE;
 
-    struct CertStoreDeleter
-    {
-        using pointer = HCERTSTORE;
+            void operator ()(HANDLE h) const
+            {
+                SymCleanup(h);
+            }
+        };
 
-        void operator ()(HANDLE h) const
+        struct CertStoreDeleter
         {
-            CloseHandle(h);
-        }
-    };
+            using pointer = HCERTSTORE;
 
+            void operator ()(HANDLE h) const
+            {
+                CloseHandle(h);
+            }
+        };
+    }
     using UniqueHandle    = std::unique_ptr< std::remove_pointer<HANDLE>::type,     HandleDeleter    >;
     using UniqueSymHandle = std::unique_ptr< std::remove_pointer<HANDLE>::type,     SymHandleDeleter >;
     using UniqueCertStore = std::unique_ptr< std::remove_pointer<HCERTSTORE>::type, CertStoreDeleter >;
