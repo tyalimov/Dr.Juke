@@ -1,8 +1,12 @@
-#include "pch.h"
+#pragma warning (push, 0)
+#   pragma warning (disable : 26812)
+#   pragma warning (disable : 28020)
+#   pragma warning (disable : 26495)
+#   pragma warning (disable : 26444)
+#   include "gtest/gtest.h"
+#pragma warning ( pop )
 
-#include <windows.h>
-#include "winlib/raii.h"
-#include "winlib/except.h"
+#include "winlib/winlib.h"
 
 using namespace drjuke;
 using namespace drjuke::winlib;
@@ -11,20 +15,7 @@ TEST(winlib, ExceptionRegular)
 {
     try
     {
-        drjuke::winlib::UniqueHandle t(CreateFileW
-        (
-            L"123", 
-            GENERIC_WRITE, 
-            0, 
-            NULL,
-            OPEN_EXISTING, 
-            FILE_ATTRIBUTE_NORMAL, 
-            NULL
-        ));
-
-
-        throw WindowsException("error opening file");
-
+        throw WindowsException("error opening file", ERROR_ACCESS_DENIED);
     }
     catch (const WindowsException& ex)
     {

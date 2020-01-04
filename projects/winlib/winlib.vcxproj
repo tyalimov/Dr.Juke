@@ -19,20 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\libs\winlib\except.h" />
+    <ClInclude Include="..\..\libs\winlib\windows_exception.h" />
     <ClInclude Include="..\..\libs\winlib\message_formatter.h" />
-    <ClInclude Include="..\..\libs\winlib\stacktrace.h" />
+    <ClInclude Include="..\..\libs\winlib\stacktrace_builder.h" />
     <ClInclude Include="..\..\libs\winlib\interprocess.h" />
     <ClInclude Include="..\..\libs\winlib\ipc_client.h" />
     <ClInclude Include="..\..\libs\winlib\raii.h" />
     <ClInclude Include="..\..\libs\winlib\winlib.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\libs\winlib\except.cpp" />
+    <ClCompile Include="..\..\libs\winlib\windows_exception.cpp" />
     <ClCompile Include="..\..\libs\winlib\interprocess.cpp" />
     <ClCompile Include="..\..\libs\winlib\ipc_client.cpp" />
     <ClCompile Include="..\..\libs\winlib\message_formatter.cpp" />
-    <ClCompile Include="..\..\libs\winlib\stacktrace.cpp" />
+    <ClCompile Include="..\..\libs\winlib\stacktrace_builder.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

@@ -1,28 +1,31 @@
-﻿// Главный хедер библиотеки
-#include "scanlib.h"
+﻿#include <common/utils.h> // ToUnderlying
 
-#include "base_analyzer.h"
-//#include "yara_analyzer.h"
-#include "signature_analyzer.h"
 
-// заинклудить классификатор
-// заинклудить ClamAV
+#include "scanlib.h" // Главный хедер библиотеки
+#include "base_analyzer.h" // Интерфейсы
+
+#include "certificate_analyzer.h"
+#include "yara_analyzer.h"
+#include "packers_analyzer.h"
+#include "clam_av_analyzer.h"
 
 namespace drjuke::scanlib
 {
-    BaseAnalyzerPtr AnalyzerFactory::get(AnalyzerId id)
+    std::vector<BaseAnalyzerPtr> AnalyzerFactory::m_analyzers 
     {
-        constexpr auto analyzers_count = 5;
-        static std::array<BaseAnalyzerPtr, analyzers_count> analyzers
-        {
-            // TODO: Заполнить необходимыми анализаторами
-            std::make_shared<DigitalSignatureAnalyzer>(), // AnalyzerId::kYara
-            std::make_shared<DigitalSignatureAnalyzer>(), // AnalyzerId::kClamAvSignature
-            std::make_shared<DigitalSignatureAnalyzer>(), // AnalyzerId::kDigitalSignature
-            std::make_shared<DigitalSignatureAnalyzer>(), // AnalyzerId::kPack
-            std::make_shared<DigitalSignatureAnalyzer>(), // AnalyzerId::kAiClassifier
-        };
+        std::make_shared<YaraAnalyzer>(),             // AnalyzerId::kYara
+        std::make_shared<ClamAvAnalyzer>(),           // AnalyzerId::kClamAvSignature
+        std::make_shared<DigitalSignatureAnalyzer>(), // AnalyzerId::kDigitalSignature
+        std::make_shared<PackersAnalyzer>(),          // AnalyzerId::kPack
+    };
 
-        return analyzers[ToUnderlying(id)];
+    auto AnalyzerFactory::get(AnalyzerId id) -> decltype(m_analyzers)::value_type
+    {
+        return m_analyzers[ToUnderlying(id)];
+    }
+
+    auto AnalyzerFactory::getAll() -> decltype(m_analyzers)
+    {
+        return m_analyzers;
     }
 }

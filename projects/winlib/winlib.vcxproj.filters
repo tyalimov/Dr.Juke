@@ -19,36 +19,36 @@
     <ClInclude Include="..\..\libs\winlib\raii.h">
       <Filter>misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\winlib\except.h">
-      <Filter>exception</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\libs\winlib\interprocess.h">
       <Filter>interprocess</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libs\winlib\ipc_client.h">
       <Filter>interprocess</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\winlib\stacktrace.h">
+    <ClInclude Include="..\..\libs\winlib\message_formatter.h">
       <Filter>exception</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\winlib\message_formatter.h">
+    <ClInclude Include="..\..\libs\winlib\stacktrace_builder.h">
+      <Filter>exception</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\winlib\windows_exception.h">
       <Filter>exception</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\libs\winlib\except.cpp">
-      <Filter>exception</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\libs\winlib\interprocess.cpp">
       <Filter>interprocess</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libs\winlib\ipc_client.cpp">
       <Filter>interprocess</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libs\winlib\stacktrace.cpp">
+    <ClCompile Include="..\..\libs\winlib\message_formatter.cpp">
       <Filter>exception</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libs\winlib\message_formatter.cpp">
+    <ClCompile Include="..\..\libs\winlib\stacktrace_builder.cpp">
+      <Filter>exception</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\winlib\windows_exception.cpp">
       <Filter>exception</Filter>
     </ClCompile>
   </ItemGroup>

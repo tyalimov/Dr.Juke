@@ -1,8 +1,12 @@
 ﻿#pragma once
 
-#include "yara_engine.h"
 #include "base_analyzer.h"
 #include <filesystem>
+
+// Необходимо слинковать все библиотеки для работы с YARA.
+#pragma warning( push )
+#   pragma warning( disable : 4081 )
+#   include <yaracpp.h>
 
 #define FIELD_RESULT         "infected" 
 #define FIELD_TOTAL_MATCHED  "total_matched"
@@ -24,16 +28,18 @@
 
 namespace drjuke::scanlib
 {
-    class YaraReport final : public BaseReport
+    class YaraReport final 
+        : public BaseReport
     {
     public:
         explicit YaraReport
         (
-			const std::vector<yaracpp::YaraRule>& rules
-		);
+            const std::vector<yaracpp::YaraRule>& rules
+        );
     };
 
-    class YaraAnalyzer final : public BaseAnalyzer 
+    class YaraAnalyzer final 
+        : public BaseAnalyzer 
     {
     private:
         yaracpp::YaraDetector m_detector;
@@ -41,8 +47,14 @@ namespace drjuke::scanlib
     public:
    
         BaseReportPtr getReport(const Path& path) override;
-        void loadResources()                   override;
-        std::string getName()                  override;
+        void loadResources()                      override;
+        std::string getName()                     override;
     };
 
+    class YaraAnalyzerException final
+        : public std::exception
+    {
+    public:
+        [[nodiscard]] const char *what() const override final;
+    };
 }

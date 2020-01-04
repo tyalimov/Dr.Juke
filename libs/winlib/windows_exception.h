@@ -22,12 +22,17 @@ namespace drjuke::winlib
     private:
         mutable std::string  m_message;
         std::string          m_error_message;
-        std::uint32_t        m_error_code;
+        uint32_t             m_error_code;
 
     public:
         /// <summary> Сгенерировать исключение. Код ошибки притянется сам через GetLastError() </summary>
         /// <param name="message"> Словестное описание ошибки </param>
         explicit WindowsException(const char *message);
+
+        /// <summary> Сгенерировать исключение со специфичным кодом ошибки </summary>
+        /// <param name="message"> Словестное описание ошибки </param>
+        /// <param name="error_code"> Код ошибки, полученный не из GetLastError() (например WSAGetLastError) </param>
+        explicit WindowsException(const char *message, uint32_t error_code);
 
         /// <summary> Вывести описание ошибки </summary>
         [[nodiscard]] const char *what() const noexcept override final;

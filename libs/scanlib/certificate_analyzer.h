@@ -7,7 +7,7 @@
 #include <filesystem>
 
 #include "base_analyzer.h"
-#include "cert_viewer.h"
+#include "certificate_info_builder.h"
 
 /*
     Анализатор файлов, проверяющий ЭЦП исполняемых файлов.
@@ -33,34 +33,41 @@
 
 namespace drjuke::scanlib
 {
-    class SignatureReport : public BaseReport
+    class SignatureReport final
+        : public BaseReport
     {
-        CertificateDetails m_details;
-        std::string        m_status;
+        CertificateInfo m_details;
+        std::string     m_status;
 
     private:
+
         void initializeJson();
+        void fillJsonWithStatus();
+        void fillJsonWithDetails();
 
     public:
-        SignatureReport(const std::string &status, const CertificateDetails &details)
+        SignatureReport(const std::string &status, const CertificateInfo &details)
             : m_details(details)
             , m_status(status)
         {
-            // TODO: Первично инициализировать json
-            // TODO: Заполнить поля из details
+            initializeJson();
+            fillJsonWithStatus();
+            fillJsonWithDetails();
         }
 
-         SignatureReport(const std::string &status)
-            : m_status(status)
+         explicit SignatureReport(const std::string &status)
+            : m_details()
+            , m_status(status)
         {
-            // TODO: Первично инициализировать json
-            // TODO: Заполнить поля из details как "незаполненные"
+            initializeJson();
+            fillJsonWithStatus();
         }
 
         Json makeJson() override;
     };
 
-    class DigitalSignatureAnalyzer : public BaseAnalyzer
+    class DigitalSignatureAnalyzer final 
+        : public BaseAnalyzer
     {
     private:
         WINTRUST_FILE_INFO m_file_info;

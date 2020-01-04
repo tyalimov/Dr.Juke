@@ -1,11 +1,9 @@
-﻿#include "except.h"
+﻿#include "windows_exception.h"
 #include "raii.h"
-#include "stacktrace.h"
+#include "stacktrace_builder.h"
 #include "message_formatter.h"
 
 #include <windows.h>
-#include <Psapi.h>
-#include <memory>
 #include <array>
 
 // TODO: Вносить в консольный лог информацию об ошибках в генерации исключения?
@@ -16,6 +14,13 @@ namespace drjuke::winlib
         : m_error_message(message)
         , m_error_code(GetLastError())
 
+    {
+    }
+
+    WindowsException::WindowsException(const char *message, 
+                                       uint32_t error_code)
+        : m_error_message(message)
+        , m_error_code(error_code)
     {
     }
 

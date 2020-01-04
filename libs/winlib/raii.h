@@ -6,6 +6,8 @@
 #include <wintrust.h>
 #include <Dbghelp.h>
 
+#include <stdexcept>
+
 namespace drjuke::winlib
 {
     namespace
@@ -16,7 +18,7 @@ namespace drjuke::winlib
 
             void operator ()(HANDLE h) const
             {
-                CloseHandle(h);
+                ::CloseHandle(h);
             }
         };
 
@@ -26,7 +28,7 @@ namespace drjuke::winlib
 
             void operator ()(HANDLE h) const
             {
-                SymCleanup(h);
+                ::SymCleanup(h);
             }
         };
 
@@ -36,11 +38,36 @@ namespace drjuke::winlib
 
             void operator ()(HANDLE h) const
             {
-                CloseHandle(h);
+                // TODO: WTF?
+                ::CloseHandle(h);
             }
         };
+
+        void *AllocateBlob(size_t size)
+        {
+            void *ptr = malloc(size);
+
+            if (!ptr)
+            {
+                throw std::runtime_error("can't allocate blob");
+            }
+
+            return ptr;
+        }
+
+        struct BlobDeleter
+        {
+            using pointer = void*;
+
+            void operator ()(void *p) const
+            {
+                ::free(p);
+            }
+        };
+
     }
     using UniqueHandle    = std::unique_ptr< std::remove_pointer<HANDLE>::type,     HandleDeleter    >;
     using UniqueSymHandle = std::unique_ptr< std::remove_pointer<HANDLE>::type,     SymHandleDeleter >;
     using UniqueCertStore = std::unique_ptr< std::remove_pointer<HCERTSTORE>::type, CertStoreDeleter >;
+    using UniqueBlob      = std::unique_ptr< std::remove_pointer<void*>::type,      BlobDeleter      >;
 }

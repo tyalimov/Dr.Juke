@@ -7,11 +7,12 @@ namespace drjuke::constants
         constexpr uint32_t kMaxTaskQueueSize = 1000;
     }
 
-    namespace scansvc
+    namespace scanlib
     {
-        // TODO: Каким-то хером задать относительный путь. Скорее всего 
-        // в будущем ты будешь знать расположение папки с ресурсами 
-        // относительно себя
-        constexpr std::string_view kYaraRulesLocation = R"(D:\Dr.Juke_resources\CVE_Rules)";
+        // TODO: Перенести это в settingslib
+        // TODO: Также убрать хардкод и делать через получение путей из реестра
+        constexpr std::string_view kYaraRulesLocation   = R"(D:\Dr.Juke_resources\CVE_Rules)";
+        constexpr std::string_view kClamAvRulesLocation = R"(D:\Dr.Juke_resources\ClamAV_Rules)";
+        constexpr std::string_view kPeidRulesLocation   = R"(D:\Dr.Juke_resources\PEiD_Rules)";
     }
 }
