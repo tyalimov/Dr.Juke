@@ -1,107 +1,220 @@
+#include <ntifs.h>
 #include <wdm.h>
 #include <ntstrsafe.h>
-#include <EASTL/string.h>
-#include <EASTL/vector.h>
-#include <EASTL/sort.h>
+
+#include "common.h"
+#include "util.h"
+
 #include <EASTL/unique_ptr.h>
-#include <EASTL/shared_ptr.h>
-#include <EASTL/scoped_ptr.h>
-#include <EASTL/set.h>
-#include <EASTL/map.h>
-#include <EASTL/unordered_set.h>
-#include <EASTL/unordered_map.h>
 
-#include "kcrt/path.h"
+#include <EASTL/string.h>
 
-class ThisIsAClass {
-public:
-	ThisIsAClass() {
-		DbgPrint("%s\n", __FUNCTION__);
-	}
-	virtual ~ThisIsAClass() {
-		DbgPrint("%s\n", __FUNCTION__);
-	}
-public:
-	void foo() {
-		DbgPrint("%s\n", __FUNCTION__);
-	}
-};
+using namespace eastl;
 
-ThisIsAClass test_global_class;
+// class RegistryReader
+// {
+// 
+// private:
+// 
+// 	wstring m_path;
+// 
+// public:
+// 
+// 	RegistryKey(LPCWSTR path) : m_path(path) {}
+// 	~RegistryKey() = default;
+// 
+// 
+// 	void create();
+// 	void remove();
+// 	void enumerateKeys();
+// 	void enumerateKeyValues();
+// 	void getValue();
+// 
+// 	NTSTATUS setValue(LPCWSTR val_name, ULONG val_type, PVOID data, ULONG data_len)
+// 	{
+// 		return RtlWriteRegistryValue(RTL_REGISTRY_ABSOLUTE, 
+// 			m_path.c_str(), val_name, val_type, data, data_len);
+// 	}
+// 
+// 	void setChangeNotifier();
+// };
 
-void DbgPrintS(const char* s) {
-	DbgPrint("%s\n", s);
-}
+// NTSYSAPI NTSTATUS ZwNotifyChangeKey(
+//   HANDLE           KeyHandle,
+//   HANDLE           Event,
+//   PIO_APC_ROUTINE  ApcRoutine,
+//   PVOID            ApcContext,
+//   PIO_STATUS_BLOCK IoStatusBlock,
+//   ULONG            CompletionFilter,
+//   BOOLEAN          WatchTree,
+//   PVOID            Buffer,
+//   ULONG            BufferSize,
+//   BOOLEAN          Asynchronous
+// );
 
-void stl_test()
+BOOLEAN ReadPreferences(LPCWSTR reg_path)
 {
-	apathy::Path path("C:\\users\\user\\Documents");
+	BOOLEAN ok;
+	NTSTATUS status;
+	HANDLE hKey;
+	OBJECT_ATTRIBUTES oa;
+	UNICODE_STRING KeyPath;
 
-	for (const auto& s : path.split())
+	UNREFERENCED_PARAMETER(reg_path);
+
+	ok = FALSE;
+	//HKEY_LOCAL_MACHINE\SOFTWARE\RegisteredApplications
+	RtlInitUnicodeString(&KeyPath, L"\\Registry\\Machine\\SOFTWARE\\RegisteredApplications");
+	InitializeObjectAttributes(&oa, &KeyPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
+	status = ZwOpenKeyEx(&hKey, KEY_READ, &oa, 0);
+
+	if (NT_SUCCESS(status))
 	{
-		DbgPrint("%s\n", s.segment.c_str());
+		ULONG data_size;
+		ULONG idx = 0;
+
+		while (1)
+		{
+			data_size = 0;
+			status = ZwEnumerateValueKey(hKey, idx, KeyValueFullInformation, NULL, 0, &data_size);
+			if (status == STATUS_NO_MORE_ENTRIES)
+				break;
+			if (status == STATUS_INVALID_PARAMETER)
+				break;
+			
+			if (data_size > 0)
+			{
+				CHAR* kvfi_ch = new CHAR[data_size];  
+				KEY_VALUE_FULL_INFORMATION* kvfi = (KEY_VALUE_FULL_INFORMATION*)kvfi_ch;
+				if (kvfi)
+				{
+					status = ZwEnumerateValueKey(hKey, idx, KeyValueFullInformation, kvfi, data_size, &data_size);
+					kprintf(TRACE_INFO, "%d) on enumerate status=0x%08X, type=%d", idx, RtlNtStatusToDosError(status), kvfi->Type);
+					if (NT_SUCCESS(status) && (kvfi->Type == REG_SZ))
+					{
+						PWCH buf;
+						ULONG len;
+						
+						buf = (PWCH)(kvfi_ch + kvfi->DataOffset);
+						len = kvfi->DataLength;
+					 	wstring data_w(buf, len);
+						kprintf(TRACE_INFO, "%ws", data_w.c_str());
+
+					// 	buf = kvfi->Name;
+					// 	len = kvfi->NameLength;
+					// 	wstring name_w(buf, len);
+
+					// 	kprintf(TRACE_INFO, "%s) Name=%ws, Data=%ws", idx, data_w.c_str(), name_w.c_str());
+					}
+
+					delete[] kvfi_ch;
+				}
+				else
+				{
+					kprintf(TRACE_INFO, "Empty record");
+				}
+
+				idx++;
+			}
+		}
+
+		ZwClose(hKey);
 	}
-	
 
-	eastl::make_unique<DRIVER_OBJECT>();
-	eastl::make_shared<UNICODE_STRING>();
-	eastl::scoped_ptr<double> dptr(new double(3.6));
-
-	eastl::set<int> set_test;
-	set_test.insert(1);
-	set_test.insert(3);
-	set_test.insert(5);
-	set_test.erase(1);
-
-	eastl::map<int, int> map_test;
-	map_test[0] = 1;
-	map_test[10] = 11;
-	map_test[20] = 12;
-	map_test.erase(11);
-
-	eastl::vector<int> vec_test;
-	vec_test.push_back(2);
-	vec_test.push_back(3);
-	vec_test.push_back(1);
-	eastl::stable_sort(vec_test.begin(), vec_test.end(), eastl::less<int>());
-	for (auto e : vec_test) {
-		DbgPrint("%d\n", e);
-	}
-
-	eastl::string s;
-	s = "This a string";
-	s.append("any");
-	DbgPrint("%s\n", s.c_str());
-
-	eastl::wstring ws;
-	ws = L"wide string";
-	ws.clear();
-
-	eastl::unordered_set<float> us_test;
-	us_test.insert(333);
-
-	eastl::unordered_map<double, eastl::string> um_test;
-	um_test.insert(eastl::make_pair(6.6, "9.9"));
+	kprintf(TRACE_INFO, "exit with status 0x%08X", RtlNtStatusToDosError(status));
+	return ok;
 }
+
+typedef struct _THREAD_CTX {
+	KEVENT evKill;
+	PKTHREAD thread;
+ } *PTHREAD_CTX, THREAD_CTX;
+
+KEVENT dummy;
+
+VOID ThreadProc(PTHREAD_CTX ctx)
+{
+	NTSTATUS status;
+	PVOID objects[] = { &ctx->evKill, &dummy };
+
+	kprintf(TRACE_INFO, "Registry listener is running");
+
+	ReadPreferences(L"aaa");
+
+	while (TRUE)
+	{
+		// KeWaitForSingleObject(&ctx->evKill, Executive, KernelMode, FALSE, NULL);
+		status = KeWaitForMultipleObjects(RTL_NUMBER_OF(objects), 
+			objects, WaitAny, Executive, KernelMode, FALSE, NULL, NULL);
+
+		if (!NT_SUCCESS(status) || status == STATUS_WAIT_0)
+			break;
+
+		// WAIT_STATUS_1
+		// NTSYSAPI NTSTATUS ZwNotifyChangeKey(
+	}
+
+	kprintf(TRACE_INFO, "Registry listener exited with status 0x%08X", status);
+	PsTerminateSystemThread(status);
+}
+
+NTSTATUS StartThread(PTHREAD_CTX ctx)
+{
+	NTSTATUS status;
+	HANDLE hThread;
+
+	kprintf(TRACE_INFO, "Starting registry listener...");
+
+	// Initialize event for stopping thread
+	KeInitializeEvent(&ctx->evKill, NotificationEvent, FALSE);
+	KeInitializeEvent(&dummy, NotificationEvent, FALSE);
+
+	// Create thread
+	status = PsCreateSystemThread(&hThread, THREAD_ALL_ACCESS,
+	  NULL, NULL, NULL, (PKSTART_ROUTINE) ThreadProc, ctx);
+	
+	if (!NT_SUCCESS(status))
+	  return status;
+	
+	// Increment object counter
+	ObReferenceObjectByHandle(hThread, THREAD_ALL_ACCESS, NULL,
+	  KernelMode, (PVOID*) &ctx->thread, NULL);
+
+	ZwClose(hThread);
+	kprintf(TRACE_INFO, "Starting registry listener... ok");
+	return STATUS_SUCCESS;
+}
+
+VOID StopThread(PTHREAD_CTX ctx)
+{
+	kprintf(TRACE_INFO, "Stopping registry listener...");
+	
+	KeSetEvent(&ctx->evKill, 0, FALSE);
+	KeWaitForSingleObject(ctx->thread, Executive, KernelMode, FALSE, NULL);
+	
+	ObDereferenceObject(ctx->thread);
+	kprintf(TRACE_INFO, "Stopping registry listener... ok");
+}
+
+
+
+
+unique_ptr<THREAD_CTX> g_ctx = nullptr;
+
 
 NTSTATUS SysMain(PDRIVER_OBJECT DrvObject, PUNICODE_STRING RegPath) {
 	UNREFERENCED_PARAMETER(RegPath);
 
-	// NOTE OF PATH:
-	// SEPARATOR = '/' !!!
-	// BASE PATH = %SystemRoot% !!!
-
-	test_global_class.foo();
-
-	auto p1 = new CLIENT_ID[10];
-	delete[] p1;
-
 	DrvObject->DriverUnload = [](DRIVER_OBJECT* DriverObject) {
 		UNREFERENCED_PARAMETER(DriverObject);
-		DbgPrint("DriverUnload");
+		StopThread(g_ctx.get());
+		kprintf(TRACE_INFO, "Driver unloaded");
 	};	
 
-	stl_test();
+	g_ctx = make_unique<THREAD_CTX>();
+
+	StartThread(g_ctx.get());
+	kprintf(TRACE_INFO, "Driver is loaded");
 
 	return STATUS_SUCCESS;
 }
