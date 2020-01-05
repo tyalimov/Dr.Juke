@@ -6,39 +6,43 @@
 
 using namespace eastl;
 
-struct RCNHandler
+using RCNHandler = void(*)();
+
+struct RCNTracker
 {
 	LPCWSTR KeyPath;
-	void (*Handler)();
+	RCNHandler Handler;
 };
 
-RCNHandler gRcnHandlers[] = {
+RCNTracker gRCNTrackers[] = {
 	{ KEY_APPS, OnKeyAppsChange },
 	{ KEY_TOTALCMD, OnKeyTotalcmdChange },
 };
 
-static_assert(RTL_NUMBER_OF(gRcnHandlers) <= 64 - 1, "Wait objects limit exceeded");
+static_assert(RTL_NUMBER_OF(gRCNTrackers) <= 64 - 1, "Wait objects limit exceeded");
 
 class RCNKey
 {
 
 private:
 
+	unique_ptr<CNotificationObject> mEvNotify = nullptr;
+	RCNHandler mHandler = nullptr;
 	HANDLE mKeyHandle = nullptr;
-	unique_ptr<CNotificationObject> mEvNotify;
 	NTSTATUS mStatus;
 
 public:
 
-	RCNKey(LPCWSTR AbsKeyPath, LPCWSTR EventName)
+	RCNKey(RCNTracker Tracker, LPCWSTR EventName)
 	{
-		UNICODE_STRING KeyPath;
+		UNICODE_STRING usKeyPath;
 		OBJECT_ATTRIBUTES Attr;
 
+		mHandler = Tracker.Handler;
 		mEvNotify = make_unique<CNotificationObject>(EventName);
 
-		RtlInitUnicodeString(&KeyPath, AbsKeyPath);
-		InitializeObjectAttributes(&Attr, &KeyPath, OBJ_CASE_INSENSITIVE, NULL, NULL);	
+		RtlInitUnicodeString(&usKeyPath, Tracker.KeyPath);
+		InitializeObjectAttributes(&Attr, &usKeyPath, OBJ_CASE_INSENSITIVE, NULL, NULL);	
 		mStatus = ZwOpenKeyEx(&mKeyHandle, KEY_NOTIFY, &Attr, 0);
 	}
 
@@ -54,9 +58,11 @@ public:
 	RCNKey& operator=(RCNKey&& other)
 	{
 		mStatus = other.mStatus;
+		mHandler = other.mHandler;
 		mKeyHandle = other.mKeyHandle;
 		mEvNotify = move(other.mEvNotify);
 		other.mKeyHandle = nullptr;
+		other.mHandler = nullptr;
 		return *this;
 	}
 
@@ -70,6 +76,12 @@ public:
 
 	const HANDLE GetKeyHandle() const {
 		return mKeyHandle;
+	}
+
+	void InvokeHandler() const 
+	{	
+		if (mHandler)
+			mHandler();
 	}
 
 	~RCNKey() 
@@ -87,63 +99,68 @@ typedef struct _THREAD_CTX {
 VOID RCNThreadEntry(PTHREAD_CTX ctx)
 {
 	NTSTATUS Status;
-	PVOID Objects[RTL_NUMBER_OF(gRcnHandlers) + 1] = { 0 };
-	Objects[0] = &ctx->EvKill;
+	WCHAR NumBuf[3] = { 0 };
+	vector<RCNKey> NotifyKeys;
+	vector<PVOID> NotifyObjects;
 
 	kprintf(TRACE_THREAD, "Registry listener is running");
 
-	WCHAR NumBuf[3] = { 0 };
-	vector<RCNKey> NotifyKeys;
-	for (int i = 0; i < RTL_NUMBER_OF(gRcnHandlers); i++)
+	for (int i = 0; i < RTL_NUMBER_OF(gRCNTrackers); i++)
 	{
-		// Create reg key notificators with unique event names
+		// Create reg key notifiers with unique event names
 		// NumBuf may contain values [0..63]
 		_itow(i, NumBuf, 10);
 		wstring EvName = L"\\BaseNamedObjects\\RCNEvent" + wstring(NumBuf);
-		NotifyKeys.push_back(RCNKey(gRcnHandlers[i].KeyPath, EvName.c_str()));
+		RCNKey key(gRCNTrackers[i], EvName.c_str());
 
-		auto NotifyObject = NotifyKeys[i].GetNotifyObject();
-		Status = NotifyKeys[i].GetKeyOpenStatus();
+		const CNotificationObject* NotifyObject = key.GetNotifyObject();
+		Status = key.GetKeyOpenStatus();
 
-		// Check for errors before continue
 		// Skip ones, those have errors
 		if (!NT_SUCCESS(Status))
 		{
 			kprintf(TRACE_ERROR, "Failed to open registry key %ws. Status=0x%08X",
-				gRcnHandlers[i].KeyPath, Status);
+				gRCNTrackers[i].KeyPath, Status);
 		}
 		else if (NotifyObject->EventHandle == nullptr || NotifyObject->PKEvent == nullptr)
 			kprintf(TRACE_ERROR, "Failed to create event %ws", EvName.c_str());
 		else
 		{
-			// Objects[0] is EvKill, so use i + 1
-			Objects[i + 1] = NotifyObject->PKEvent;
+			NotifyObjects.push_back(NotifyObject->PKEvent);
+			NotifyKeys.push_back(move(key));
 		}
 	}
 	
+	NotifyObjects.push_back(&ctx->EvKill);
+
 	while (TRUE)
 	{
 		// Subscribe to registry keys notifications (async)
-		for (int i = 0; i < RTL_NUMBER_OF(gRcnHandlers); i++)
+		for (const auto& key: NotifyKeys)
 		{
-			auto NotifyObj = NotifyKeys[i].GetNotifyObject();
-			auto KeyHandle = NotifyKeys[i].GetKeyHandle();
-			KeClearEvent(NotifyObj->PKEvent);
+			auto NotifyObj = key.GetNotifyObject();
+			auto KeyHandle = key.GetKeyHandle();
 
+			KeClearEvent(NotifyObj->PKEvent);
 			Status = ZwNotifyChangeKey(KeyHandle, NotifyObj->EventHandle, NULL, 
 				(PVOID)DelayedWorkQueue, NULL, REG_NOTIFY_CHANGE_LAST_SET, FALSE, NULL, 0, TRUE);
 		}
 
 		// Wait for registry key change event or EvKill
-		Status = KeWaitForMultipleObjects(RTL_NUMBER_OF(Objects), 
-			Objects, WaitAny, Executive, KernelMode, FALSE, NULL, NULL);
+		Status = KeWaitForMultipleObjects((ULONG)NotifyObjects.size(), 
+			NotifyObjects.data(), WaitAny, Executive, KernelMode, FALSE, NULL, NULL);
 	
-		if (!NT_SUCCESS(Status) || Status == STATUS_WAIT_0)
+		if (!NT_SUCCESS(Status))
 			break;
 
-		// WAIT_STATUS_1
-		LONG j = Status - 1;
-		gRcnHandlers[j].Handler();
+		const eastl_size_t j = Status;
+		if (j < NotifyKeys.size())
+			NotifyKeys[j].InvokeHandler();
+		else
+		{
+			Status = STATUS_SUCCESS;
+			break;
+		}
 	}
 
 	kprint_st(TRACE_THREAD, Status);
