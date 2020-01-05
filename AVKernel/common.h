@@ -1,14 +1,16 @@
 #pragma once
 
 #include "drv_info.h"
+#include <ntifs.h>
 
 
 #define kprintf(level, fmt, ...)			\
     (FlagOn(TRACE_FLAGS,(level)) ?			\
         DbgPrint("[%s] %S!%s: "##fmt, #level, DRIVER_NAME, __FUNCTION__, __VA_ARGS__) : ((int)0))
 
-#define PRINT_STATUS(level, status) \
-	kprintf(level, "Exit with status 0x%08X", status);
+#define kprint_st(level, status)		\
+    (FlagOn(TRACE_FLAGS,(level)) ?		\
+        DbgPrint("[%s] %S!%s: %s 0x%08X", #level, DRIVER_NAME, __FUNCTION__, "Exit with status", status) : ((int)0))
 
 //#include <EASTL/string.h>
 //#include <EASTL/vector.h>

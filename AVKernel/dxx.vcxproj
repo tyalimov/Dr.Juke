@@ -134,7 +134,10 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="changes.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="preferences.cpp" />
+    <ClCompile Include="rcn.cpp" />
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -146,8 +149,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="changes.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="drv_info.h" />
+    <ClInclude Include="preferences.h" />
+    <ClInclude Include="rcn.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

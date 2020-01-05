@@ -42,3 +42,20 @@ public:
 	LockGuard(const LockGuard&) = delete;
 	LockGuard(LockGuard&&) = delete;
 };
+
+struct CNotificationObject
+{
+	HANDLE EventHandle = nullptr;
+	PKEVENT PKEvent = nullptr;
+
+	// forbid copy
+	CNotificationObject& operator=(const CNotificationObject& other) = delete;
+	CNotificationObject(const CNotificationObject& other) = delete;
+
+	// allow move
+	CNotificationObject(CNotificationObject&& other);
+	CNotificationObject& operator=(CNotificationObject&& other);
+
+	CNotificationObject(LPCWSTR name);
+	~CNotificationObject();
+};
