@@ -69,43 +69,63 @@ struct CNotificationEvent
 		kprintf(TRACE_INFO, "state=%d", state);
 	}
 
-	~CNotificationEvent() {
-		ZwClose(hEvent);
+	~CNotificationEvent() 
+	{
+		if (hEvent)
+			ZwClose(hEvent);
 	}
 };
 
-unique_ptr<CNotificationEvent> g_nf;
-
-NTSTATUS SetupKeyValueChangeNotifier(LPCWSTR reg_path, HANDLE hEvent, PIO_STATUS_BLOCK pio)
+class RegistryNotifier
 {
-	NTSTATUS status;
-	OBJECT_ATTRIBUTES oa;
-	UNICODE_STRING KeyPath;
-	HANDLE hKey;
-	
-	UNREFERENCED_PARAMETER(reg_path);
-	UNREFERENCED_PARAMETER(hEvent);
 
-	RtlInitUnicodeString(&KeyPath, L"\\Registry\\Machine\\SOFTWARE\\RegisteredApplications");
-	InitializeObjectAttributes(&oa, &KeyPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
-	status = ZwOpenKeyEx(&hKey, KEY_NOTIFY, &oa, 0);
+private:
 
-	if (NT_SUCCESS(status))
+	HANDLE mKeyHandle = nullptr;
+	IO_STATUS_BLOCK mIob;
+	LPCWSTR mEvName = L"\\BaseNamedObjects\\TestEvent";
+	unique_ptr<CNotificationEvent> mEvNotify;
+
+public:
+
+	RegistryNotifier(LPCWSTR AbsKeyPath)
 	{
-		status = ZwNotifyChangeKey(hKey, g_nf->hEvent, NULL, (PVOID)DelayedWorkQueue, 
-			pio, REG_NOTIFY_CHANGE_LAST_SET, FALSE, NULL, 0, TRUE);
+		NTSTATUS Status;
+		UNICODE_STRING KeyPath;
+		OBJECT_ATTRIBUTES Attr;
 
-		kprintf(TRACE_INFO, "status=0x%08X signaled state=%d", status, KeReadStateEvent(g_nf->pkEvent));
-		status = KeWaitForSingleObject(g_nf->pkEvent, Executive, KernelMode, FALSE, NULL);
-		kprintf(TRACE_INFO, "after wait status=0x%08X", status);
-		while (1);
-
-		ZwClose(hKey);
+		mEvNotify = make_unique<CNotificationEvent>(mEvName);
+		RtlInitUnicodeString(&KeyPath, AbsKeyPath);
+		InitializeObjectAttributes(&Attr, &KeyPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
+		
+		Status = ZwOpenKeyEx(&mKeyHandle, KEY_NOTIFY, &Attr, 0);
+		kprintf(TRACE_INFO, "Exit with status=0x%08X", Status);
 	}
 
-	kprintf(TRACE_INFO, "Exit with status 0x%08X", status);
-	return status;
-}
+	~RegistryNotifier()
+	{
+		if (mKeyHandle)
+			ZwClose(mKeyHandle);
+	}
+
+	NTSTATUS WaitForChangesAsync()
+	{
+		NTSTATUS Status = ZwNotifyChangeKey(mKeyHandle, mEvNotify->hEvent, NULL, 
+			(PVOID)DelayedWorkQueue, &mIob, REG_NOTIFY_CHANGE_LAST_SET, FALSE, NULL, 0, TRUE);
+		
+		kprintf(TRACE_INFO, "Exit with status=0x%08X", Status);
+		return Status;
+	}
+
+	PKEVENT GetPKEvent() {
+		return mEvNotify->pkEvent;
+	}
+
+	void print_all()
+	{
+		kprintf(TRACE_INFO, "Registry change: cnt=%d, status=0x%08X", (ULONG)mIob.Information, mIob.Status);
+	}
+};
 
 NTSTATUS ReadPreferences(LPCWSTR reg_path)
 {
@@ -178,7 +198,6 @@ NTSTATUS ReadPreferences(LPCWSTR reg_path)
 	return status;
 }
 
-
 typedef struct _THREAD_CTX {
 	KEVENT evKill;
 	PKTHREAD thread;
@@ -191,33 +210,27 @@ VOID ThreadProc(PTHREAD_CTX ctx)
 	kprintf(TRACE_THREAD, "Registry listener is running");
 
 	//ReadPreferences(L"aaa");
-	IO_STATUS_BLOCK iob = { 0 };
-	status = SetupKeyValueChangeNotifier(L"aaa", g_nf->hEvent, &iob);
-	if (status != STATUS_PENDING)
-		goto exit;
+	RegistryNotifier notifier(L"\\Registry\\Machine\\SOFTWARE\\RegisteredApplications");	
+	
+	PKEVENT EvNotify = notifier.GetPKEvent();
+	PVOID objects[] = { &ctx->evKill, EvNotify};
 
-	PVOID objects[] = { &ctx->evKill, g_nf->pkEvent };
-	int i = 0;
 	while (TRUE)
 	{
+		KeClearEvent(EvNotify);
+		notifier.WaitForChangesAsync();
+
 		status = KeWaitForMultipleObjects(RTL_NUMBER_OF(objects), 
 			objects, WaitAny, Executive, KernelMode, FALSE, NULL, NULL);
 	
 		if (!NT_SUCCESS(status) || status == STATUS_WAIT_0)
 			break;
 
-		if (i++ < 100)
-		{
-			kprintf(TRACE_INFO, "Registry change: cnt=%d, status=0x%08X", (ULONG)iob.Information, iob.Status);
-			status = SetupKeyValueChangeNotifier(L"aaa", g_nf->hEvent, &iob);
-			kprintf(TRACE_INFO, "status=0x%08X", status);
-		}
 		// WAIT_STATUS_1
-		// NTSYSAPI NTSTATUS ZwNotifyChangeKey(
+		notifier.print_all();
 	}
 
-exit:
-	kprintf(TRACE_THREAD, "Registry listener exited with status 0x%08X", status);
+	PRINT_STATUS(TRACE_THREAD, status);
 	PsTerminateSystemThread(status);
 }
 
@@ -258,9 +271,6 @@ VOID StopThread(PTHREAD_CTX ctx)
 	kprintf(TRACE_THREAD, "Stopping registry listener... ok");
 }
 
-
-
-
 unique_ptr<THREAD_CTX> g_ctx;
 
 
@@ -274,9 +284,6 @@ NTSTATUS SysMain(PDRIVER_OBJECT DrvObject, PUNICODE_STRING RegPath) {
 	};	
 
 	g_ctx = make_unique<THREAD_CTX>();
-	g_nf = make_unique<CNotificationEvent>( L"\\BaseNamedObjects\\TestEvent");
-	
-
 	StartThread(g_ctx.get());
 	kprintf(TRACE_INFO, "Driver is loaded");
 
