@@ -1,25 +1,13 @@
-#include "rcn.h"
+#include "common.h"
 #include "util.h"
+#include "rcn.h"
+
 #include "EASTL/unique_ptr.h"
 #include "EASTL/string.h"
 #include "EASTL/vector.h"
 
 using namespace eastl;
 
-using RCNHandler = void(*)();
-
-struct RCNTracker
-{
-	LPCWSTR KeyPath;
-	RCNHandler Handler;
-};
-
-RCNTracker gRCNTrackers[] = {
-	{ KEY_APPS, OnKeyAppsChange },
-	{ KEY_TOTALCMD, OnKeyTotalcmdChange },
-};
-
-static_assert(RTL_NUMBER_OF(gRCNTrackers) <= 64 - 1, "Wait objects limit exceeded");
 
 class RCNKey
 {
@@ -33,7 +21,7 @@ private:
 
 public:
 
-	RCNKey(RCNTracker Tracker, LPCWSTR EventName)
+	RCNKey(const RCNTracker& Tracker, LPCWSTR EventName)
 	{
 		UNICODE_STRING usKeyPath;
 		OBJECT_ATTRIBUTES Attr;
@@ -91,13 +79,9 @@ public:
 	}
 };
 
-typedef struct _THREAD_CTX {
-	KEVENT EvKill;
-	PKTHREAD PKThread;
-} *PTHREAD_CTX, THREAD_CTX;
-
 VOID RCNThreadEntry(PTHREAD_CTX ctx)
 {
+	int i = 0;
 	NTSTATUS Status;
 	WCHAR NumBuf[3] = { 0 };
 	vector<RCNKey> NotifyKeys;
@@ -105,13 +89,13 @@ VOID RCNThreadEntry(PTHREAD_CTX ctx)
 
 	kprintf(TRACE_THREAD, "Registry listener is running");
 
-	for (int i = 0; i < RTL_NUMBER_OF(gRCNTrackers); i++)
+	for (const auto& tracker: ctx->Trackers)
 	{
 		// Create reg key notifiers with unique event names
 		// NumBuf may contain values [0..63]
-		_itow(i, NumBuf, 10);
+		_itow(i++, NumBuf, 10);
 		wstring EvName = L"\\BaseNamedObjects\\RCNEvent" + wstring(NumBuf);
-		RCNKey key(gRCNTrackers[i], EvName.c_str());
+		RCNKey key(tracker, EvName.c_str());
 
 		const CNotificationObject* NotifyObject = key.GetNotifyObject();
 		Status = key.GetKeyOpenStatus();
@@ -120,7 +104,7 @@ VOID RCNThreadEntry(PTHREAD_CTX ctx)
 		if (!NT_SUCCESS(Status))
 		{
 			kprintf(TRACE_ERROR, "Failed to open registry key %ws. Status=0x%08X",
-				gRCNTrackers[i].KeyPath, Status);
+				tracker.KeyPath, Status);
 		}
 		else if (NotifyObject->EventHandle == nullptr || NotifyObject->PKEvent == nullptr)
 			kprintf(TRACE_ERROR, "Failed to create event %ws", EvName.c_str());
@@ -204,14 +188,3 @@ VOID RCNStopThread(PTHREAD_CTX ctx)
 	kprintf(TRACE_THREAD, "Stopping registry listener... ok");
 }
 
-unique_ptr<THREAD_CTX> gThreadCtx;
-NTSTATUS RCNInit()
-{
-	gThreadCtx = make_unique<THREAD_CTX>();
-	return RCNStartThread(gThreadCtx.get());
-}
-
-void RCNExit()
-{
-	RCNStopThread(gThreadCtx.get());
-}
