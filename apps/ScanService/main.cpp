@@ -5,8 +5,6 @@
 #include <winlib/raii.h>
 #include <common/constants.h>
 
-using namespace drjuke::threading;
-
 
 int main()
 {

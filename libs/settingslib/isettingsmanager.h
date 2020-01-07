@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <common/aliases.h>
+#include <common/win_raii.h>
 
 namespace drjuke::settingslib
 {
