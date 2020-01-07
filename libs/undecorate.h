@@ -27,3 +27,15 @@
 
 #define BOOST_UNDECORATE_LIBRARY(library_name) \
     "boost_" library_name "-vc142" "-mt" "-" BOOST_LINKAGE_STATUS "-" BOOST_PLATFORM_NAME "-1_71" ".lib"
+
+#define LINK_LIBRARY(name) \
+    __pragma( comment ( lib, UNDECORATE_LIBRARY(name)) )
+
+#define BOOST_LINK_LIBRARY(name) \
+    __pragma( comment ( lib, BOOST_UNDECORATE_LIBRARY(name)) )
+
+#define LINK_YARA                                              \
+    __pragma( comment( lib, UNDECORATE_LIBRARY("yaracpp")) )   \
+    __pragma( comment( lib, UNDECORATE_LIBRARY("libyara")) )   \
+    __pragma( comment( lib, "ws2_32.lib" ))                    \
+    __pragma( comment( lib, "crypt32.lib" ))

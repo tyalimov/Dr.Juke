@@ -1,16 +1,21 @@
-﻿#include "cert_viewer.h"
+﻿#include "certificate_info_builder.h"
 
 #include <iostream>
 #include <wintrust.h>
 
-#include <memory>
+#include <winlib/winlib.h> 
 
 #define ENCODING (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING)
 #define NO_INFO L"no information"
 
+
 namespace drjuke::scanlib
 {
-    void CertificateViewer::initialize()
+    using winlib::WindowsException;
+    using winlib::UniqueBlob;
+    using winlib::AllocateBlob;
+
+    void CertificateInfoBuilder::initializeCryptoObjects()
     {
         
         DWORD      signer_info_size   = 0;; // Размер структуры информации о подписавшем
@@ -35,11 +40,8 @@ namespace drjuke::scanlib
 
         if (!status)
         {
-            // TODO: логировать
-            std::cout << "CryptQueryObject failed with" << GetLastError() << std::endl;;
-            return;
+            throw WindowsException("CryptQueryObject fail");
         }
-
 
         // Получаем размер структуры, которую вернет функция
         status = CryptMsgGetParam
@@ -53,20 +55,11 @@ namespace drjuke::scanlib
 
         if (!status)
         {
-            // TODO: логировать
-            std::cout << "CryptMsgGetParam failed with " << GetLastError() << std::endl;
-            return;
+            throw WindowsException("CryptMsgGetParam fail");
         }
 
         // Выделяем память под SIGNER_INFO
-        pSignerInfo = static_cast<PCMSG_SIGNER_INFO>(malloc(signer_info_size)); // TODO: unique_ptr
-
-        if (!pSignerInfo)
-        {
-            // TODO: логировать
-            std::cout << "Unable to allocate memory for Signer Info" << std::endl;
-            return;
-        }
+        p_signer_info = UniqueBlob(AllocateBlob(signer_info_size));
 
         // Получаем информацию о подписавшем
         status = CryptMsgGetParam
@@ -74,23 +67,22 @@ namespace drjuke::scanlib
             crypt_message, 
             CMSG_SIGNER_INFO_PARAM, 
             0, 
-            static_cast<PVOID>(pSignerInfo), 
+            p_signer_info.get(), 
             &signer_info_size
         );
 
         if (!status)
         {
-            // TODO: логировать
-            std::cout << "CryptMsgGetParam failed with " << GetLastError() << std::endl;
-            return;
+            throw WindowsException("CryptMsgGetParam fail");
         }
     }
 
-    void CertificateViewer::getProgramAndPublisherInfo()
-    {
-        PSPC_SP_OPUS_INFO opus_info = nullptr;  
-        DWORD dwData{0};
-        auto attribute = getNecessaryAttribute(pSignerInfo->AuthAttrs, SPC_SP_OPUS_INFO_OBJID);
+    void CertificateInfoBuilder::getProgramAndPublisherInfo()
+    {  
+        DWORD opus_info_size;
+
+        auto auth_attrs = static_cast<PCMSG_SIGNER_INFO>(p_signer_info.get())->AuthAttrs;
+        auto attribute = getNecessaryAttribute(auth_attrs, SPC_SP_OPUS_INFO_OBJID);
 
         // Get Size of SPC_SP_OPUS_INFO structure.
         BOOL status = CryptDecodeObject
@@ -101,22 +93,21 @@ namespace drjuke::scanlib
             attribute.rgValue[0].cbData,
             0,
             nullptr,
-            &dwData
+            &opus_info_size
         );
 
         if (!status)
         {
-            std::cout << "CryptDecodeObject failed with " << GetLastError() << std::endl;
-            return;
+            throw WindowsException("CryptDecodeObject failed");
         }
 
         // Allocate memory for SPC_SP_OPUS_INFO structure.
-        opus_info = static_cast<PSPC_SP_OPUS_INFO>(LocalAlloc(LPTR, dwData));
+        auto opus_info     = UniqueBlob(AllocateBlob(opus_info_size));
+        auto opus_info_ptr = static_cast<PSPC_SP_OPUS_INFO>(opus_info.get());
 
         if (!opus_info)
         {
-            std::cout << "Unable to allocate memory for Publisher Info\n";
-            return;
+            throw std::runtime_error("Unable to allocate memory for Publisher Info");
         }
 
         // Decode and get SPC_SP_OPUS_INFO structure.
@@ -127,46 +118,47 @@ namespace drjuke::scanlib
             attribute.rgValue[0].pbData,
             attribute.rgValue[0].cbData,
             0,
-            opus_info,
-            &dwData
+            opus_info_ptr,
+            &opus_info_size
         );
 
         if (!status)
         {
-            std::cout << "CryptDecodeObject failed with " << GetLastError() << std::endl;
-            return;
+            throw WindowsException("CryptDecodeObject failed");
         }
-
 
         // Fill in Program Name if present.
         m_details.m_program_name = 
-            opus_info->pwszProgramName ?
-            opus_info->pwszProgramName :
+            opus_info_ptr->pwszProgramName ?
+            opus_info_ptr->pwszProgramName :
             NO_INFO;
 
         // Fill in Publisher Information if present.
         m_details.m_publisher_link = 
-            opus_info->pPublisherInfo ?
-            getCertificateInfo(opus_info, CertificateInfo::kPublisherInfo) : 
+            opus_info_ptr->pPublisherInfo ?
+            getCertificateInfo(opus_info_ptr, CertificateInfoType::kPublisherInfo) : 
             NO_INFO;
 
         // Fill in More Info if present.
         m_details.m_more_info_link =
-            opus_info->pMoreInfo ?
-            getCertificateInfo(opus_info, CertificateInfo::kMoreInfo) :
+            opus_info_ptr->pMoreInfo ?
+            getCertificateInfo(opus_info_ptr, CertificateInfoType::kMoreInfo) :
             NO_INFO;
     }
 
-    void CertificateViewer::getTimestamp()
+    void CertificateInfoBuilder::getTimestamp()
     {
         FILETIME        local_filetime;
         FILETIME        filetime;
         DWORD           info_size = sizeof(FILETIME);
         CRYPT_ATTRIBUTE attribute;
 
+        // TODO: Избавиться от копипасты
+        auto auth_attrs = static_cast<PCMSG_SIGNER_INFO>(p_signer_info.get())->AuthAttrs;
+
         try
         {
-            attribute = getNecessaryAttribute(pSignerInfo->AuthAttrs, szOID_RSA_signingTime);
+            attribute = getNecessaryAttribute(auth_attrs, szOID_RSA_signingTime);
         }
         catch (const std::runtime_error&)
         {
@@ -188,8 +180,7 @@ namespace drjuke::scanlib
 
         if (!status)
         {
-            std::cout << "CryptDecodeObject failed with: " << GetLastError() << std::endl;
-            return;
+            throw WindowsException("CryptDecodeObject failed");
         }
 
         // Convert to local time.
@@ -197,15 +188,16 @@ namespace drjuke::scanlib
         FileTimeToSystemTime(&local_filetime, &m_details.m_timestamp);
     } 
 
-    void CertificateViewer::getSignerInfo()
+    void CertificateInfoBuilder::getSignerInfo()
     {    
         DWORD dw_size = 0;
-        pCounterSignerInfo = nullptr;
         CRYPT_ATTRIBUTE attribute;
+
+        auto auth_attrs = static_cast<PCMSG_SIGNER_INFO>(p_signer_info.get())->AuthAttrs;
 
         try
         {
-            attribute = getNecessaryAttribute(pSignerInfo->AuthAttrs, szOID_RSA_counterSign);
+            attribute = getNecessaryAttribute(auth_attrs, szOID_RSA_counterSign);
         }
         catch (const std::runtime_error&)
         {
@@ -228,17 +220,16 @@ namespace drjuke::scanlib
 
         if (!status)
         {
-            std::cout << "CryptDecodeObject failed with " << GetLastError() << std::endl;
-            return;
+            throw WindowsException("CryptDecodeObject failed");
         }
 
         // Allocate memory for CMSG_SIGNER_INFO.
-        pCounterSignerInfo = static_cast<PCMSG_SIGNER_INFO>(LocalAlloc(LPTR, dw_size));
 
-        if (!pCounterSignerInfo)
+        p_counter_signer_info = UniqueBlob(AllocateBlob(dw_size));
+        
+        if (!p_counter_signer_info)
         {
-            std::cout << "Unable to allocate memory for timestamp info." << GetLastError() << std::endl;
-            return;
+            throw std::runtime_error("Unable to allocate memory for timestamp info.");
         }
 
         // Decode and get CMSG_SIGNER_INFO structure
@@ -250,20 +241,17 @@ namespace drjuke::scanlib
             attribute.rgValue[0].pbData,
             attribute.rgValue[0].cbData,
             0,
-            static_cast<PVOID>(pCounterSignerInfo),
+            p_counter_signer_info.get(),
             &dw_size
         );
 
         if (!status)
         {
-            std::cout << "CryptDecodeObject failed with " << GetLastError() << std::endl;
-            return;
+            throw WindowsException("CryptDecodeObject failed");
         }
-
-        //pCounterSignerInfo->Issuer
     }
 
-    CRYPT_ATTRIBUTE CertificateViewer::getNecessaryAttribute(CRYPT_ATTRIBUTES attrs, const std::string &object_id)
+    CRYPT_ATTRIBUTE CertificateInfoBuilder::getNecessaryAttribute(CRYPT_ATTRIBUTES attrs, const std::string &object_id)
     {
         for (DWORD i = 0; i < attrs.cAttr; i++)
         {
@@ -276,18 +264,17 @@ namespace drjuke::scanlib
         }
 
         throw std::runtime_error("Specified attribute not found");
-        // TODO: Выбросить исключение, если ничего не нашли.
     }
 
-    std::wstring CertificateViewer::getCertificateInfo(PSPC_SP_OPUS_INFO opus_info, CertificateInfo cert_info)
+    std::wstring CertificateInfoBuilder::getCertificateInfo(PSPC_SP_OPUS_INFO opus_info, CertificateInfoType cert_info)
     {
         SPC_LINK *link;
 
         switch (cert_info)
         {
-        case CertificateInfo::kMoreInfo      : link = opus_info->pMoreInfo;      break;
-        case CertificateInfo::kPublisherInfo : link = opus_info->pPublisherInfo; break;
-        default                              : link = opus_info->pPublisherInfo; break;
+        case CertificateInfoType::kMoreInfo      : link = opus_info->pMoreInfo;      break;
+        case CertificateInfoType::kPublisherInfo : link = opus_info->pPublisherInfo; break;
+        default                                  : link = opus_info->pPublisherInfo; break;
         }
 
         switch (link->dwLinkChoice)
@@ -299,16 +286,16 @@ namespace drjuke::scanlib
     }
 
     // !! ИМЯ ФАЙЛА !!
-    CertificateViewer::CertificateViewer(const wchar_t *filename)
+    CertificateInfoBuilder::CertificateInfoBuilder(const wchar_t *filename)
         : m_target_filename(filename)
     {
-        initialize();
+        initializeCryptoObjects();
         getProgramAndPublisherInfo();
         getTimestamp();
         getSignerInfo();
     }
 
-    CertificateDetails CertificateViewer::getDetails() const
+    CertificateInfo CertificateInfoBuilder::get() const
     {
         return m_details;
     }

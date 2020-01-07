@@ -1,57 +1,56 @@
 ﻿#pragma once
 
 #include <string>
-#include <common/aliases.h>
+#include <winlib/raii.h>
 #include <windows.h>
 #include <wincrypt.h>
-#include <wintrust.h>
+
 
 namespace drjuke::scanlib
 {
-    enum class CertificateInfo
+    enum class CertificateInfoType
     {
         kPublisherInfo,
         kMoreInfo
     };
 
-    struct CertificateDetails
+    struct CertificateInfo
     {
         std::wstring m_program_name;
         std::wstring m_publisher_link;
         std::wstring m_more_info_link;
         std::string  m_serial_number;
-        SYSTEMTIME   m_timestamp{0,0,0,0,0,0,0,0};
+        SYSTEMTIME   m_timestamp;
     };
 
-    struct CertificateViewer
+    struct CertificateInfoBuilder
     {
     private:
         std::wstring        m_target_filename;
-        
-        PCCERT_CONTEXT      pCertContext         = nullptr;
+
         DWORD               m_encoding_type;
         DWORD               m_content_type;
         DWORD               m_format_type;
-        PCMSG_SIGNER_INFO   pSignerInfo          = nullptr;
-        PCMSG_SIGNER_INFO   pCounterSignerInfo   = nullptr;
+        winlib::UniqueBlob  p_signer_info;
+        winlib::UniqueBlob  p_counter_signer_info;
         CERT_INFO           CertInfo;     
         SYSTEMTIME          m_date_of_timestamp;
 
-        CertificateDetails m_details;
+        CertificateInfo m_details;
 
     private:
-        void initialize();
+        void initializeCryptoObjects();
         void getProgramAndPublisherInfo();
         void getTimestamp();
         void getSignerInfo();
 
         // Вспомогательные методы
         static CRYPT_ATTRIBUTE getNecessaryAttribute(CRYPT_ATTRIBUTES attrs, const std::string &object_id);
-        static std::wstring getCertificateInfo(PSPC_SP_OPUS_INFO opus_info, CertificateInfo cert_info);
+        static std::wstring getCertificateInfo(PSPC_SP_OPUS_INFO opus_info, CertificateInfoType cert_info);
 
     public:
-        explicit CertificateViewer(const wchar_t *filename);
+        explicit CertificateInfoBuilder(const wchar_t *filename);
 
-        [[nodiscard]] CertificateDetails getDetails() const;
+        [[nodiscard]] CertificateInfo get() const;
     };
 }

@@ -1,39 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="cryptor">
+      <UniqueIdentifier>{ebc42e50-1ee3-4f05-a322-e0ad24cb8df7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="misc">
+      <UniqueIdentifier>{7c01ed93-8b88-4550-a734-42ba36a8bbac}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\libs\cryptolib\pch.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\libs\cryptolib\icryptor.h">
+      <Filter>cryptor</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\cryptolib\framework.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\libs\cryptolib\BasicSigner.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\libs\cryptolib\cryptor.h">
+      <Filter>cryptor</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libs\cryptolib\cryptolib.h">
-      <Filter>Header Files</Filter>
+      <Filter>misc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\libs\cryptolib\pch.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\libs\cryptolib\cryptolib.cpp">
+      <Filter>misc</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libs\cryptolib\BasicSigner.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\libs\cryptolib\cryptor.cpp">
+      <Filter>cryptor</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -1,23 +1,32 @@
-﻿#include "signature_analyzer.h"
-#include "cert_viewer.h"
+﻿#include "certificate_analyzer.h"
+#include "certificate_info_builder.h"
 
 #pragma comment( lib, "wintrust.lib" )
 #pragma comment( lib, "crypt32.lib"  )
 
 #pragma warning( disable : 26812 ) // Unscoped enum
 
+#include <type_traits>
+
 #include <common/win_raii.h>
+#include <winlib/windows_exception.h>
 
 namespace 
 {
-    constexpr auto g_EncodingType = (X509_ASN_ENCODING | PKCS_7_ASN_ENCODING);
+    constexpr std::string_view kFileSigned          { "The file is signed"           };
+    constexpr std::string_view kFileNotSigned       { "The file is not signed"       };
+    constexpr std::string_view kSignatureNotTrusted { "The signature is not trusted" };
+    constexpr std::string_view kFileCorrupted       { "The file is corrupted"        };
+    constexpr std::string_view kRootUntrusted       { "The Root CA is untrusted"     };
+    constexpr std::string_view kCertificateExpired  { "The certificate is expired"   };
+    constexpr std::string_view kCertificateRevoked  { "The certificate is revoked"   };
 }
 
 namespace drjuke::scanlib
 {
     namespace 
     {
-        struct SignatureStatus { enum 
+        struct SignatureStatus { enum Type
         {
             kSuccess                      = 0,
             kActionUnknown                = 0x800b0002,                   // Trust provider does not support the specified action
@@ -32,35 +41,25 @@ namespace drjuke::scanlib
             kUntrustedRoot                = CERT_E_UNTRUSTEDROOT          // Корневой удостоверяющий центр является недоверенным
         }; };
 
-        std::map<uint32_t, std::string> g_FormattedStatuses = 
+        std::map<std::underlying_type_t<SignatureStatus::Type>, std::string_view> g_FormattedStatuses 
         {
-            { SignatureStatus::kSuccess                    , "The file is signed"           },
-            { SignatureStatus::kProviderUnknown            , "The file is not signed"       },
-            { SignatureStatus::kActionUnknown              , "The file is not signed"       },
-            { SignatureStatus::kSubjectFormUnknown         , "The file is not signed"       },
-            { SignatureStatus::kSubjectNotTrusted          , "The signature is not trusted" },
-            { SignatureStatus::kSubjectExplicitlyDistrusted, "The signature is not trusted" },
-            { SignatureStatus::kFileNotSigned              , "The file is not signed"       },
-            { SignatureStatus::kSignatureOrFileCorrupt     , "The file is corrupted"        },
-            { SignatureStatus::kSubjectCertExpired         , "The certificate is expired"   },
-            { SignatureStatus::kSubjectCertificateRevoked  , "The certificate is revoked"   },
-            { SignatureStatus::kUntrustedRoot              , "The Root CA is untrusted"     }
-        };
-
-        std::array<int32_t, 6> g_RequiredDetaledInfo =
-        {
-            SignatureStatus::kSuccess,
-            SignatureStatus::kSubjectNotTrusted,
-            SignatureStatus::kSubjectExplicitlyDistrusted,
-            SignatureStatus::kSubjectCertExpired,
-            SignatureStatus::kSubjectCertificateRevoked,
-            SignatureStatus::kUntrustedRoot
+            { SignatureStatus::kSuccess                    , kFileSigned           }, 
+            { SignatureStatus::kProviderUnknown            , kFileNotSigned        },
+            { SignatureStatus::kActionUnknown              , kFileNotSigned        },
+            { SignatureStatus::kSubjectFormUnknown         , kFileNotSigned        },
+            { SignatureStatus::kSubjectNotTrusted          , kSignatureNotTrusted  },
+            { SignatureStatus::kSubjectExplicitlyDistrusted, kSignatureNotTrusted  },
+            { SignatureStatus::kFileNotSigned              , kFileNotSigned        },
+            { SignatureStatus::kSignatureOrFileCorrupt     , kFileCorrupted        },
+            { SignatureStatus::kSubjectCertExpired         , kCertificateExpired   },
+            { SignatureStatus::kSubjectCertificateRevoked  , kCertificateRevoked   },
+            { SignatureStatus::kUntrustedRoot              , kRootUntrusted        }
         };
     }
 
     Json SignatureReport::makeJson()
     {
-        return Json();
+        return m_report;
     }
 
     void DigitalSignatureAnalyzer::constructWinTrustFileInfo(const wchar_t *filename)
@@ -145,26 +144,30 @@ namespace drjuke::scanlib
         destroyWinTrustData();
 
         // TODO: Собственные исключения
+        // TODO: Заменить shared на unique
+
         try
         {
             auto str_status = g_FormattedStatuses[status];
-            auto details    = CertificateViewer(filename_ptr).getDetails();
+
+            if (str_status != kFileNotSigned)
+            {
+                auto details = CertificateInfoBuilder(filename_ptr).get();
+                return std::make_shared<SignatureReport>(str_status.data(), details);
+            }
 
             // TODO: Залогировать
-            return std::make_shared<SignatureReport>(str_status, details);
+            return std::make_shared<SignatureReport>(str_status.data());
         }
-        catch (const std::system_error &ex)
+        catch (const std::system_error&)
         {
-            UNREFERENCED_PARAMETER(ex);
-            // TODO: Залогировать
-            return std::make_shared<SignatureReport>(g_FormattedStatuses[status]);
+            return std::make_shared<SignatureReport>(g_FormattedStatuses[status].data());
         }
-        catch (const std::out_of_range &ex)
+        catch (const std::out_of_range&)
         {
-            UNREFERENCED_PARAMETER(ex);
-            // TODO: Залогировать
             return std::make_shared<SignatureReport>("Unknown");
         }
+
     }
 
     void DigitalSignatureAnalyzer::loadResources()
@@ -185,6 +188,7 @@ namespace drjuke::scanlib
         m_report["signer"]                  = "UNKNOWN";
         m_report["application"]             = "UNKNOWN";
         m_report["url"]                     = "UNKNOWN";
+        m_report["more_info"]               = "UNKNOWN";
         m_report["datetime"]["year"]        = -1;
         m_report["datetime"]["month"]       = -1;
         m_report["datetime"]["day"]         = -1;
@@ -193,5 +197,26 @@ namespace drjuke::scanlib
         m_report["datetime"]["minute"]      = -1;
         m_report["datetime"]["second"]      = -1;
         m_report["datetime"]["millisecond"] = -1;
+    }
+
+    void SignatureReport::fillJsonWithStatus()
+    {
+        m_report["resolution"] = m_status;
+    }
+
+    void SignatureReport::fillJsonWithDetails()
+    {
+        m_report["signer"]                  = m_details.m_publisher_link;
+        m_report["application"]             = m_details.m_program_name;
+        m_report["url"]                     = m_details.m_publisher_link;
+        m_report["more_info"]               = m_details.m_more_info_link;
+        m_report["datetime"]["year"]        = m_details.m_timestamp.wYear;
+        m_report["datetime"]["month"]       = m_details.m_timestamp.wMonth;
+        m_report["datetime"]["day"]         = m_details.m_timestamp.wDay;
+        m_report["datetime"]["day of week"] = m_details.m_timestamp.wDayOfWeek;
+        m_report["datetime"]["hour"]        = m_details.m_timestamp.wHour;
+        m_report["datetime"]["minute"]      = m_details.m_timestamp.wMinute;
+        m_report["datetime"]["second"]      = m_details.m_timestamp.wSecond;
+        m_report["datetime"]["millisecond"] = m_details.m_timestamp.wMilliseconds;
     }
 }

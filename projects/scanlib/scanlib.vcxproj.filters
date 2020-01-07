@@ -1,51 +1,63 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="certificate">
+      <UniqueIdentifier>{00cab68a-46dc-4490-8543-7c31cdc70358}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="misc">
+      <UniqueIdentifier>{b762c711-4fb0-46dc-9612-735bab933551}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="yara">
+      <UniqueIdentifier>{31d14fd8-8222-47af-b6e9-aec548d38e9e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="packers">
+      <UniqueIdentifier>{d3ab37f5-b7db-46b2-825f-1d51a19bc4c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="clam_av">
+      <UniqueIdentifier>{096ba487-58b3-4b44-a683-10803dcd53b5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\libs\scanlib\cert_viewer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\libs\scanlib\certificate_info_builder.cpp">
+      <Filter>certificate</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libs\scanlib\signature_analyzer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\libs\scanlib\yara_analyzer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\..\libs\scanlib\certificate_analyzer.cpp">
+      <Filter>certificate</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libs\scanlib\scanlib.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\scanlib\yara_analyzer.cpp">
+      <Filter>yara</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\scanlib\packers_analyzer.cpp">
+      <Filter>packers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\scanlib\clam_av_analyzer.cpp">
+      <Filter>clam_av</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\libs\scanlib\yara_engine.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\libs\scanlib\certificate_info_builder.h">
+      <Filter>certificate</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\scanlib\yara_analyzer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\libs\scanlib\signature_analyzer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\libs\scanlib\cert_viewer.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\libs\scanlib\certificate_analyzer.h">
+      <Filter>certificate</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libs\scanlib\scanlib.h">
-      <Filter>Header Files</Filter>
+      <Filter>misc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libs\scanlib\base_analyzer.h">
-      <Filter>Header Files</Filter>
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\scanlib\yara_analyzer.h">
+      <Filter>yara</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\scanlib\packers_analyzer.h">
+      <Filter>packers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\scanlib\clam_av_analyzer.h">
+      <Filter>clam_av</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
