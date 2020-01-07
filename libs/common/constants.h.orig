@@ -1,0 +1,51 @@
+﻿#include <string>
+
+<<<<<<< HEAD
+namespace drjuke::constants
+{
+    namespace tasklib
+    {
+        constexpr uint32_t kMaxTaskQueueSize = 1000;
+    }
+
+    namespace scanlib
+    {
+        // TODO: Перенести это в settingslib
+        // TODO: Также убрать хардкод и делать через получение путей из реестра
+        constexpr std::string_view kYaraRulesLocation   = R"(D:\Dr.Juke_resources\CVE_Rules)";
+        constexpr std::string_view kClamAvRulesLocation = R"(D:\Dr.Juke_resources\ClamAV_Rules)";
+        constexpr std::string_view kPeidRulesLocation   = R"(D:\Dr.Juke_resources\PEiD_Rules)";
+    }
+=======
+// Предназначено для целочисленных констант.
+#define BEGIN_NUMERIC_SPACE(Space) \
+    namespace Space { enum {
+
+#define END_NUMERIC_SPACE() \
+    }; }
+
+// Предназначено для строковых констант.
+#define BEGIN_STRING_SPACE(Space) \
+    namespace Space { 
+
+#define END_STRING_SPACE() \
+    } 
+
+namespace drjuke::constants
+{
+    BEGIN_NUMERIC_SPACE(tasklib)
+        kMaxTaskQueueSize = 1000
+    END_NUMERIC_SPACE()
+
+    BEGIN_STRING_SPACE(tasklib)
+        static const std::string kJsonTaskId = "task_id";
+    END_STRING_SPACE()
+
+    BEGIN_STRING_SPACE(scansvc)
+        // TODO: Каким-то хером задать относительный путь. Скорее всего 
+        // в будущем ты будешь знать расположение папки с ресурсами 
+        // относительно себя
+        static const std::string kYaraRulesLocation = R"(D:\Dr.Juke_resources\CVE_Rules)";
+    END_STRING_SPACE()
+>>>>>>> tyalimov_dev_tasklib_2
+}

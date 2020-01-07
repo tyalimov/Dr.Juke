@@ -1,5 +1,7 @@
 ﻿#include <string>
 
+// Предназначено для целочисленных констант.
+// Предназначено для строковых констант.
 namespace drjuke::constants
 {
     namespace tasklib

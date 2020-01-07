@@ -21,6 +21,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\apps\ScanService\main.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\tasklib\tasklib.vcxproj">
+      <Project>{496508ef-aca8-4319-a779-e6b72bb6630b}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{199D2946-86CE-45F3-88CB-05AD2417DEF7}</ProjectGuid>

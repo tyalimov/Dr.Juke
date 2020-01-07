@@ -10,3 +10,10 @@
 #   pragma warning (disable : 26444)
 #   include "gtest/gtest.h"
 #pragma warning ( pop )
+#include <vector>
+#include <string>
+#include <filesystem>
+
+#include <common/constants.h>
+#include <common/aliases.h>
+#include <common/win_raii.h>

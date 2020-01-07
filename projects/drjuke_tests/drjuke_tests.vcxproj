@@ -80,6 +80,11 @@
       <Project>{5955b0db-6c7a-44f3-99e0-910bdc453406}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\tasklib\tasklib.vcxproj">
+      <Project>{496508ef-aca8-4319-a779-e6b72bb6630b}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
