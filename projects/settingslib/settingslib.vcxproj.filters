@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="settings_managing">
+      <UniqueIdentifier>{bef6e43d-e5fb-42b8-b6d2-dc62943597c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="misc">
+      <UniqueIdentifier>{6860432a-aaf2-4569-ae92-3037d5d5b04a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\libs\settingslib\settings_manager.h">
+      <Filter>settings_managing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\settingslib\winreg.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\settingslib\settingslib.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\settingslib\isettingsmanager.h">
+      <Filter>settings_managing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\libs\settingslib\settings_manager.cpp">
+      <Filter>settings_managing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\settingslib\settingslib.cpp">
+      <Filter>misc</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

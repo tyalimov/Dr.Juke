@@ -1,10 +1,12 @@
-// cryptolib.cpp : Defines the functions for the static library.
-//
+#include "cryptolib.h"
 
-#include "pch.h"
-#include "framework.h"
+#include "cryptor.h"
 
-// TODO: This is an example of a library function
-void fncryptolib()
+
+namespace drjuke::cryptolib
 {
+    ICryptorPtr CryptorFactory::get() 
+    {
+        return std::make_unique<Cryptor>();
+    }
 }

@@ -62,12 +62,19 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tests\cryptolib_test.cpp" />
     <ClCompile Include="..\..\tests\scanlib_test.cpp" />
     <ClCompile Include="..\..\tests\winlib_test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\cryptolib\cryptolib.vcxproj">
+      <Project>{5da2a62c-5c81-4d1c-925e-fda5842a91ed}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\scanlib\scanlib.vcxproj">
       <Project>{aec604cc-446d-472e-8306-77fa3c5323e4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\settingslib\settingslib.vcxproj">
+      <Project>{c86b3e2d-d655-45e3-a261-6fd52dcf1fe6}</Project>
     </ProjectReference>
     <ProjectReference Include="..\winlib\winlib.vcxproj">
       <Project>{5955b0db-6c7a-44f3-99e0-910bdc453406}</Project>
@@ -94,7 +101,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VcpkgRoot)debug\lib;$(VcpkgRoot)debug\lib\manual-link; $(ExternalSDK)/yaracpp/lib;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VcpkgRoot)debug\lib;$(VcpkgRoot)debug\lib\manual-link; $(ExternalSDK)/yaracpp/lib;; $(ExternalSDK)/CryptoPP/lib;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -113,7 +120,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VcpkgRoot)debug\lib;$(VcpkgRoot)debug\lib\manual-link; $(ExternalSDK)/yaracpp/lib;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VcpkgRoot)debug\lib;$(VcpkgRoot)debug\lib\manual-link; $(ExternalSDK)/yaracpp/lib;; $(ExternalSDK)/CryptoPP/lib;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -133,7 +140,7 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VcpkgRoot)lib;$(VcpkgRoot)lib\manual-link; $(ExternalSDK)/yaracpp/lib;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VcpkgRoot)lib;$(VcpkgRoot)lib\manual-link; $(ExternalSDK)/yaracpp/lib;; $(ExternalSDK)/CryptoPP/lib;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -153,7 +160,7 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VcpkgRoot)lib;$(VcpkgRoot)lib\manual-link; $(ExternalSDK)/yaracpp/lib;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(VcpkgRoot)lib;$(VcpkgRoot)lib\manual-link; $(ExternalSDK)/yaracpp/lib;; $(ExternalSDK)/CryptoPP/lib;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

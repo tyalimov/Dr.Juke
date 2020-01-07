@@ -80,3 +80,47 @@ catch (const std::exception &ex)
     std::cout << ex.what() << std::endl;
     FAIL();
 }
+
+TEST(scanlib, ClamAV) try
+{
+    const Path target = R"(scanlib\SignatureAnalyzer\calc.exe)";
+
+    EXPECT_TRUE(fs::exists(target));
+
+    auto analyzer = AnalyzerFactory::get(AnalyzerFactory::AnalyzerId::kClamAvSignature);
+
+    analyzer->loadResources();
+    auto report = analyzer->getReport(target)->makeJson();
+
+    std::cout << report.dump() << std::endl;
+
+    // TODO: Проверить ожидаемые значения
+    SUCCEED();
+}
+catch (const std::exception &ex)
+{
+    std::cout << ex.what() << std::endl;
+    FAIL();
+}
+
+TEST(scanlib, PEiD) try
+{
+    const Path target = R"(scanlib\SignatureAnalyzer\calc.exe)";
+
+    EXPECT_TRUE(fs::exists(target));
+
+    auto analyzer = AnalyzerFactory::get(AnalyzerFactory::AnalyzerId::kPack);
+
+    analyzer->loadResources();
+    auto report = analyzer->getReport(target)->makeJson();
+
+    std::cout << report.dump() << std::endl;
+
+    // TODO: Проверить ожидаемые значения
+    SUCCEED();
+}
+catch (const std::exception &ex)
+{
+    std::cout << ex.what() << std::endl;
+    FAIL();
+}
