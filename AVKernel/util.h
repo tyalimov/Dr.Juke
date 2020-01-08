@@ -2,6 +2,35 @@
 
 #include <ntifs.h>
 
+#include <EASTL/string.h>
+
+using namespace eastl;
+
+wstring GetKeyNameByHandle(HANDLE KeyHandle);
+
+BOOLEAN IsWin8OrGreater();
+
+namespace str_util
+{
+	bool startsWith(const wstring& str, const wstring& substr);
+
+	bool startsWith(const string& str, const string& substr);
+
+	bool startsWith(const wstring& str, const wchar_t* substr);
+
+	bool startsWith(const string& str, const char* substr);
+
+	bool startsWith(const wstring* str, const wchar_t* substr);
+
+	bool startsWith(const string* str, const char* substr);
+
+	void makeLower(wstring* str);
+
+	void makeLower(string* str);
+}
+
+bool NormalizeRegistryPath(wstring* KeyPath);
+
 class GuardedMutex
 {
 private:
@@ -43,19 +72,19 @@ public:
 	LockGuard(LockGuard&&) = delete;
 };
 
-struct CNotificationObject
-{
-	HANDLE EventHandle = nullptr;
-	PKEVENT PKEvent = nullptr;
-
-	// forbid copy
-	CNotificationObject& operator=(const CNotificationObject& other) = delete;
-	CNotificationObject(const CNotificationObject& other) = delete;
-
-	// allow move
-	CNotificationObject(CNotificationObject&& other);
-	CNotificationObject& operator=(CNotificationObject&& other);
-
-	CNotificationObject(LPCWSTR name);
-	~CNotificationObject();
-};
+// struct CNotificationObject
+// {
+// 	HANDLE EventHandle = nullptr;
+// 	PKEVENT PKEvent = nullptr;
+// 
+// 	// forbid copy
+// 	CNotificationObject& operator=(const CNotificationObject& other) = delete;
+// 	CNotificationObject(const CNotificationObject& other) = delete;
+// 
+// 	// allow move
+// 	CNotificationObject(CNotificationObject&& other);
+// 	CNotificationObject& operator=(CNotificationObject&& other);
+// 
+// 	CNotificationObject(LPCWSTR name);
+// 	~CNotificationObject();
+// };

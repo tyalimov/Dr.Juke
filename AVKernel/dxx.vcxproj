@@ -137,7 +137,7 @@
     <ClCompile Include="filter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="preferences.cpp" />
-    <ClCompile Include="rcn.cpp" />
+    <ClCompile Include="regfilter_cb.cpp" />
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -153,7 +153,7 @@
     <ClInclude Include="drv_info.h" />
     <ClInclude Include="filter.h" />
     <ClInclude Include="preferences.h" />
-    <ClInclude Include="rcn.h" />
+    <ClInclude Include="regfilter_cb.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

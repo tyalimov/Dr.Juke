@@ -2,40 +2,65 @@
 #include <wdm.h>
 #include <ntstrsafe.h>
 
-#include "rcn.h"
 #include "preferences.h"
 #include "filter.h"
+#include "regfilter_cb.h"
 
-RCN_THREAD_CTX gRCNThread;
-BOOLEAN bRCNInit = FALSE;
+PREGFILTER_CALLBACK_CTX gRegFilterCtx = nullptr;
 
-VOID DriverUnload(PDRIVER_OBJECT DriverObject)
+
+NTSTATUS CreateRegFilterCtx()
+{
+	NTSTATUS Status = STATUS_SUCCESS;
+	gRegFilterCtx = new REGFILTER_CALLBACK_CTX();
+
+	if (gRegFilterCtx == nullptr)
+	{
+		kprintf(TRACE_LOAD, "Failed to allocate RegFilter context");
+		Status = STATUS_INSUFFICIENT_RESOURCES;
+	}
+	else
+	{
+		RtlInitUnicodeString(&gRegFilterCtx->Altitude, REGFILTER_ALTITUDE);
+		gRegFilterCtx->OnRegNtPreCreateKeyEx = OnRegNtPreCreateKeyEx;
+		gRegFilterCtx->OnRegNtPostSetValueKey = OnRegNtPostSetValueKey;
+		gRegFilterCtx->OnRegFilterInit = OnRegFilterInit;
+	}
+
+	return Status;
+}
+
+void DeleteRegFilterCtx()
+{
+	delete gRegFilterCtx;
+	gRegFilterCtx = nullptr;
+}
+
+void DriverUnload(PDRIVER_OBJECT DriverObject)
 {
 	UNREFERENCED_PARAMETER(DriverObject);
-	
-	if (bRCNInit)
-		RCNStopThread(&gRCNThread);
-
+	RegFilterExit(gRegFilterCtx);
+	DeleteRegFilterCtx();
 	kprintf(TRACE_LOAD, "Driver unloaded");
 }
 
-
-NTSTATUS SysMain(PDRIVER_OBJECT DrvObject, PUNICODE_STRING RegPath) {
+NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 	UNREFERENCED_PARAMETER(RegPath);
 
 	NTSTATUS Status;
-	DrvObject->DriverUnload = DriverUnload;
+	DriverObject->DriverUnload = DriverUnload;
 	
-	Status = PreferencesReset(KEY_PROCFILTER);
+	Status = CreateRegFilterCtx();
 	if (!NT_SUCCESS(Status))
 		goto fail;
 
-	gRCNThread.Trackers.push_back({ KEY_PROCFILTER, OnProcFilterKeyChange });
-	Status = RCNStartThread(&gRCNThread);
+	Status = RegFilterInit(DriverObject, gRegFilterCtx);
 	if (!NT_SUCCESS(Status))
+	{
+		DeleteRegFilterCtx();
 		goto fail;
+	}
 
-	bRCNInit = TRUE;
 	kprintf(TRACE_LOAD, "Driver initialization successfull");
 	return STATUS_SUCCESS;
 
