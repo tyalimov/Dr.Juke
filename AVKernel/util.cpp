@@ -142,6 +142,20 @@ namespace str_util
 		for (auto i = 0; i < n; i++)
 			str->at(i) = (char)tolower(str->at(i));
 	}
+
+	bool compareIns(string str1, string str2)
+	{
+		makeLower(&str1);
+		makeLower(&str2);
+		return str1 == str2;
+	}
+
+	bool compareIns(wstring str1, wstring str2)
+	{
+		makeLower(&str1);
+		makeLower(&str2);
+		return str1 == str2;
+	}
 }
 
 bool NormalizeRegistryPath(wstring* KeyPath)

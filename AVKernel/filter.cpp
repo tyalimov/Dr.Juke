@@ -6,20 +6,20 @@
 //------------------------------------------------------------>
 // Prototypes
 
-NTSTATUS RegCallback(
+NTSTATUS RegFilterCallback(
 	_In_     PVOID CallbackContext,
 	_In_opt_ PVOID Argument1,
 	_In_opt_ PVOID Argument2);
 
-NTSTATUS RegPreCreateKey(
+NTSTATUS RegPostSetValueKey(
 	_In_ PREGFILTER_CALLBACK_CTX CbContext,
-	_Inout_	PVOID Argument2);
+	_Inout_	PVOID Argument2,
+	_In_ BOOLEAN bDeleted);
 
 NTSTATUS RegPreCreateKeyEx(
 	_In_ PREGFILTER_CALLBACK_CTX CallbackCtx,
 	_Inout_ PVOID Argument2);
 
-LPCWSTR GetNotifyClassString(REG_NOTIFY_CLASS NotifyClass);
 
 //------------------------------------------------------------>
 // Registry filter
@@ -40,7 +40,7 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject, PREGFILTER_CALLBACK_CTX CbCo
 	}
 
 	Status = CmRegisterCallbackEx(
-		RegCallback,
+		RegFilterCallback,
 		&CbContext->Altitude,
 		DriverObject,
 		(PVOID)CbContext,
@@ -63,7 +63,7 @@ void RegFilterExit(PREGFILTER_CALLBACK_CTX CbContext)
 }
 
 NTSTATUS
-RegCallback(
+RegFilterCallback(
 	_In_  PVOID CallbackContext,
 	_In_opt_ PVOID Argument1,
 	_In_opt_ PVOID Argument2
@@ -82,24 +82,17 @@ RegCallback(
 		return STATUS_SUCCESS;
 	}
 
-	//UNICODE_STRING us;
-	//RtlInitUnicodeString(&us, L"");
-	//RtlCompareUnicodeString(&us, )
-	//if ()
-
-
 	switch (NotifyClass)
 	{
 	case RegNtPreCreateKeyEx: 
 	case RegNtPreOpenKeyEx: 
 		Status = RegPreCreateKeyEx(CbContext, Argument2);
 		break;
-	case RegNtPreCreateKey:
-		Status = RegPreCreateKey(CbContext, Argument2);
-		break;
-
 	case RegNtPostSetValueKey: 
-	//PREG_POST_OPERATION_INFORMATION PostSetKeyValueInfo;
+		Status = RegPostSetValueKey(CbContext, Argument2, FALSE);
+		break;
+	case RegNtPostDeleteValueKey:
+		Status = RegPostSetValueKey(CbContext, Argument2, TRUE);
 		break;
 	default: 
 		break;
@@ -109,27 +102,9 @@ RegCallback(
 }
 
 NTSTATUS 
-RegPreCreateKey(
-    _In_ PREGFILTER_CALLBACK_CTX CbContext,
-    _Inout_	PVOID Argument2
-    )
-{
-    NTSTATUS Status = STATUS_SUCCESS;
-    PREG_CREATE_KEY_INFORMATION PreCreateInfo;
-	PreCreateInfo = (PREG_CREATE_KEY_INFORMATION) Argument2;
-	
-	UNREFERENCED_PARAMETER(CbContext);
-
-	kprintf(TRACE_INFO, "Access to %s", PreCreateInfo->CompleteName);
-
-    return Status;
-}
-
-NTSTATUS 
 RegPreCreateKeyEx(
     _In_ PREGFILTER_CALLBACK_CTX CbContext,
-    _Inout_	PVOID Argument2
-    )
+    _Inout_	PVOID Argument2)
 {
     NTSTATUS Status = STATUS_SUCCESS;
     PREG_CREATE_KEY_INFORMATION_V1 PreCreateInfo;
@@ -146,58 +121,17 @@ RegPreCreateKeyEx(
     return Status;
 }
 
-LPCWSTR GetNotifyClassString(REG_NOTIFY_CLASS NotifyClass)
+NTSTATUS RegPostSetValueKey(
+	_In_ PREGFILTER_CALLBACK_CTX CbContext,
+	_Inout_	PVOID Argument2,
+	_In_ BOOLEAN bDeleted)
 {
-	switch (NotifyClass) 
-	{
-	case RegNtPreDeleteKey:                 return L"RegNtPreDeleteKey";
-	case RegNtPreSetValueKey:               return L"RegNtPreSetValueKey";
-	case RegNtPreDeleteValueKey:            return L"RegNtPreDeleteValueKey";
-	case RegNtPreSetInformationKey:         return L"RegNtPreSetInformationKey";
-	case RegNtPreRenameKey:                 return L"RegNtPreRenameKey";
-	case RegNtPreEnumerateKey:              return L"RegNtPreEnumerateKey";
-	case RegNtPreEnumerateValueKey:         return L"RegNtPreEnumerateValueKey";
-	case RegNtPreQueryKey:                  return L"RegNtPreQueryKey";
-	case RegNtPreQueryValueKey:             return L"RegNtPreQueryValueKey";
-	case RegNtPreQueryMultipleValueKey:     return L"RegNtPreQueryMultipleValueKey";
-	case RegNtPreKeyHandleClose:            return L"RegNtPreKeyHandleClose";
-	case RegNtPreCreateKeyEx:               return L"RegNtPreCreateKeyEx";
-	case RegNtPreOpenKeyEx:                 return L"RegNtPreOpenKeyEx";
-	case RegNtPreFlushKey:                  return L"RegNtPreFlushKey";
-	case RegNtPreLoadKey:                   return L"RegNtPreLoadKey";
-	case RegNtPreUnLoadKey:                 return L"RegNtPreUnLoadKey";
-	case RegNtPreQueryKeySecurity:          return L"RegNtPreQueryKeySecurity";
-	case RegNtPreSetKeySecurity:            return L"RegNtPreSetKeySecurity";
-	case RegNtPreRestoreKey:                return L"RegNtPreRestoreKey";
-	case RegNtPreSaveKey:                   return L"RegNtPreSaveKey";
-	case RegNtPreReplaceKey:                return L"RegNtPreReplaceKey";
+	NTSTATUS Status = STATUS_SUCCESS;
+	PREG_POST_OPERATION_INFORMATION PostInfo;
+	PostInfo = (PREG_POST_OPERATION_INFORMATION)Argument2;
 
-	case RegNtPostDeleteKey:                return L"RegNtPostDeleteKey";
-	case RegNtPostSetValueKey:              return L"RegNtPostSetValueKey";
-	case RegNtPostDeleteValueKey:           return L"RegNtPostDeleteValueKey";
-	case RegNtPostSetInformationKey:        return L"RegNtPostSetInformationKey";
-	case RegNtPostRenameKey:                return L"RegNtPostRenameKey";
-	case RegNtPostEnumerateKey:             return L"RegNtPostEnumerateKey";
-	case RegNtPostEnumerateValueKey:        return L"RegNtPostEnumerateValueKey";
-	case RegNtPostQueryKey:                 return L"RegNtPostQueryKey";
-	case RegNtPostQueryValueKey:            return L"RegNtPostQueryValueKey";
-	case RegNtPostQueryMultipleValueKey:    return L"RegNtPostQueryMultipleValueKey";
-	case RegNtPostKeyHandleClose:           return L"RegNtPostKeyHandleClose";
-	case RegNtPostCreateKeyEx:              return L"RegNtPostCreateKeyEx";
-	case RegNtPostOpenKeyEx:                return L"RegNtPostOpenKeyEx";
-	case RegNtPostFlushKey:                 return L"RegNtPostFlushKey";
-	case RegNtPostLoadKey:                  return L"RegNtPostLoadKey";
-	case RegNtPostUnLoadKey:                return L"RegNtPostUnLoadKey";
-	case RegNtPostQueryKeySecurity:         return L"RegNtPostQueryKeySecurity";
-	case RegNtPostSetKeySecurity:           return L"RegNtPostSetKeySecurity";
-	case RegNtPostRestoreKey:               return L"RegNtPostRestoreKey";
-	case RegNtPostSaveKey:                  return L"RegNtPostSaveKey";
-	case RegNtPostReplaceKey:               return L"RegNtPostReplaceKey";
+	if (CbContext->OnRegNtPostSetValueKey)
+		Status = CbContext->OnRegNtPostSetValueKey(PostInfo, CbContext, bDeleted);
 
-	case RegNtCallbackObjectContextCleanup: return L"RegNtCallbackObjectContextCleanup";
-
-	default:
-		return L"Unsupported REG_NOTIFY_CLASS";
-	}
+	return Status;
 }
-

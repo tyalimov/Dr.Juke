@@ -10,7 +10,8 @@ using PREGFILTER_CALLBACK_CTX = REGFILTER_CALLBACK_CTX*;
 
 using RegNtPostSetValueKeyRoutine = NTSTATUS(*)(
 	PREG_POST_OPERATION_INFORMATION,
-	PREGFILTER_CALLBACK_CTX);
+	PREGFILTER_CALLBACK_CTX,
+	BOOLEAN bDeleted);
 
 using RegNtPreCreateKeyExRoutine = NTSTATUS(*)(
 	PREG_CREATE_KEY_INFORMATION_V1,
@@ -22,14 +23,21 @@ using RegFilterInitRoutine = NTSTATUS(*)(
 using RegFilterExitRoutine = void(*)(
 	PREGFILTER_CALLBACK_CTX);
 
+using RegNotifyKeyValueChangeRoutine = void(*)(int);
+
 struct REGFILTER_CALLBACK_CTX
 {
 	LARGE_INTEGER Cookie = { 0 };
 	UNICODE_STRING Altitude = { 0 };
-	RegNtPostSetValueKeyRoutine OnRegNtPostSetValueKey = nullptr;
+
 	RegNtPreCreateKeyExRoutine OnRegNtPreCreateKeyEx = nullptr;
+	RegNtPostSetValueKeyRoutine OnRegNtPostSetValueKey = nullptr;
+	RegNtPostSetValueKeyRoutine OnRegNtPostDeleteValueKey = nullptr;
+
 	RegFilterInitRoutine OnRegFilterInit = nullptr;
 	RegFilterExitRoutine OnRegFilterExit = nullptr;
+
+	//RegNotifyKeyValueChangeRoutine a[];
 };
 
 

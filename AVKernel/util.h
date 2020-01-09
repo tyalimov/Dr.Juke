@@ -27,6 +27,11 @@ namespace str_util
 	void makeLower(wstring* str);
 
 	void makeLower(string* str);
+
+	bool compareIns(string str1, string str2);
+
+	bool compareIns(wstring str1, wstring str2);
+
 }
 
 bool NormalizeRegistryPath(wstring* KeyPath);
