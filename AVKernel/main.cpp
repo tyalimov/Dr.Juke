@@ -3,11 +3,17 @@
 #include <ntstrsafe.h>
 
 #include "preferences.h"
-#include "filter.h"
-#include "regfilter_cb.h"
+#include "reg_filter.h"
 
 PREGFILTER_CALLBACK_CTX gRegFilterCtx = nullptr;
 
+void OnRegKeyChange(
+	PREG_POST_OPERATION_INFORMATION,
+	PREGFILTER_CALLBACK_CTX,
+	BOOLEAN)
+{
+
+}
 
 NTSTATUS CreateRegFilterCtx()
 {
@@ -21,10 +27,7 @@ NTSTATUS CreateRegFilterCtx()
 	}
 	else
 	{
-		RtlInitUnicodeString(&gRegFilterCtx->Altitude, REGFILTER_ALTITUDE);
-		gRegFilterCtx->OnRegNtPreCreateKeyEx = OnRegNtPreCreateKeyEx;
-		gRegFilterCtx->OnRegNtPostSetValueKey = OnRegNtPostSetValueKey;
-		gRegFilterCtx->OnRegFilterInit = OnRegFilterInit;
+		gRegFilterCtx->onKeyChange = OnRegKeyChange;
 	}
 
 	return Status;
