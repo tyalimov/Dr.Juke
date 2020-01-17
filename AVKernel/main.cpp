@@ -4,6 +4,7 @@
 
 #include "preferences.h"
 #include "reg_filter.h"
+#include "fs_filter.h"
 
 PREGFILTER_CALLBACK_CTX gRegFilterCtx = nullptr;
 
@@ -63,6 +64,8 @@ NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 		DeleteRegFilterCtx();
 		goto fail;
 	}
+
+	FsFilterInit(DriverObject);
 
 	kprintf(TRACE_LOAD, "Driver initialization successfull");
 	return STATUS_SUCCESS;
