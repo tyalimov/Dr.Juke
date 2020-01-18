@@ -41,7 +41,7 @@ typedef DWORD (__stdcall *NtQueryKeyFunc)(
 	ULONG  Length,
 	PULONG  ResultLength);
 
-BOOL CreateRegistryKey(HKEY hKeyParent,PWCHAR subkey)
+BOOL CreateRegistryKey(HKEY hKeyParent, PWCHAR subkey)
 {
 	DWORD dwDisposition; //It verify new key is created or open existing key
 	HKEY  hKey;
@@ -136,4 +136,69 @@ wstring GetFileKernelPath(const wstring& file_path)
     }
 
     return result;
+}
+
+wstring GetKeyKernelPath(HKEY hBaseKey, const wstring& lpSubKey)
+{
+    DWORD res;
+    HKEY hKey;
+    wstring keyPath;
+
+    res = RegOpenKey(hBaseKey, lpSubKey.c_str(), &hKey);
+    if (res == ERROR_SUCCESS && hKey != NULL)
+    {
+        HMODULE ntdll = LoadLibrary(L"ntdll.dll");
+        if (ntdll != NULL) {
+
+            NtQueryKeyFunc NtQueryKey = (NtQueryKeyFunc)GetProcAddress(ntdll, "NtQueryKey");
+
+            if (NtQueryKey != NULL) {
+                DWORD size = 0;
+                DWORD result = 0;
+                result = NtQueryKey(hKey, KeyNameInformation, 0, 0, &size);
+                if (result == STATUS_BUFFER_TOO_SMALL)
+                {
+                    size = size + 2;
+                    wchar_t* buffer = new wchar_t[size / sizeof(wchar_t)]; // size is in bytes
+                    KEY_NAME_INFORMATION* info = (KEY_NAME_INFORMATION*)buffer;
+
+					result = NtQueryKey(hKey, KeyNameInformation, buffer, size, &size);
+					if (result == STATUS_SUCCESS)
+						keyPath = wstring(info->Name, info->NameLength / sizeof(wchar_t));
+
+					delete[] buffer;
+                }
+            }
+        }
+    }
+    return keyPath;
+}
+
+wstring GetPipeKernelPath(const wstring& pipe_name)
+{
+	return L"\\Device\\NamedPipe\\" + pipe_name;
+}
+
+bool AddProtectedProcess(const wstring& image_path, ACCESS_MASK access)
+{
+
+}
+
+bool AddProtectedFile(const wstring& image_path, ACCESS_MASK access)
+{
+
+}
+
+bool AddProtectedPipe(const wstring& image_path, ACCESS_MASK access)
+{
+
+}
+
+int main()
+{
+	GetKeyKernelPath(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft");
+	GetFileKernelPath(L"main.cpp");
+	GetPipeKernelPath(L"Dropboxpipe1");
+
+	return 0;
 }
