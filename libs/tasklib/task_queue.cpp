@@ -2,9 +2,9 @@
 
 #include <common/constants.h>
 
-namespace drjuke::threading
+namespace drjuke::tasklib
 {
-    ITaskPtr TaskQueue::popTask()
+    BaseTaskPtr TaskQueue::popTask()
     {
         std::unique_lock<std::mutex> lock(m_mutex);
 
@@ -26,7 +26,7 @@ namespace drjuke::threading
         return task;
     }
 
-    void TaskQueue::pushTask(ITaskPtr task)
+    void TaskQueue::pushTask(BaseTaskPtr task)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
 

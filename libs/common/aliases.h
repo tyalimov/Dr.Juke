@@ -5,7 +5,8 @@
 // при каждой сборке.
 
 #pragma warning ( push, 0 )
-#   include "nlohmann/json_fwd.hpp"
+#pragma warning ( disable: 26451 )
+#   include "json/nlohmann/json_fwd.hpp"
 #pragma warning ( pop )
 
 namespace std::filesystem

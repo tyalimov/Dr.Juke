@@ -22,6 +22,8 @@ TEST(cryptolib, SHA512_Regular) try
     EXPECT_TRUE(fs::exists(file));
 
     std::cout << cryptor->sha512(file) << std::endl;
+
+    SUCCEED();
 }
 catch (const std::exception &ex)
 {

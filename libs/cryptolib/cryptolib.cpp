@@ -2,7 +2,6 @@
 
 #include "cryptor.h"
 
-
 namespace drjuke::cryptolib
 {
     ICryptorPtr CryptorFactory::get() 

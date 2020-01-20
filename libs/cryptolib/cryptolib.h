@@ -6,7 +6,7 @@
 
 #pragma warning( push )                                   
 #   pragma warning(disable : 4081)                         
-    LINK_LIBRARY("cryptlib")
+    LINK_LIBRARY("cryptopp\\cryptlib")
 #pragma warning( pop ) 
 
 namespace drjuke::cryptolib

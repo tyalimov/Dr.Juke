@@ -6,7 +6,7 @@
 // Необходимо слинковать все библиотеки для работы с YARA.
 #pragma warning( push )
 #   pragma warning( disable : 4081 )
-#   include <yaracpp.h>
+#   include <yara/yaracpp.h>
 
 #define FIELD_RESULT         "infected" 
 #define FIELD_TOTAL_MATCHED  "total_matched"

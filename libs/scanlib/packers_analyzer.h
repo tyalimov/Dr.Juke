@@ -6,7 +6,7 @@
 
 #pragma warning( push )
 #   pragma warning( disable : 4081 )
-#   include <yaracpp.h>
+#   include <yara/yaracpp.h>
 
 
 

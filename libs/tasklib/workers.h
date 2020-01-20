@@ -3,7 +3,7 @@
 #include "i_task.h"
 #include "task_queue.h"
 
-namespace drjuke::threading
+namespace drjuke::tasklib
 {
     // Базовый класс, взаимодействующий с 
     // очередью задач. 
@@ -46,13 +46,13 @@ namespace drjuke::threading
         // Вызывается из listenEnvironment
         // в тот момент, когда из канала данных была 
         // считана новая задача
-        void onTaskEvent(ITaskPtr task);
+        void onTaskEvent(BaseTaskPtr task);
 
         // Конструирует задачу, специфичную для унаследованного
         // класса (забирает из своего map по id задачи)
         // В случае отсутствия id в map выбрасывает 
         // исключение
-        virtual ITaskPtr constructTask(const Json &input) = 0;
+        virtual BaseTaskPtr constructTask(const Json &input) = 0;
 
         // Вызывается после конструирования объекта, бесконечно
         // слушает события на pipe, и при получении задачи оттуда

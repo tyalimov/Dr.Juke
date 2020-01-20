@@ -71,4 +71,12 @@
     <CodeCurrent>20152109</CodeCurrent>
     <CodeNext>70977</CodeNext>
   </drjuke_tests>
+  <drjuke_tests>
+    <FileName>json.hpp</FileName>
+    <ErrorCode>V547</ErrorCode>
+    <Message>Expression 't == value_t::null' is always false.</Message>
+    <CodePrev>2581413359</CodePrev>
+    <CodeCurrent>1956033101</CodeCurrent>
+    <CodeNext>123</CodeNext>
+  </drjuke_tests>
 </NewDataSet>

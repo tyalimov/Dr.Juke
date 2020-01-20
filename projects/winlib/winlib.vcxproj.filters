@@ -11,6 +11,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="filesystem">
+      <UniqueIdentifier>{01ccb2a0-cff7-48ab-a8b2-615a34befa78}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\winlib\winlib.h">
@@ -34,6 +37,9 @@
     <ClInclude Include="..\..\libs\winlib\windows_exception.h">
       <Filter>exception</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\winlib\filesys.h">
+      <Filter>filesystem</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\winlib\interprocess.cpp">
@@ -50,6 +56,9 @@
     </ClCompile>
     <ClCompile Include="..\..\libs\winlib\windows_exception.cpp">
       <Filter>exception</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\winlib\filesys.cpp">
+      <Filter>filesystem</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

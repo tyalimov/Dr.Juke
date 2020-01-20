@@ -1,22 +1,36 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="lalala">
+      <UniqueIdentifier>{7e1335ef-7cfe-4347-9106-d26bafcdeb0f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="winapi_service">
+      <UniqueIdentifier>{9f48da78-eb02-450f-b27c-dd45007f6522}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="tasks">
+      <UniqueIdentifier>{00ce648f-b56d-48aa-b987-5fc6ebbc58ad}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\apps\AVService\main.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>lalala</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\apps\AVService\avservice.cpp">
+      <Filter>winapi_service</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\apps\AVService\conslsvc.h">
+      <Filter>winapi_service</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\AVService\logfmwk.h">
+      <Filter>winapi_service</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\AVService\avservice.h">
+      <Filter>winapi_service</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\AVService\task_scan.h">
+      <Filter>tasks</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

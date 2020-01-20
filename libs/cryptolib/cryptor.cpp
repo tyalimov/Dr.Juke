@@ -1,10 +1,10 @@
 #include "cryptor.h"
 
-#include <channels.h>
-#include <filters.h>
-#include <files.h>
-#include <sha.h>
-#include <hex.h>
+#include <cryptopp/channels.h>
+#include <cryptopp/filters.h>
+#include <cryptopp/files.h>
+#include <cryptopp/sha.h>
+#include <cryptopp/hex.h>
 
 #include <filesystem>
 

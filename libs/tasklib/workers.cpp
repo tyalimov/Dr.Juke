@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-namespace drjuke::threading
+namespace drjuke::tasklib
 {
     void Executor::listenQueue()
     {
@@ -13,7 +13,7 @@ namespace drjuke::threading
         }
     }
 
-    void IProducer::onTaskEvent(ITaskPtr task)
+    void IProducer::onTaskEvent(BaseTaskPtr task)
     {
         m_queue->pushTask(task);
     }
