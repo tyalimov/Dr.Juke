@@ -178,7 +178,7 @@ enum FilterDriverType
 	RegFilter
 };
 
-bool AllowAccessToObject(wstring ps_image_path, FilterDriverType type, bool cancel_allow=false)
+DWORD SetAccessToObject(wstring ps_image_path, FilterDriverType type, bool deny=false)
 {
     const wchar_t* lpSubkey;
     DWORD res;
@@ -202,7 +202,7 @@ bool AllowAccessToObject(wstring ps_image_path, FilterDriverType type, bool canc
     if (ps_image_path.length() == 0)
         return false;
 
-    if (cancel_allow)
+    if (deny)
     {
         res = DeleteRegistryValue(HKEY_LOCAL_MACHINE,
             lpSubkey, ps_image_path.c_str());
@@ -213,10 +213,10 @@ bool AllowAccessToObject(wstring ps_image_path, FilterDriverType type, bool canc
             lpSubkey, ps_image_path.c_str(), NULL, 0, REG_SZ);
     }
 
-	return res == ERROR_SUCCESS;
+	return res;
 }
 
-bool ProtectFile(wstring file_path, ACCESS_MASK access=0, bool deprotect=false)
+DWORD ProtectFile(wstring file_path, ACCESS_MASK access=0, bool deprotect=false)
 {
     const wchar_t* lpSubkey;
     DWORD res;
@@ -238,10 +238,10 @@ bool ProtectFile(wstring file_path, ACCESS_MASK access=0, bool deprotect=false)
 			file_path.c_str(), &access, sizeof(ACCESS_MASK), REG_DWORD);
     }
 
-	return res == ERROR_SUCCESS;
+	return res;
 }
 
-bool ProtectPipe(wstring pipe_path, ACCESS_MASK access=0, bool deprotect=false)
+DWORD ProtectPipe(wstring pipe_path, ACCESS_MASK access=0, bool deprotect=false)
 {
     const wchar_t* lpSubkey;
     DWORD res;
@@ -263,10 +263,10 @@ bool ProtectPipe(wstring pipe_path, ACCESS_MASK access=0, bool deprotect=false)
 			pipe_path.c_str(), &access, sizeof(ACCESS_MASK), REG_DWORD);
     }
 
-	return res == ERROR_SUCCESS;
+	return res;
 }
 
-bool ProtectKey(HKEY base, wstring subkey_path, ACCESS_MASK access=0, bool deprotect=false)
+DWORD ProtectKey(HKEY base, wstring subkey_path, ACCESS_MASK access=0, bool deprotect=false)
 {
     const wchar_t* lpSubkey;
     DWORD res;
@@ -289,10 +289,10 @@ bool ProtectKey(HKEY base, wstring subkey_path, ACCESS_MASK access=0, bool depro
 	}
 
 
-	return res == ERROR_SUCCESS;
+	return res;
 }
 
-bool ProtectProcess(wstring ps_image_path, bool deprotect=false)
+DWORD ProtectProcess(wstring ps_image_path, bool deprotect=false)
 {
     const wchar_t* lpSubkey;
     DWORD res;
@@ -314,25 +314,22 @@ bool ProtectProcess(wstring ps_image_path, bool deprotect=false)
 			lpSubkey, ps_image_path.c_str(), NULL, 0, REG_SZ);
     }
 
-	return res == ERROR_SUCCESS;
+	return res;
 }
 
-bool TestOpenKey(HKEY base, const wstring& subkey_path, ACCESS_MASK access)
+DWORD TestOpenKey(HKEY base, const wstring& subkey_path, ACCESS_MASK access)
 {
     HKEY hKey;
     DWORD Ret;
     
     Ret = RegOpenKeyEx(base, subkey_path.c_str(), 0, access, &hKey);
 	if (Ret == ERROR_SUCCESS && hKey != NULL)
-	{	
 		RegCloseKey(hKey);
-        return true;
-	}
 
-    return false;
+    return Ret;
 }
 
-bool TestOpenFile(const wstring& file_path, ACCESS_MASK access)
+DWORD TestOpenFile(const wstring& file_path, ACCESS_MASK access)
 {
 	HANDLE hPipe = CreateFile( 
 			 file_path.c_str(),   // pipe name 
@@ -344,30 +341,24 @@ bool TestOpenFile(const wstring& file_path, ACCESS_MASK access)
 			 NULL);          // no template file 
 
     if (hPipe != INVALID_HANDLE_VALUE)
-    {
         CloseHandle(hPipe);
-        return true;
-    }
 
-    return false;
+    return GetLastError();
 }
 
-bool TestOpenPipe(wstring pipe_name, ACCESS_MASK access)
+DWORD TestOpenPipe(wstring pipe_name, ACCESS_MASK access)
 {
     pipe_name = L"\\\\.\\pipe\\" + pipe_name;
     return TestOpenFile(pipe_name, access);
 }
 
-bool TestOpenProcess(DWORD pid, ACCESS_MASK access)
+DWORD TestOpenProcess(DWORD pid, ACCESS_MASK access)
 {
     HANDLE hProcess = OpenProcess(access, FALSE, pid);
     if (hProcess != NULL)
-    {
         CloseHandle(hProcess);
-        return true;
-    }
 
-    return false;
+    return GetLastError();
 }
 
 void usage()
@@ -419,83 +410,90 @@ int wmain(int argc, wchar_t *argv[])
     {
 		DWORD access = (DWORD)wcstol(argv[4], NULL, 16);
 		LPCWSTR path = argv[3];
-		bool ok = false;
+		DWORD res = !ERROR_SUCCESS;
 
         if (!wcscmp(argv[1], L"protect"))
         {
 			if (!wcscmp(argv[2], L"key"))
-				ok = ProtectKey(HKEY_LOCAL_MACHINE, path, access);
+				res = ProtectKey(HKEY_LOCAL_MACHINE, path, access);
 			else if (!wcscmp(argv[2], L"file"))
-				ok = ProtectFile(path, access);
+				res = ProtectFile(path, access);
 			else if (!wcscmp(argv[2], L"pipe"))
-				ok = ProtectPipe(path, access);
+				res = ProtectPipe(path, access);
 			else if (!wcscmp(argv[2], L"ps"))
-				ok = ProtectProcess(path);
+				res = ProtectProcess(path);
 			else
 				wprintf(L"bad args\n");
         }
         else if (!wcscmp(argv[1], L"test-open"))
         {
             if (!wcscmp(argv[2], L"key"))
-                ok = TestOpenKey(HKEY_LOCAL_MACHINE, path, access);
+                res = TestOpenKey(HKEY_LOCAL_MACHINE, path, access);
             else if (!wcscmp(argv[2], L"file"))
-                ok = TestOpenFile(path, access);
+                res = TestOpenFile(path, access);
             else if (!wcscmp(argv[2], L"pipe"))
-                ok = TestOpenPipe(path, access);
+                res = TestOpenPipe(path, access);
             else if (!wcscmp(argv[2], L"ps"))
-                ok = TestOpenProcess(_wtol(argv[3]), access);
+                res = TestOpenProcess(_wtol(argv[3]), access);
 			else
 				wprintf(L"bad args\n");
         }
         else if (!wcscmp(argv[1], L"allow"))
         {
             if (!wcscmp(argv[2], L"key"))
-                ok = AllowAccessToObject(path, RegFilter);
+                res = SetAccessToObject(path, RegFilter);
 			else if (!wcscmp(argv[2], L"file"))
-				ok = AllowAccessToObject(path, FsFilter);
+				res = SetAccessToObject(path, FsFilter);
 			else if (!wcscmp(argv[2], L"pipe"))
-				ok = AllowAccessToObject(path, PipeFilter);
+				res = SetAccessToObject(path, PipeFilter);
 			else
 				wprintf(L"bad args\n");
         }
         else if (!wcscmp(argv[1], L"deny"))
         {
             if (!wcscmp(argv[2], L"key"))
-                ok = AllowAccessToObject(path, RegFilter, true);
+                res = SetAccessToObject(path, RegFilter, true);
 			else if (!wcscmp(argv[2], L"file"))
-				ok = AllowAccessToObject(path, FsFilter, true);
+				res = SetAccessToObject(path, FsFilter, true);
 			else if (!wcscmp(argv[2], L"pipe"))
-				ok = AllowAccessToObject(path, PipeFilter, true);
+				res = SetAccessToObject(path, PipeFilter, true);
 			else
 				wprintf(L"bad args\n");
         }
         else
 			wprintf(L"bad args\n");
 
-        wprintf(L"\nResult: %s\n", ok ? L"Ok" : L"Failed");
+        if (res == ERROR_SUCCESS)
+            wprintf(L"\nResult: Ok\n");
+        else
+            wprintf(L"\nResult: failed - 0x%08X\n", res);
+
     }
     else if (argc == 4)
     {
 		LPCWSTR path = argv[3];
-		bool ok = false;
+		bool res = false;
 
         if (!wcscmp(argv[1], L"deprotect"))
         {
 			if (!wcscmp(argv[2], L"key"))
-				ok = ProtectKey(HKEY_LOCAL_MACHINE, path, 0, true);
+				res = ProtectKey(HKEY_LOCAL_MACHINE, path, 0, true);
 			else if (!wcscmp(argv[2], L"file"))
-				ok = ProtectFile(path, 0, true);
+				res = ProtectFile(path, 0, true);
 			else if (!wcscmp(argv[2], L"pipe"))
-				ok = ProtectPipe(path, 0, true);
+				res = ProtectPipe(path, 0, true);
 			else if (!wcscmp(argv[2], L"ps"))
-				ok = ProtectProcess(path, true);
+				res = ProtectProcess(path, true);
             else
                 wprintf(L"bad args\n");
         }
         else
 			wprintf(L"bad args\n");
 
-        wprintf(L"\nResult: %s\n", ok ? L"Ok" : L"Failed");
+        if (res == ERROR_SUCCESS)
+            wprintf(L"\nResult: Ok\n");
+        else
+            wprintf(L"\nResult: failed - 0x%08X\n", res);
     }
     else
         wprintf(L"bad args\n");

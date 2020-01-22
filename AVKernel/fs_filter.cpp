@@ -7,8 +7,15 @@ FLT_PREOP_CALLBACK_STATUS FltCreatePreOperation(
 	_In_ PCFLT_RELATED_OBJECTS FltObjects,
 	_Flt_CompletionContext_Outptr_ PVOID* CompletionContext);
 
+FLT_PREOP_CALLBACK_STATUS FltCreatePipePreOperation(
+	_Inout_ PFLT_CALLBACK_DATA Data,
+	_In_ PCFLT_RELATED_OBJECTS FltObjects,
+	_Flt_CompletionContext_Outptr_ PVOID* CompletionContext);
+
+
 const FLT_OPERATION_REGISTRATION Callbacks[] = {
 	{ IRP_MJ_CREATE, 0, FltCreatePreOperation,  /*FltCreatePostOperation*/ NULL },
+	{ IRP_MJ_CREATE_NAMED_PIPE, 0, FltCreatePipePreOperation, NULL },	
 	{ IRP_MJ_OPERATION_END }
 };
 
@@ -88,6 +95,42 @@ NTSTATUS FilterSetup(
 }
 
 FLT_PREOP_CALLBACK_STATUS FltCreatePreOperation(
+	_Inout_ PFLT_CALLBACK_DATA Data,
+	_In_ PCFLT_RELATED_OBJECTS FltObjects,
+	_Flt_CompletionContext_Outptr_ PVOID *CompletionContext)
+{
+	NTSTATUS Status;
+	ACCESS_MASK DesiredAccess;
+	PFLT_FILE_NAME_INFORMATION fltName;
+
+	UNREFERENCED_PARAMETER(FltObjects);
+	UNREFERENCED_PARAMETER(CompletionContext);
+
+	DesiredAccess = Data->Iopb->Parameters.Create.SecurityContext->DesiredAccess;
+	Status = FltGetFileNameInformation(Data, FLT_FILE_NAME_NORMALIZED, &fltName);
+
+	if (!NT_SUCCESS(Status))
+	{
+		if (Status != STATUS_OBJECT_PATH_NOT_FOUND)
+			kprintf(TRACE_INFO, "FltGetFileNameInformation() failed with code:%08x", Status);
+
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+	}
+
+	//kprintf(TRACE_FSFILTER, "%Name=%wZ Component=%wZ", fltName->Name, fltName->FinalComponent);
+	FltReleaseFileNameInformation(fltName);
+
+	// if (FALSE)
+	// {
+	// 	kprintf(TRACE_INFO, "Operation has been cancelled for: %wZ", &Data->Iopb->TargetFileObject->FileName);
+	// 	Data->IoStatus.Status = STATUS_NO_SUCH_FILE;
+	// 	return FLT_PREOP_COMPLETE;
+	// }
+
+	return FLT_PREOP_SUCCESS_NO_CALLBACK;
+}
+
+FLT_PREOP_CALLBACK_STATUS FltCreatePipePreOperation(
 	_Inout_ PFLT_CALLBACK_DATA Data,
 	_In_ PCFLT_RELATED_OBJECTS FltObjects,
 	_Flt_CompletionContext_Outptr_ PVOID *CompletionContext)
