@@ -59,6 +59,11 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject, PREGFILTER_CALLBACK_CTX CbCo
 		&CbContext->Cookie,
 		NULL);
 
+	if (NT_SUCCESS(Status))
+	{
+		CbContext->IsInitialized = TRUE;
+	}
+
 	Status = PreferencesReadFull(KRF_PROTECTED_KEYS,
 		[&i](PWCH Name, ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type) {
 
@@ -98,6 +103,7 @@ exit:
 void RegFilterExit(PREGFILTER_CALLBACK_CTX CbContext)
 {
 	NTSTATUS Status = CmUnRegisterCallback(CbContext->Cookie);
+	CbContext->IsInitialized = FALSE;
 	kprint_st(TRACE_REGFILTER, Status);
 }
 
@@ -129,13 +135,13 @@ RegFilterCallback(
 	{
 	case RegNtPreCreateKeyEx: 
 	case RegNtPreOpenKeyEx: 
-		Status = RegPreCreateKeyEx(CbContext, Argument2);
+		if (false) Status = RegPreCreateKeyEx(CbContext, Argument2);
 		break;
 	case RegNtPostSetValueKey: 
-		Status = RegPostSetValueKey(CbContext, Argument2, FALSE);
+		if (false) Status = RegPostSetValueKey(CbContext, Argument2, FALSE);
 		break;
 	case RegNtPostDeleteValueKey:
-		Status = RegPostSetValueKey(CbContext, Argument2, TRUE);
+		if (false) Status = RegPostSetValueKey(CbContext, Argument2, TRUE);
 		break;
 	default: 
 		break;

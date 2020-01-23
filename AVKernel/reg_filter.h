@@ -17,6 +17,7 @@ using RegNotifyKeyValueChangeRoutine = void(*)(
 struct REGFILTER_CALLBACK_CTX
 {
 	LARGE_INTEGER Cookie = { 0 };
+	BOOLEAN IsInitialized = FALSE;
 
 	RegNotifyKeyValueChangeRoutine onKeyChange = nullptr;
 };

@@ -36,15 +36,22 @@ NTSTATUS CreateRegFilterCtx()
 
 void DeleteRegFilterCtx()
 {
-	delete gRegFilterCtx;
-	gRegFilterCtx = nullptr;
+	if (gRegFilterCtx)
+	{
+		delete gRegFilterCtx;
+		gRegFilterCtx = nullptr;
+	}
 }
 
 void DriverUnload(PDRIVER_OBJECT DriverObject)
 {
 	UNREFERENCED_PARAMETER(DriverObject);
-	RegFilterExit(gRegFilterCtx);
-	DeleteRegFilterCtx();
+	
+	//if (gRegFilterCtx->IsInitialized)
+	//	RegFilterExit(gRegFilterCtx);
+
+	//DeleteRegFilterCtx();
+	
 	kprintf(TRACE_LOAD, "Driver unloaded");
 }
 
@@ -53,25 +60,25 @@ NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 
 	NTSTATUS Status;
 	DriverObject->DriverUnload = DriverUnload;
-	
-	Status = CreateRegFilterCtx();
-	if (!NT_SUCCESS(Status))
+
+	if (false)
 		goto fail;
 
-	Status = RegFilterInit(DriverObject, gRegFilterCtx);
-	if (!NT_SUCCESS(Status))
-	{
-		DeleteRegFilterCtx();
-		goto fail;
-	}
+	//Status = CreateRegFilterCtx();
+	//if (!NT_SUCCESS(Status))
+	//	goto fail;
 
-	FsFilterInit(DriverObject);
+	//Status = RegFilterInit(DriverObject, gRegFilterCtx);
+	//if (!NT_SUCCESS(Status))
+	//	goto fail;
 
+	Status = FsFilterInit(DriverObject);
+	kprintf(TRACE_LOAD, "FsFilter init: 0x%08X", Status);
 	kprintf(TRACE_LOAD, "Driver initialization successfull");
 	return STATUS_SUCCESS;
 
 fail:
 	kprintf(TRACE_LOAD, "Driver initialization failed");
 	kprint_st(TRACE_LOAD, Status);
-	return Status;
+	return STATUS_SUCCESS;
 }

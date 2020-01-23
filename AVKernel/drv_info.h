@@ -1,12 +1,16 @@
 #pragma once
 
 // Driver properties
-#define DRIVER_NAME             L"RegFltr"
-#define DRIVER_NAME_WITH_EXT    L"RegFltr.sys"
+#define DRIVER_NAME             L"AVKernel"
+#define DRIVER_NAME_WITH_EXT    L"AVKernel.sys"
 
-#define NT_DEVICE_NAME          L"\\Device\\RegFltr"
-#define DOS_DEVICES_LINK_NAME   L"\\DosDevices\\RegFltr"
-#define WIN32_DEVICE_NAME       L"\\\\.\\RegFltr"
+#define NT_DEVICE_NAME          L"\\Device\\AVKernel"
+#define DOS_DEVICES_LINK_NAME   L"\\DosDevices\\AVKernel"
+#define WIN32_DEVICE_NAME       L"\\\\.\\AVKernel"
+
+#define OS_WIN8_OR_GREATER     (NTDDI_VERSION >= NTDDI_WIN8)
+#define OS_WIN7_OR_GREATER     (NTDDI_VERSION >= NTDDI_WIN7)
+#define OS_VISTA_OR_GREATER    (NTDDI_VERSION >= NTDDI_VISTA)
 
 // Tracing options
 #define TRACE_NONE				0x00000000
