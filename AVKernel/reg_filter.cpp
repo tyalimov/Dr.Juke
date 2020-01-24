@@ -1,9 +1,7 @@
 #include "reg_filter.h"
 #include "preferences.h"
 #include "util.h"
-#include <EASTL/string.h>
-#include <EASTL/hash_set.h>
-#include <EASTL/hash_map.h>
+#include "access_monitor.h"
 
 //------------------------------------------------------------>
 // Prototypes
@@ -16,95 +14,63 @@ RegFilterCallback(
 
 static NTSTATUS 
 RegPostSetValueKey(
-	_In_ PREGFILTER_CALLBACK_CTX CbContext,
 	_Inout_	PVOID Argument2,
 	_In_ BOOLEAN bDeleted);
 
 static NTSTATUS 
-RegPreCreateKeyEx(
-	_In_ PREGFILTER_CALLBACK_CTX CallbackCtx,
-	_Inout_ PVOID Argument2);
+RegPreCreateKeyEx(_Inout_ PVOID Argument2);
 
-static NTSTATUS
-RegFilterAccessCheck(const wstring& KeyPath,
-	DWORD32 ActualAccess, DWORD32 DesiredAccess);
-
-static auto
-RegFilterFindRule(wstring KeyPath);
 
 //------------------------------------------------------------>
 // Registry filter
 
-hash_map<wstring, ACCESS_MASK> gProtectedKeys;
-hash_set<wstring> gAllowedProcImages;
+PRegistryAccessMonitor gRegMon = nullptr;
+LARGE_INTEGER gCookie = { 0 };
 
-GuardedMutex gRegFilterLock;
-
-NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject, PREGFILTER_CALLBACK_CTX CbContext)
+NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 {
-	int i = 0;
-	NTSTATUS Status;
+	NTSTATUS Status = STATUS_UNSUCCESSFUL;
 	ULONG MajorVersion = 0, MinorVersion = 0;
 	UNICODE_STRING Altitude = RTL_CONSTANT_STRING(REGFILTER_ALTITUDE);
 
     CmGetCallbackVersion(&MajorVersion, &MinorVersion);
-    kprintf(TRACE_REGFILTER, "Callback version %u.%u", MajorVersion, MinorVersion);
+    kprintf(TRACE_REGFILTER_INFO, "Callback version %u.%u", MajorVersion, MinorVersion);
 
-
-	Status = CmRegisterCallbackEx(
-		RegFilterCallback,
-		&Altitude,
-		DriverObject,
-		(PVOID)CbContext,
-		&CbContext->Cookie,
-		NULL);
-
-	if (NT_SUCCESS(Status))
+	gRegMon = new RegistryAccessMonitor(KRF_BASE_KEY);
+	if (gRegMon)
 	{
-		CbContext->IsInitialized = TRUE;
+		Status = CmRegisterCallbackEx(
+			RegFilterCallback,
+			&Altitude,
+			DriverObject,
+			NULL,
+			&gCookie,
+			NULL);
+
+		if (!NT_SUCCESS(Status))
+		{
+			delete gRegMon;
+			gRegMon = nullptr;
+		}
 	}
 
-	Status = PreferencesReadFull(KRF_PROTECTED_KEYS,
-		[&i](PWCH Name, ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type) {
-
-			bool res = RegFilterAddProtectedKey(Name, 
-				NameLen, Data, DataLen, Type);
-
-			if (res)
-				i++;
-
-		});
-
-	if (i == 0)
-		kprintf(TRACE_INFO, "No protected keys!");
-
-	if (!NT_SUCCESS(Status))
-		goto exit;
-	
-	i = 1;
-	Status = PreferencesReadBasic(KRF_ALLOWED_PROCESSES,
-		[&i](PWCH Name, ULONG NameLen) {
-
-			bool res = RegFilterAddAllowedProcess(Name, NameLen);
-
-			if (res)
-				i++;
-
-		});
-
-	if (i - 1 == 0)
-		kprintf(TRACE_INFO, "No allowed processes!");
-
-exit:
-	kprint_st(TRACE_REGFILTER, Status);
+	kprint_st(TRACE_REGFILTER_INFO, Status);
 	return Status;
 }
 
-void RegFilterExit(PREGFILTER_CALLBACK_CTX CbContext)
+void RegFilterExit()
 {
-	NTSTATUS Status = CmUnRegisterCallback(CbContext->Cookie);
-	CbContext->IsInitialized = FALSE;
-	kprint_st(TRACE_REGFILTER, Status);
+	NTSTATUS Status = STATUS_UNSUCCESSFUL;
+	
+	if (gRegMon)
+	{
+		Status = CmUnRegisterCallback(gCookie);
+
+		delete gRegMon;
+		gRegMon = nullptr;
+	}
+
+	kprint_st(TRACE_REGFILTER_INFO, Status);
 }
 
 static NTSTATUS
@@ -116,18 +82,17 @@ RegFilterCallback(
 {
 	NTSTATUS Status = STATUS_SUCCESS;
 	REG_NOTIFY_CLASS NotifyClass;
-	PREGFILTER_CALLBACK_CTX CbContext;
 
-	CbContext = (PREGFILTER_CALLBACK_CTX)CallbackContext;
+	UNREFERENCED_PARAMETER(CallbackContext);
 	NotifyClass = (REG_NOTIFY_CLASS)(ULONG_PTR)Argument1;
 
 	// Ignore windows system process
-	if (PsGetCurrentProcessId() == (HANDLE)4)
+	if (PsGetCurrentProcessId() == (PID)4)
 		return STATUS_SUCCESS;
 
 	if (Argument2 == NULL)
 	{
-		kprintf(TRACE_REGFILTER, "Argument 2 unexpectedly 0. Abort with STATUS_SUCCESS");
+		kprintf(TRACE_REGFILTER_INFO, "Argument 2 unexpectedly 0. Abort with STATUS_SUCCESS");
 		return STATUS_SUCCESS;
 	}
 
@@ -135,13 +100,13 @@ RegFilterCallback(
 	{
 	case RegNtPreCreateKeyEx: 
 	case RegNtPreOpenKeyEx: 
-		if (false) Status = RegPreCreateKeyEx(CbContext, Argument2);
+		Status = RegPreCreateKeyEx(Argument2);
 		break;
 	case RegNtPostSetValueKey: 
-		if (false) Status = RegPostSetValueKey(CbContext, Argument2, FALSE);
+		if (false) Status = RegPostSetValueKey(Argument2, FALSE);
 		break;
 	case RegNtPostDeleteValueKey:
-		if (false) Status = RegPostSetValueKey(CbContext, Argument2, TRUE);
+		if (false) Status = RegPostSetValueKey(Argument2, TRUE);
 		break;
 	default: 
 		break;
@@ -150,48 +115,8 @@ RegFilterCallback(
 	return Status;
 }
 
-static auto 
-RegFilterFindRule(wstring KeyPath)
-{
-	auto pos = KeyPath.rfind(L'\\');
-	auto it = gProtectedKeys.find(KeyPath);
-
-	while (pos != wstring::npos)
-	{
-		if (it != gProtectedKeys.end())
-			return it;
-
-		KeyPath = KeyPath.substr(0, pos);
-		pos = KeyPath.rfind(L'\\');
-		it = gProtectedKeys.find(KeyPath);
-	}
-
-	return gProtectedKeys.end();
-}
-
-static NTSTATUS RegFilterAccessCheck(const wstring& KeyPath, 
-	DWORD32 ActualAccess, DWORD32 DesiredAccess)
-{
-	if (DesiredAccess & ActualAccess)
-	{
-		kprintf(TRACE_REGFILTER, "Allow <pid=%d> to access %ws", 
-			PsGetCurrentProcessId(), KeyPath.c_str());
-
-		return STATUS_SUCCESS;
-	}
-	else
-	{
-		kprintf(TRACE_REGFILTER, "Deny <pid=%d> to access %ws", 
-			PsGetCurrentProcessId(), KeyPath.c_str());
-
-		return STATUS_ACCESS_DENIED;
-	}
-}
-
 static NTSTATUS 
-RegPreCreateKeyEx(
-    _In_ PREGFILTER_CALLBACK_CTX CbContext,
-    _Inout_	PVOID Argument2)
+RegPreCreateKeyEx(_Inout_ PVOID Argument2)
 {
 	NTSTATUS Status;
     PREG_CREATE_KEY_INFORMATION_V1 PreCreateInfo;
@@ -199,7 +124,7 @@ RegPreCreateKeyEx(
 	PreCreateInfo = (PREG_CREATE_KEY_INFORMATION_V1) Argument2;
 	if ((ULONG_PTR)PreCreateInfo->Version != 1)
 	{
-		kprintf(TRACE_REGFILTER, "PreCreateInfo type is not PREG_CREATE_KEY_INFORMATION_V1");
+		kprintf(TRACE_REGFILTER_INFO, "PreCreateInfo type is not PREG_CREATE_KEY_INFORMATION_V1");
 		return STATUS_SUCCESS;
 	}
 
@@ -210,12 +135,12 @@ RegPreCreateKeyEx(
 	{
 		// Convert relative path to absolute
 		PCUNICODE_STRING usObjectPath;
-		Status = CmCallbackGetKeyObjectID(&CbContext->Cookie,
+		Status = CmCallbackGetKeyObjectID(&gCookie,
 			PreCreateInfo->RootObject, NULL, &usObjectPath);
 
 		if (!NT_SUCCESS(Status))
 		{
-			kprintf(TRACE_REGFILTER, "CmCallbackGetKeyObjectID failed with status=0x%08X", Status);
+			kprintf(TRACE_REGFILTER_INFO, "CmCallbackGetKeyObjectID failed with status=0x%08X", Status);
 			return STATUS_SUCCESS;
 		}
 		else
@@ -226,24 +151,15 @@ RegPreCreateKeyEx(
 		}
 	}
 
-	// Lowercase registry key path
-	// And find rule matching the key
-	str_util::makeLower(&KeyPath);	
-	auto it = RegFilterFindRule(KeyPath);
+	PID pid = PsGetCurrentProcessId();
+	bool allowed = gRegMon->isAccessAllowed(pid, 
+		KeyPath, PreCreateInfo->DesiredAccess);
 
-	if (it != gProtectedKeys.end())
-	{
-		ACCESS_MASK AccessMask = it->second;
-		return RegFilterAccessCheck(KeyPath,
-			AccessMask, PreCreateInfo->DesiredAccess);
-	}	
-
-	return STATUS_SUCCESS;
+	return allowed ? STATUS_SUCCESS : STATUS_ACCESS_DENIED;
 }
 
 static NTSTATUS 
 RegPostSetValueKey(
-	_In_ PREGFILTER_CALLBACK_CTX CbContext,
 	_Inout_	PVOID Argument2,
 	_In_ BOOLEAN bDeleted)
 {
@@ -259,154 +175,25 @@ RegPostSetValueKey(
 		return STATUS_SUCCESS;
 
 	// Get Absolute key name path
-	Status = CmCallbackGetKeyObjectID(&CbContext->Cookie, 
+	Status = CmCallbackGetKeyObjectID(&gCookie, 
 		PostInfo->Object, NULL, &KeyPath);
 
 	if (!NT_SUCCESS(Status))
 	{
-		kprintf(TRACE_REGFILTER, "CmCallbackGetKeyObjectID failed with status=0x%08X", Status);
+		kprintf(TRACE_REGFILTER_INFO, "CmCallbackGetKeyObjectID failed with status=0x%08X", Status);
 		return STATUS_SUCCESS;
 	}
 	
-	UNICODE_STRING ProtectedKeys = RTL_CONSTANT_STRING(KRF_PROTECTED_KEYS);
-	UNICODE_STRING AllowedProcesses = RTL_CONSTANT_STRING(KRF_ALLOWED_PROCESSES);
-	PUNICODE_STRING ValueName = PreInfo->ValueName;
+	UNICODE_STRING JukeKey = RTL_CONSTANT_STRING(DR_JUKE_BASE_KEY);
+	BOOLEAN res = RtlPrefixUnicodeString(KeyPath, &JukeKey, FALSE);
 
-	if (RtlCompareUnicodeString(KeyPath, &ProtectedKeys, TRUE) == 0)
-	{
-		gRegFilterLock.acquire();
+	// Not interested in modified keys 
+	// other than Dr.Juke ones
+	if (!res)
+		return STATUS_SUCCESS;
 
-		if (bDeleted)
-		{
-			RegFilterRemoveProtectedKey(
-				ValueName->Buffer, ValueName->Length);
-		}
-		else
-		{
-			RegFilterAddProtectedKey(
-				ValueName->Buffer, ValueName->Length,
-				PreInfo->Data, PreInfo->DataSize, PreInfo->Type);
-		}
-
-		gRegFilterLock.release();
-	}
-	else if (RtlCompareUnicodeString(KeyPath, &AllowedProcesses, TRUE) == 0)
-	{
-		gRegFilterLock.acquire();
-		
-		if (bDeleted)
-		{
-			RegFilterRemoveAllowedProcess(
-				ValueName->Buffer, ValueName->Length);
-		}
-		else
-		{
-			RegFilterAddAllowedProcess(
-				ValueName->Buffer, ValueName->Length);
-		}
-
-		gRegFilterLock.release();
-	}
-
-	if (CbContext->onKeyChange)
-		CbContext->onKeyChange(PostInfo, CbContext, bDeleted);
+	gRegMon->onRegKeyChange(PreInfo, bDeleted);
 
 	return STATUS_SUCCESS;
 }
 
-bool RegFilterAddProtectedKey(PWCH Name, 
-	ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type)
-{
-	bool res = false;
-	if (Type == REG_DWORD)
-	{
-		if (NameLen > 0 && DataLen > 0)
-		{
-			wstring KeyPath(Name, NameLen / sizeof(WCHAR));
-			ACCESS_MASK Access = *(ACCESS_MASK*)Data;
-
-			str_util::makeLower(&KeyPath);
-			auto _pair = gProtectedKeys.try_emplace(KeyPath, Access);
-			auto it = _pair.first;
-			bool bInserted = _pair.second;
-
-			if (bInserted)
-			{
-				kprintf(TRACE_INFO, "Added <Key=%ws>, <Access=0x%08X>",
-					KeyPath.c_str(), Access);
-			}
-			else
-			{
-				it->second = Access;
-				kprintf(TRACE_INFO, "Modified <Key=%ws>, <Access=0x%08X>",
-					KeyPath.c_str(), Access);
-			}
-
-		}
-	}
-
-	return res;
-}
-
-void RegFilterRemoveProtectedKey(PWCH Name, ULONG NameLen)
-{
-	if (NameLen > 0)
-	{
-		wstring KeyPath(Name, NameLen / sizeof(WCHAR));
-
-		str_util::makeLower(&KeyPath);
-		auto n = gProtectedKeys.erase(KeyPath);
-
-		if (n > 0)
-			kprintf(TRACE_INFO, "Removed <Key=%ws>", KeyPath.c_str());
-		else
-			kprintf(TRACE_INFO, "Attempt to remove"
-				"non existent <Key=%ws>", KeyPath.c_str());
-	}
-
-}
-
-bool RegFilterAddAllowedProcess(PWCH Name, ULONG NameLen)
-{
-	bool res = false;
-
-	if (NameLen > 0)
-	{
-		wstring ImagePath(Name, NameLen / sizeof(WCHAR));
-		gAllowedProcImages.emplace(ImagePath);
-
-		// TODO: normalize path
-		res = true;
-
-		if (res)
-			kprintf(TRACE_INFO, "Added Process <ImagePath=%ws>", ImagePath.c_str());
-	}
-
-	return res;
-}
-
-bool RegFilterRemoveAllowedProcess(PWCH Name, ULONG NameLen)
-{
-	bool res = false;
-
-	if (NameLen > 0)
-	{
-		wstring ImagePath(Name, NameLen / sizeof(WCHAR));
-
-		// TODO: normalize path
-		res = true;
-
-		auto n = gAllowedProcImages.erase(ImagePath);
-
-		if (res)
-		{
-			if (n > 0)
-				kprintf(TRACE_INFO, "Remove Process <ImagePath=%ws>", ImagePath.c_str());
-			else
-				kprintf(TRACE_INFO, "Attempt to remove"
-					"non existent <ImagePath=%ws>", ImagePath.c_str());
-		}
-	}
-
-	return res;
-}

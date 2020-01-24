@@ -6,52 +6,13 @@
 #include "fs_filter.h"
 #include "ps_monitor.h"
 
-PREGFILTER_CALLBACK_CTX gRegFilterCtx = nullptr;
-
-void OnRegKeyChange(
-	PREG_POST_OPERATION_INFORMATION,
-	PREGFILTER_CALLBACK_CTX,
-	BOOLEAN)
-{
-
-}
-
-NTSTATUS CreateRegFilterCtx()
-{
-	NTSTATUS Status = STATUS_SUCCESS;
-	gRegFilterCtx = new REGFILTER_CALLBACK_CTX();
-
-	if (gRegFilterCtx == nullptr)
-	{
-		kprintf(TRACE_LOAD, "Failed to allocate RegFilter context");
-		Status = STATUS_INSUFFICIENT_RESOURCES;
-	}
-	else
-	{
-		gRegFilterCtx->onKeyChange = OnRegKeyChange;
-	}
-
-	return Status;
-}
-
-void DeleteRegFilterCtx()
-{
-	if (gRegFilterCtx)
-	{
-		delete gRegFilterCtx;
-		gRegFilterCtx = nullptr;
-	}
-}
-
 void DriverUnload(PDRIVER_OBJECT DriverObject)
 {
 	UNREFERENCED_PARAMETER(DriverObject);
 	
-	//if (gRegFilterCtx->IsInitialized)
-	//	RegFilterExit(gRegFilterCtx);
-
-	//DeleteRegFilterCtx();
+	RegFilterExit();
 	PsMonExit();
+
 	kprintf(TRACE_LOAD, "Driver unloaded");
 }
 
@@ -64,16 +25,17 @@ NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 	if (false)
 		goto fail;
 
-	//Status = CreateRegFilterCtx();
-	//if (!NT_SUCCESS(Status))
-	//	goto fail;
+	Status = PsMonInit();
+	if (!NT_SUCCESS(Status))
+		goto fail;
 
-	//Status = RegFilterInit(DriverObject, gRegFilterCtx);
-	//if (!NT_SUCCESS(Status))
-	//	goto fail;
+	Status = RegFilterInit(DriverObject);
+	if (!NT_SUCCESS(Status))
+	{
+		PsMonExit();
+		goto fail;
+	}
 
-	//Status = FsFilterInit(DriverObject);
-	PsMonInit();
 	//kprintf(TRACE_LOAD, "FsFilter init: 0x%08X", Status);
 
 	kprintf(TRACE_LOAD, "Driver initialization successfull");

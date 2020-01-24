@@ -1,17 +1,10 @@
 #pragma once
 
-//#include <ntddk.h>
 #include "common.h"
 #include <EASTL/functional.h>
 #include <EASTL/string.h>
 
 using PID = HANDLE;
-
-NTSTATUS PsMonInit();
-
-NTSTATUS IterateProcesses(eastl::function<void(PID, const eastl::wstring&)> cb);
-
-VOID PsMonExit();
 
 typedef enum _SYSTEM_INFORMATION_CLASS {
 	SystemBasicInformation = 0,
@@ -81,3 +74,78 @@ typedef NTSTATUS (*ZwQueryInformationProcessRoutine)(
 	_In_      ULONG                     ProcessInformationLength,
 	_Out_opt_ PULONG                    ReturnLength
 );
+
+// Warning!
+// Do not use this class until PsMonInit is called! Or manually load
+// routines ZwQuerySystemInformation and ZwQueryProcessInformation
+class ProcessList
+{
+private:
+
+	PCHAR m_info = nullptr;
+
+	class iterator
+	{
+	private:
+		PSYSTEM_PROCESS_INFORMATION m_info_ptr = nullptr;
+		SIZE_T m_offset = 0;
+
+	public:
+		iterator(PSYSTEM_PROCESS_INFORMATION info) : m_info_ptr(info) {}
+		iterator() = default;
+
+		const PSYSTEM_PROCESS_INFORMATION& operator*() const {
+			return m_info_ptr;
+		}
+
+		iterator& operator++();
+
+		bool operator==(const iterator& other) const;
+
+		bool operator!=(const iterator& other) const;
+	};
+
+public:
+
+	ProcessList()
+	{
+		NTSTATUS status = getProcessList();
+		kprint_st(TRACE_INFO, status);
+	}
+
+	~ProcessList() 
+	{
+		if (m_info)
+		{
+			delete[] m_info;
+			m_info = nullptr;
+		}
+	}
+
+	// Forbid copy/move
+	ProcessList(const ProcessList&) = delete;
+	ProcessList(ProcessList&&) = delete;
+
+	iterator begin() const 
+	{
+		return iterator((PSYSTEM_PROCESS_INFORMATION)m_info);
+	}
+
+	iterator end() const
+	{
+		return iterator(nullptr);
+	}
+
+private:
+
+	NTSTATUS getProcessList();
+};
+
+NTSTATUS PsMonInit();
+
+VOID PsMonExit();
+
+NTSTATUS QueryProcessImagePath(HANDLE Process, PUNICODE_STRING* ImagePath);
+
+eastl::wstring GetProcessImagePathByPid(PID ProcessId);
+
