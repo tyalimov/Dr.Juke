@@ -92,4 +92,4 @@ DiskId1                 = "dxx Device Installation Disk"
 DefaultInstance         = "Null Instance"
 Instance1.Name          = "Null Instance"
 Instance1.Altitude      = "370020"
-Instance1.Flags         = 0x1          ; Suppress automatic attachments
+Instance1.Flags         = 0x0              ; Allow all attachments

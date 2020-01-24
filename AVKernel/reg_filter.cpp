@@ -325,32 +325,23 @@ bool RegFilterAddProtectedKey(PWCH Name,
 			wstring KeyPath(Name, NameLen / sizeof(WCHAR));
 			ACCESS_MASK Access = *(ACCESS_MASK*)Data;
 
-			res = NormalizeRegistryPath(&KeyPath);
-			if (res)
+			str_util::makeLower(&KeyPath);
+			auto _pair = gProtectedKeys.try_emplace(KeyPath, Access);
+			auto it = _pair.first;
+			bool bInserted = _pair.second;
+
+			if (bInserted)
 			{
-				str_util::makeLower(&KeyPath);
-				auto _pair = gProtectedKeys.try_emplace(KeyPath, Access);
-				auto it = _pair.first;
-				bool bInserted = _pair.second;
-
-				if (bInserted)
-				{
-					kprintf(TRACE_INFO, "Added <Key=%ws>, <Access=0x%08X>",
-						KeyPath.c_str(), Access);
-				}
-				else
-				{
-					it->second = Access;
-					kprintf(TRACE_INFO, "Modified <Key=%ws>, <Access=0x%08X>",
-						KeyPath.c_str(), Access);
-				}
-
+				kprintf(TRACE_INFO, "Added <Key=%ws>, <Access=0x%08X>",
+					KeyPath.c_str(), Access);
 			}
 			else
 			{
-				kprintf(TRACE_INFO, "Failed to add Key %ws",
-					KeyPath.c_str());
+				it->second = Access;
+				kprintf(TRACE_INFO, "Modified <Key=%ws>, <Access=0x%08X>",
+					KeyPath.c_str(), Access);
 			}
+
 		}
 	}
 
@@ -362,19 +353,15 @@ void RegFilterRemoveProtectedKey(PWCH Name, ULONG NameLen)
 	if (NameLen > 0)
 	{
 		wstring KeyPath(Name, NameLen / sizeof(WCHAR));
-		bool res = NormalizeRegistryPath(&KeyPath);
 
-		if (res)
-		{
-			str_util::makeLower(&KeyPath);
-			auto n = gProtectedKeys.erase(KeyPath);
+		str_util::makeLower(&KeyPath);
+		auto n = gProtectedKeys.erase(KeyPath);
 
-			if (n > 0)
-				kprintf(TRACE_INFO, "Removed <Key=%ws>", KeyPath.c_str());
-			else
-				kprintf(TRACE_INFO, "Attempt to remove"
-					"non existent <Key=%ws>", KeyPath.c_str());
-		}
+		if (n > 0)
+			kprintf(TRACE_INFO, "Removed <Key=%ws>", KeyPath.c_str());
+		else
+			kprintf(TRACE_INFO, "Attempt to remove"
+				"non existent <Key=%ws>", KeyPath.c_str());
 	}
 
 }

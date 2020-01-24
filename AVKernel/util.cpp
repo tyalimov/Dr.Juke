@@ -158,19 +158,3 @@ namespace str_util
 	}
 }
 
-bool NormalizeRegistryPath(wstring* KeyPath)
-{
-	bool result = true;
-	if (str_util::startsWith(KeyPath, L"HKEY_LOCAL_MACHINE"))
-		KeyPath->replace(0, RTL_NUMBER_OF(L"HKEY_LOCAL_MACHINE"), L"\\Registry\\Machine\\");
-	else if (str_util::startsWith(KeyPath, L"HKEY_USERS"))
-		KeyPath->replace(0, RTL_NUMBER_OF(L"HKEY_USERS"), L"\\Registry\\Users\\");
-	else
-	{
-		kprintf(TRACE_INFO, "Key path format not supported");
-		result = false;
-	}
-
-	return result;
-}
-

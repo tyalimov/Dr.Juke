@@ -5,6 +5,7 @@
 
 using namespace eastl;
 
+
 FLT_PREOP_CALLBACK_STATUS FltCreatePreOperation(
 	_Inout_ PFLT_CALLBACK_DATA Data,
 	_In_ PCFLT_RELATED_OBJECTS FltObjects,
@@ -47,7 +48,6 @@ FsFilterExit (
     );
 
 PFLT_FILTER gFilterHandle = nullptr;
-PFLT_VOLUME gNamedPipeVolume = nullptr;
 
 CONST FLT_REGISTRATION FilterRegistration = {
 
@@ -71,6 +71,7 @@ CONST FLT_REGISTRATION FilterRegistration = {
 	NULL,                               //  GenerateDestinationFileName
 	NULL                                //  NormalizeNameComponent
 };
+
 
 
 NTSTATUS FsFilterInstanceSetup(
@@ -99,24 +100,9 @@ FLT_PREOP_CALLBACK_STATUS FltCreatePreOperation(
 	NTSTATUS Status;
 	ACCESS_MASK DesiredAccess;
 	PFLT_FILE_NAME_INFORMATION fltName;
-	UCHAR MajorFunction;
-	ULONG DeviceType;
 
 	UNREFERENCED_PARAMETER(FltObjects);
 	UNREFERENCED_PARAMETER(CompletionContext);
-
-	MajorFunction = Data->Iopb->MajorFunction;
-	if (MajorFunction == IRP_MJ_CREATE)
-	{
-
-	}
-	if (MajorFunction == IRP_MJ_CREATE_NAMED_PIPE)
-	{
-		kprintf(TRACE_INFO, "Named pipe");
-	}
-
-	DeviceType = IoGetRelatedDeviceObject(FltObjects->FileObject)->DeviceType;
-	//kprintf(TRACE_INFO, "Device type: 0x%08x", DeviceType);
 
 	DesiredAccess = Data->Iopb->Parameters.Create.SecurityContext->DesiredAccess;
 	Status = FltGetFileNameInformation(Data, FLT_FILE_NAME_NORMALIZED, &fltName);
@@ -129,7 +115,7 @@ FLT_PREOP_CALLBACK_STATUS FltCreatePreOperation(
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
 
-	kprintf(TRACE_FSFILTER, "%Name=%wZ Component=%wZ", fltName->Name, fltName->FinalComponent);
+	//kprintf(TRACE_FSFILTER, "%Name=%wZ Component=%wZ", fltName->Name, fltName->FinalComponent);
 	FltReleaseFileNameInformation(fltName);
 
 	// if (FALSE)
@@ -157,59 +143,6 @@ NTSTATUS FsFilterInit(PDRIVER_OBJECT DriverObject)
 		}
 	}
 
-	if (NT_SUCCESS(Status))
-	{
-		UNICODE_STRING VolumeName;
-		RtlInitUnicodeString(&VolumeName, L"\\Device\\NamedPipe");
-
-		Status = FltGetVolumeFromName(gFilterHandle, &VolumeName, &gNamedPipeVolume);
-		if (NT_SUCCESS(Status))
-		{
-			kprintf(TRACE_INFO, "Try to attach pipes");
-			Status = FltAttachVolume(gFilterHandle, gNamedPipeVolume, NULL, NULL);
-		}
-
-	}
-
-	if (true)
-	{
-		// list devs
-		ULONG BufSize, i;
-		CHAR* Buf;
-		PFILTER_VOLUME_STANDARD_INFORMATION info;
-
-
-		i = 0;
-		while (TRUE)
-		{
-			BufSize = 0;
-			Status = FltEnumerateVolumeInformation(gFilterHandle, i, FilterVolumeStandardInformation, NULL, 0, &BufSize);
-
-			if (Status == STATUS_NO_MORE_ENTRIES)
-			{
-				Status = STATUS_SUCCESS;
-				break;
-			}
-
-			if (Status != STATUS_BUFFER_TOO_SMALL)
-				break;
-
-			Buf = new CHAR[BufSize];
-			info = (PFILTER_VOLUME_STANDARD_INFORMATION)Buf;
-			Status = FltEnumerateVolumeInformation(gFilterHandle, 0, FilterVolumeStandardInformation, Buf, BufSize, &BufSize);
-
-			if (NT_SUCCESS(Status))
-			{
-				wstring name(info->FilterVolumeName, info->FilterVolumeNameLength / sizeof(WCHAR));
-				kprintf(TRACE_FSFILTER, "%d) VolumeName=%ws, FsType=0x%08X", i, name.c_str(), info->FileSystemType);
-
-			}
-			
-			delete[] Buf;
-			i++;
-		}
-	}
-
 	kprint_st(TRACE_FSFILTER, Status);
 	return Status;
 }
@@ -217,13 +150,6 @@ NTSTATUS FsFilterInit(PDRIVER_OBJECT DriverObject)
 NTSTATUS FsFilterExit(FLT_FILTER_UNLOAD_FLAGS Flags)
 {
 	UNREFERENCED_PARAMETER(Flags);
-
-	if (gNamedPipeVolume != nullptr)
-	{
-		NTSTATUS Status = FltDetachVolume(gFilterHandle, gNamedPipeVolume, NULL);
-		kprintf(TRACE_INFO, "FltDetachVolume returned 0x%08X\n", Status);
-		gNamedPipeVolume = nullptr;
-	}
 
 	if (gFilterHandle != nullptr)
 	{

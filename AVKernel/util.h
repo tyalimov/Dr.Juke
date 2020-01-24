@@ -34,8 +34,6 @@ namespace str_util
 
 }
 
-bool NormalizeRegistryPath(wstring* KeyPath);
-
 class GuardedMutex
 {
 private:
