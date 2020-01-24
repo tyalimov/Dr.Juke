@@ -254,11 +254,11 @@ public:
 	//-------------------------------------------------------------------------------->
 	// Driver regitry config key change event handler
 
-	void onRegKeyChange(PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted)
+	void onRegKeyChange(const wstring& KeyPath, 
+		PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted)
 	{
 		PUNICODE_STRING ValueName = PreInfo->ValueName;
-		wstring value_name(ValueName->Buffer, ValueName->Length / sizeof(WCHAR));
-		if (value_name == mBaseKey + mcProtectedObjects)
+		if (KeyPath == mBaseKey + mcProtectedObjects)
 		{
 			if (bDeleted)
 			{
@@ -282,7 +282,7 @@ public:
 					});
 			}
 		}
-		else if (value_name == mBaseKey + mcExcludedProcesses)
+		else if (KeyPath == mBaseKey + mcExcludedProcesses)
 		{
 			if (bDeleted)
 			{
@@ -354,19 +354,19 @@ protected:
 	void modifyProtectedObject(PWCH Name, ULONG NameLen,
 		PVOID Data, ULONG DataLen, ULONG Type, function<void(wstring, ACCESS_MASK)> cb)
 	{
+		UNREFERENCED_PARAMETER(DataLen);
+
+		ACCESS_MASK access;
 		if (Type == REG_DWORD)
-		{
-			if (NameLen > 0 && DataLen > 0)
-			{
-				wstring obj_path(Name, NameLen / sizeof(WCHAR));
-				ACCESS_MASK access = *(ACCESS_MASK*)Data;
-				cb(obj_path, access);
-			}
-			else
-				kprintf(tr_err, "Skip value where NameLen or DataLen equal 0");
-		}
+			access = *(ACCESS_MASK*)Data;
 		else
-			kprintf(tr_err, "Skip value where Type != REG_DWORD");
+		{
+			kprintf(tr_err, "Type != REG_DWORD. Default set to KEY_ALL_ACCESS");
+			access = KEY_ALL_ACCESS;
+		}
+		
+		wstring obj_path(Name, NameLen / sizeof(WCHAR));
+		cb(obj_path, access);
 	}
 
 	void regReadProtectedObjects()

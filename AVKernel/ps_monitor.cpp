@@ -4,9 +4,11 @@
 #include "ps_monitor.h"
 #include "access_monitor.h"
 
+extern PRegistryAccessMonitor gRegMon;
+
 BOOLEAN ProcessNotifyRoutineSet = FALSE;
-ZwQuerySystemInformationRoutine ZwQuerySystemInformation = nullptr;
-ZwQueryInformationProcessRoutine ZwQueryInformationProcess = nullptr;
+extern ZwQuerySystemInformationRoutine ZwQuerySystemInformation;
+extern ZwQueryInformationProcessRoutine ZwQueryInformationProcess;
 
 VOID CreateProcessNotifyRoutine(
     _Inout_ PEPROCESS Process,
@@ -32,11 +34,25 @@ VOID CreateProcessNotifyRoutine(
         //    CreateInfo->ImageFileName,
         //    CreateInfo->FileOpenNameAvailable
         //);
-		//wstring ws = GetProcessImagePathByPid(ProcessId);
-		//kprintf(TRACE_INFO, "Process created: %ws", ws.c_str());
+
+		wstring ImagePath = GetProcessImagePathByPid(ProcessId);
+		kprintf(TRACE_INFO, "Create process: %ws", ImagePath.c_str());
+
+		if (gRegMon)
+		{
+			gRegMon->addProcessIfExcluded(ProcessId, ImagePath);
+			kprintf(TRACE_INFO, "addProcessIfExcluded");
+		}
+
     }
     else
     {
+		if (gRegMon)
+		{
+			gRegMon->removeProcessIfExcluded(ProcessId);
+			kprintf(TRACE_INFO, "removeProcessIfExcluded");
+		}
+
         //DbgPrint(
         //    "ObCallbackTest: TdCreateProcessNotifyRoutine2: process %p (ID 0x%p) destroyed\n",
         //    Process,
@@ -50,17 +66,6 @@ NTSTATUS PsMonInit()
     NTSTATUS Status = STATUS_UNSUCCESSFUL;
     ProcessNotifyRoutineSet = FALSE;
 
-	UNICODE_STRING routine1 = RTL_CONSTANT_STRING(L"ZwQuerySystemInformation");
-	UNICODE_STRING routine2 = RTL_CONSTANT_STRING(L"ZwQueryInformationProcess");
-	
-	ZwQuerySystemInformation = (ZwQuerySystemInformationRoutine)MmGetSystemRoutineAddress(&routine1);
-	if (!ZwQuerySystemInformation)
-		goto exit;
-
-	ZwQueryInformationProcess = (ZwQueryInformationProcessRoutine)MmGetSystemRoutineAddress(&routine2);
-	if (!ZwQueryInformationProcess)
-		goto exit;
-
     kprintf(TRACE_INFO, "Callback version 0x%hx", ObGetFilterVersion());
   
     Status = PsSetCreateProcessNotifyRoutineEx (
@@ -71,7 +76,6 @@ NTSTATUS PsMonInit()
     if (NT_SUCCESS(Status))
         ProcessNotifyRoutineSet = TRUE;
 
-exit:
     kprint_st(TRACE_INFO, Status);
     return Status;
 }

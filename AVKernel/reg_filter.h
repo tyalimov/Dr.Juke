@@ -1,7 +1,8 @@
 #pragma once
 #include "common.h"
 
-#define KRF_BASE_KEY L"\\Registry\\Machine\\SOFTWARE\\Dr.Juke\\AVSecGeneric\\RegFilter"
+#define KRF_BASE_KEY L"\\REGISTRY\\MACHINE\\SOFTWARE\\Dr.Juke\\AVSecGeneric\\RegFilter"
+
 #define KRF_PROTECTED_KEYS L"\\Registry\\Machine\\SOFTWARE\\Dr.Juke\\AVSecGeneric\\RegFilter\\ProtectedKeys"
 #define KRF_ALLOWED_PROCESSES L"\\Registry\\Machine\\SOFTWARE\\Dr.Juke\\AVSecGeneric\\RegFilter\\AllowedProcesses" 
 

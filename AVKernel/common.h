@@ -10,7 +10,7 @@
 #define OS_WIN7_OR_GREATER     (NTDDI_VERSION >= NTDDI_WIN7)
 #define OS_VISTA_OR_GREATER    (NTDDI_VERSION >= NTDDI_VISTA)
 
-#define DR_JUKE_BASE_KEY L"\\Registry\\Machine\\SOFTWARE\\Dr.Juke"
+#define DR_JUKE_BASE_KEY L"\\REGISTRY\\MACHINE\\SOFTWARE\\Dr.Juke"
 
 //-------------------------------------------------------------------------------->
 // Tracing options

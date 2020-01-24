@@ -76,8 +76,8 @@ typedef NTSTATUS (*ZwQueryInformationProcessRoutine)(
 );
 
 // Warning!
-// Do not use this class until PsMonInit is called! Or manually load
-// routines ZwQuerySystemInformation and ZwQueryProcessInformation
+// Do not use this class until loaded routines
+// ZwQuerySystemInformation and ZwQueryProcessInformation
 class ProcessList
 {
 private:

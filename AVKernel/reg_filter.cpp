@@ -103,10 +103,10 @@ RegFilterCallback(
 		Status = RegPreCreateKeyEx(Argument2);
 		break;
 	case RegNtPostSetValueKey: 
-		if (false) Status = RegPostSetValueKey(Argument2, FALSE);
+		Status = RegPostSetValueKey(Argument2, FALSE);
 		break;
 	case RegNtPostDeleteValueKey:
-		if (false) Status = RegPostSetValueKey(Argument2, TRUE);
+		Status = RegPostSetValueKey(Argument2, TRUE);
 		break;
 	default: 
 		break;
@@ -185,14 +185,16 @@ RegPostSetValueKey(
 	}
 	
 	UNICODE_STRING JukeKey = RTL_CONSTANT_STRING(DR_JUKE_BASE_KEY);
-	BOOLEAN res = RtlPrefixUnicodeString(KeyPath, &JukeKey, FALSE);
+	BOOLEAN res = RtlPrefixUnicodeString(&JukeKey, KeyPath, FALSE);
+	//kprintf(TRACE_INFO, "RtlPrefixUnicodeString res=%d %wZ, %wZ", res, JukeKey, KeyPath);
 
 	// Not interested in modified keys 
 	// other than Dr.Juke ones
 	if (!res)
 		return STATUS_SUCCESS;
 
-	gRegMon->onRegKeyChange(PreInfo, bDeleted);
+	wstring key_path(KeyPath->Buffer, KeyPath->Length / sizeof(WCHAR));
+	gRegMon->onRegKeyChange(key_path, PreInfo, bDeleted);
 
 	return STATUS_SUCCESS;
 }
