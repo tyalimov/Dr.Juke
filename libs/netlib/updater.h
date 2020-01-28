@@ -6,6 +6,8 @@
 #include <common/aliases.h>
 #include <filesystem>
 
+#include <loglib/loghlp.h>
+
 namespace drjuke::netlib
 {
     class Updater final
@@ -22,8 +24,8 @@ namespace drjuke::netlib
             Path           filename;
 
             FtpFile(const std::string& filename_,
-                    ProgressBarPtr progress_bar_,
-                    std::uint32_t actual_size_)
+                    ProgressBarPtr     progress_bar_,
+                    std::uint32_t      actual_size_)
                 : downloaded(0)
                 , actual_size(actual_size_)
                 , progress_bar(progress_bar_)
@@ -54,10 +56,6 @@ namespace drjuke::netlib
             , m_progress_bar()
         {}
 
-        void setFilenames();
-        void setProgressBar();
-        void setDestination();
-
         void downloadFiles() override;
 
     private:
@@ -70,7 +68,6 @@ namespace drjuke::netlib
         Path              m_destination;
         ProgressBarPtr    m_progress_bar;
         FtpFile           m_current_download;
-        
     };
 
     using UpdaterPtr = std::unique_ptr<IUpdater>;

@@ -11,7 +11,7 @@
 
 namespace drjuke::scanlib
 {
-    std::vector<BaseAnalyzerPtr> AnalyzerFactory::m_analyzers 
+    std::vector<BaseAnalyzerPtr> Factory::m_analyzers 
     {
         std::make_shared<YaraAnalyzer>(),             // AnalyzerId::kYara
         std::make_shared<ClamAvAnalyzer>(),           // AnalyzerId::kClamAvSignature
@@ -19,12 +19,12 @@ namespace drjuke::scanlib
         std::make_shared<PackersAnalyzer>(),          // AnalyzerId::kPack
     };
 
-    auto AnalyzerFactory::get(AnalyzerId id) -> decltype(m_analyzers)::value_type
+    auto Factory::getAnalyzer(AnalyzerId id) -> decltype(m_analyzers)::value_type
     {
         return m_analyzers[ToUnderlying(id)];
     }
 
-    auto AnalyzerFactory::getAll() -> decltype(m_analyzers)
+    auto Factory::getAll() -> decltype(m_analyzers)
     {
         return m_analyzers;
     }

@@ -4,7 +4,7 @@
 
 namespace drjuke::cryptolib
 {
-    ICryptorPtr CryptorFactory::get() 
+    ICryptorPtr Factory::getCryptor() 
     {
         return std::make_unique<Cryptor>();
     }

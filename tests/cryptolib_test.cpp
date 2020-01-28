@@ -12,11 +12,11 @@
 
 #include <filesystem>
 
-using drjuke::cryptolib::CryptorFactory;
+using drjuke::cryptolib::Factory;
 
 TEST(cryptolib, SHA512_Regular) try
 {
-    auto cryptor = CryptorFactory::get();
+    auto cryptor = Factory::getCryptor();
     auto file = R"(cryptolib\test.txt)";
 
     EXPECT_TRUE(fs::exists(file));

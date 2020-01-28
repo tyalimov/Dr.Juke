@@ -7,26 +7,38 @@
 #pragma warning ( pop )
 
 #include "winlib/winlib.h"
+#include "winlib/filesys.h"
+
+#include <common/aliases.h>
+#include <filesystem>
 
 using namespace drjuke;
 using namespace drjuke::winlib;
 
-TEST(winlib, ExceptionRegular)
+TEST(winlib, ExceptionRegular) try
 {
-    try
-    {
-        throw WindowsException("error opening file", ERROR_ACCESS_DENIED);
-    }
-    catch (const WindowsException& ex)
-    {
-        std::cout << ex.what() << std::endl;
-        std::cout << ex.dumpStackTrace() << std::endl;
-        SUCCEED();
-    }
-    catch (const std::exception& ex)
-    {
-        std::cout << ex.what() << std::endl;
-        FAIL();
-    }
-    
+    throw WindowsException("error opening file", ERROR_ACCESS_DENIED);
+}
+catch (const WindowsException& ex)
+{
+    std::cout << ex.what() << std::endl;
+    std::cout << ex.dumpStackTrace() << std::endl;
+    SUCCEED();
+}
+catch (const std::exception& ex)
+{
+    std::cout << ex.what() << std::endl;
+    FAIL();
+}
+
+TEST(winlib, GetDesktopDirectory) try
+{
+    auto path = winlib::filesys::GetDesktopDirectory();
+    std::cout << path << std::endl;
+    SUCCEED();
+}
+catch (const std::exception& ex)
+{
+    std::cout << ex.what() << std::endl;
+    FAIL();
 }

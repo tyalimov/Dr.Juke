@@ -4,7 +4,7 @@
 
 namespace drjuke::settingslib
 {
-    SettingsManagerPtr SettingsManagerFactory::get()
+    SettingsManagerPtr Factory::getSettingsManager()
     {
         return std::make_unique<SettingsManager>();
     }

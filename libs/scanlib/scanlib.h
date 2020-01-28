@@ -8,7 +8,7 @@ LINK_YARA
 
 namespace drjuke::scanlib
 {
-    class AnalyzerFactory
+    class Factory
     {
     public:
 
@@ -22,7 +22,7 @@ namespace drjuke::scanlib
 
         static std::vector<BaseAnalyzerPtr> m_analyzers;
 
-        [[nodiscard]] static auto get(AnalyzerId id) -> decltype(m_analyzers)::value_type;
-        [[nodiscard]] static auto getAll()           -> decltype(m_analyzers);
+        [[nodiscard]] static auto getAnalyzer(AnalyzerId id) -> decltype(m_analyzers)::value_type;
+        [[nodiscard]] static auto getAll()                   -> decltype(m_analyzers);
     };
 }

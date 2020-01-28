@@ -14,7 +14,7 @@ namespace drjuke::netlib
 
             void operator ()(CURL* h) const
             {
-                :: curl_easy_cleanup(h);
+                ::curl_easy_cleanup(h);
             }
         };
     }

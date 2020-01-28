@@ -5,4 +5,5 @@ namespace drjuke::winlib::filesys
 {
     void CreateNewFile(const Path& file);
     void AppendFile(const Path& file, const std::string& data);
+    Path GetDesktopDirectory();
 }

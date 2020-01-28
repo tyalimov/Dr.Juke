@@ -1,7 +1,9 @@
 #include "filesys.h"
 #include "raii.h"
-#include <filesystem>
 #include "windows_exception.h"
+
+#include <filesystem>
+#include <shlobj.h>
 
 namespace drjuke::winlib::filesys
 {
@@ -61,5 +63,26 @@ namespace drjuke::winlib::filesys
         {
             throw WindowsException(("Error appending to file - " + file.generic_string()).c_str());
         }
+    }
+
+    Path GetDesktopDirectory()
+    {
+        static wchar_t path[ MAX_PATH + 1 ]{0};
+
+        auto status = SHGetFolderPathW
+        (
+            nullptr, 
+            CSIDL_DESKTOP,
+            nullptr, 
+            0, 
+            path
+        );
+
+        if (status != S_OK)
+        {
+            throw WindowsException("can't get desktop directory", status);
+        }
+
+        return Path(path);
     }
 }

@@ -8,9 +8,9 @@ namespace drjuke::settingslib
 {
     using SettingsManagerPtr = std::unique_ptr<ISettingsManager>;
 
-    class SettingsManagerFactory
+    class Factory
     {
     public:
-        static SettingsManagerPtr get();
+        static SettingsManagerPtr getSettingsManager();
     };
 }

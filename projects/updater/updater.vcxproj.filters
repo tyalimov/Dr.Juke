@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="updater">
+      <UniqueIdentifier>{0a864bed-59cc-4274-af75-eb965be8c433}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="winapi_stuff">
+      <UniqueIdentifier>{cae2730b-c630-49f4-9ce4-f2e8c3b3b463}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\apps\updater\updater.h">
+      <Filter>updater</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\updater\Resource.h">
+      <Filter>winapi_stuff</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\updater\targetver.h">
+      <Filter>winapi_stuff</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\updater\framework.h">
+      <Filter>winapi_stuff</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\apps\updater\updater.cpp">
+      <Filter>updater</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\apps\updater\small.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="..\..\apps\updater\updater.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\apps\updater\updater.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

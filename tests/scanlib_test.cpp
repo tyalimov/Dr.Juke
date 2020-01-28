@@ -21,7 +21,7 @@ TEST(scanlib, SignatureAnalyzer_Regular) try
 
     EXPECT_TRUE(fs::exists(target));
 
-    auto analyzer =  AnalyzerFactory::get(AnalyzerFactory::AnalyzerId::kDigitalSignature);
+    auto analyzer =  Factory::getAnalyzer(Factory::AnalyzerId::kDigitalSignature);
 
     analyzer->loadResources();
     auto report = analyzer->getReport(target)->makeJson();
@@ -43,7 +43,7 @@ TEST(scanlib, SignatureAnalyzer_Signed)  try
 
     EXPECT_TRUE(fs::exists(target));
 
-    auto analyzer = AnalyzerFactory::get(AnalyzerFactory::AnalyzerId::kDigitalSignature);
+    auto analyzer = Factory::getAnalyzer(Factory::AnalyzerId::kDigitalSignature);
 
     analyzer->loadResources();
     auto report = analyzer->getReport(target)->makeJson();
@@ -65,7 +65,7 @@ TEST(scanlib, Yara) try
 
     EXPECT_TRUE(fs::exists(target));
 
-    auto analyzer = AnalyzerFactory::get(AnalyzerFactory::AnalyzerId::kYara);
+    auto analyzer = Factory::getAnalyzer(Factory::AnalyzerId::kYara);
 
     analyzer->loadResources();
     auto report = analyzer->getReport(target)->makeJson();
@@ -87,7 +87,7 @@ TEST(scanlib, ClamAV) try
 
     EXPECT_TRUE(fs::exists(target));
 
-    auto analyzer = AnalyzerFactory::get(AnalyzerFactory::AnalyzerId::kClamAvSignature);
+    auto analyzer = Factory::getAnalyzer(Factory::AnalyzerId::kClamAvSignature);
 
     analyzer->loadResources();
     auto report = analyzer->getReport(target)->makeJson();
@@ -109,7 +109,7 @@ TEST(scanlib, PEiD) try
 
     EXPECT_TRUE(fs::exists(target));
 
-    auto analyzer = AnalyzerFactory::get(AnalyzerFactory::AnalyzerId::kPack);
+    auto analyzer = Factory::getAnalyzer(Factory::AnalyzerId::kPack);
 
     analyzer->loadResources();
     auto report = analyzer->getReport(target)->makeJson();

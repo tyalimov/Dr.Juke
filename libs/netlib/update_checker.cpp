@@ -14,7 +14,7 @@ namespace drjuke::netlib
         static_cast<Responce*>(stream)->data += std::string(static_cast<char*>(buffer), real_size);
         return real_size;
     }
-    catch (const std::exception& /*ex*/)
+    catch (...)
     {
         return 0;
     }

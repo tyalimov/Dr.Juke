@@ -14,6 +14,9 @@
     <Filter Include="filesystem">
       <UniqueIdentifier>{01ccb2a0-cff7-48ab-a8b2-615a34befa78}</UniqueIdentifier>
     </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{aee5c014-f400-40a4-a995-41ca85f83e09}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\winlib\winlib.h">
@@ -40,6 +43,9 @@
     <ClInclude Include="..\..\libs\winlib\filesys.h">
       <Filter>filesystem</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\winlib\utils.h">
+      <Filter>utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\winlib\interprocess.cpp">
@@ -59,6 +65,9 @@
     </ClCompile>
     <ClCompile Include="..\..\libs\winlib\filesys.cpp">
       <Filter>filesystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\winlib\utils.cpp">
+      <Filter>utils</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

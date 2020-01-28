@@ -1,28 +1,18 @@
-#pragma once
+﻿#pragma once
 
 #include <undecorate.h>
-#include <cstdint>
 #include <filesystem>
 
 #include "iupdate_checker.h"
 #include "iupdater.h"
 
-#pragma warning( push )                                   
-#   pragma warning( disable : 4081 )                         
-#   pragma comment(lib, UNDECORATE_LIBRARY("curl\\libcurl"))
-#pragma warning( pop ) 
+LINK_LIBRARY("curl\\libcurl")
 
-#define CURL_STATICLIB
+// Необходимо для нормальной линковки CURL в статическом режиме.
+#define CURL_STATICLIB 
 
 namespace drjuke::netlib
 {
-    class NetlibFactory
-    {
-    public:
-        [[nodiscard]] static UpdateCheckerPtr getUpdateChecker();
-        [[nodiscard]] static UpdaterPtr       getUpdater();
-    };
-
     struct ProgressBar
     {
         Path   filename;
@@ -40,4 +30,15 @@ namespace drjuke::netlib
     };
 
     using ProgressBarPtr = std::shared_ptr<ProgressBar>;
+    
+    class Factory
+    {
+    public:
+        [[nodiscard]] static UpdateCheckerPtr getUpdateChecker();
+        [[nodiscard]] static UpdaterPtr       getUpdater(const std::vector<Path>& filenames,
+                                                         const Path&              destination,
+                                                         ProgressBarPtr           progress_bar);
+    };
+
+
 }

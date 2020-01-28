@@ -220,6 +220,11 @@
     <ClCompile Include="..\..\libs\netlib\updater.cpp" />
     <ClCompile Include="..\..\libs\netlib\update_checker.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\loglib\loglib.vcxproj">
+      <Project>{eda10196-8cc8-4164-8f7a-aa36d718506d}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

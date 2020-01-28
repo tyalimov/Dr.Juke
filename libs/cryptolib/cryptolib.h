@@ -12,9 +12,9 @@
 namespace drjuke::cryptolib
 {
     using ICryptorPtr = std::unique_ptr<ICryptor>;
-    class CryptorFactory
+    class Factory
     {
     public:
-        [[nodiscard]] static ICryptorPtr get();
+        [[nodiscard]] static ICryptorPtr getCryptor();
     };
 }

@@ -12,7 +12,7 @@ using namespace  drjuke::netlib;
 
 TEST(netlib, UpdateChecker_Regular) try
 {
-    auto update_checker = NetlibFactory::getUpdateChecker();
+    auto update_checker = Factory::getUpdateChecker();
     auto hashes         = update_checker->getActualHashes();
 
     for (const auto& [key, value] : hashes)
@@ -34,17 +34,16 @@ catch (const std::exception& ex)
 
 TEST(netlib, Updater_Regular) try
 {
-    auto update_checker = NetlibFactory::getUpdateChecker();
-    auto hashes         = update_checker->getActualHashes();
-
-    for (const auto& [key, value] : hashes)
+    std::vector<drjuke::Path> files
     {
-        std::cout
-            << "file = " << key           << std::endl
-            << "hash = " << value.first   << std::endl
-            << "size = " << value.second  << std::endl
-            << "-----------------"        << std::endl;
-    }
+        "test_1.txt",
+        "test_2.txt"
+    };
+
+    auto progress_bar = std::make_shared<ProgressBar>();
+    auto updater = Factory::getUpdater(files, "loaded", progress_bar);
+
+    updater->downloadFiles();
 
     SUCCEED();
 }

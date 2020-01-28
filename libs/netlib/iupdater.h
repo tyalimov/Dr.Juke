@@ -1,9 +1,5 @@
 #pragma once
 
-#include <common/aliases.h>
-
-#include <string>
-
 namespace drjuke::netlib
 {
     class IUpdater

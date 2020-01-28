@@ -4,13 +4,15 @@
 
 namespace drjuke::netlib
 {
-    UpdateCheckerPtr NetlibFactory::getUpdateChecker()
+    UpdateCheckerPtr Factory::getUpdateChecker()
     {
         return std::make_unique<UpdateChecker>();
     }
 
-    UpdaterPtr NetlibFactory::getUpdater()
+    UpdaterPtr Factory::getUpdater(const std::vector<Path>& filenames, 
+                                         const Path&              destination,
+                                         ProgressBarPtr           progress_bar)
     {
-        return std::make_unique<Updater>();
+        return std::make_unique<Updater>(filenames, destination, progress_bar);
     }
 }
