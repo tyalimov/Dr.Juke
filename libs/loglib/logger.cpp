@@ -1,5 +1,4 @@
 ﻿#include "logger.h"
-#include "string_conv.h"
 
 #include <common/aliases.h>
 #include <winlib/filesys.h>
@@ -62,7 +61,7 @@ namespace drjuke::loglib
         constexpr unsigned int kWaitLogTimeout{ 1000 };
     }
 
-    std::shared_ptr<Logger> LogWriter::m_logger;
+    std::shared_ptr<Logger> LogWriter::m_logger = std::make_shared<Logger>();
 
     std::wstring ToString(LogLevel type)
     {
@@ -106,6 +105,8 @@ namespace drjuke::loglib
         m_logger.reset();
     }
 
+#define CONSOLE_AGENT_LOG
+
     Logger::Logger()
         : m_exit(false)
         , m_max_file_size(0)
@@ -114,9 +115,10 @@ namespace drjuke::loglib
         createLogFile();
 #endif
 
-#if defined(CONSOLE_AGENT_LOG) || defined(FILE_AGENT_LOG)
+#ifdef CONSOLE_AGENT_LOG
         createLogConsole();
 #endif
+        m_log_thread_ptr.reset(new std::thread{ &Logger::runLog, this });
     }
 
     void Logger::write(const LogLevel &type, const std::wstring &text)
@@ -124,7 +126,7 @@ namespace drjuke::loglib
         auto now = winlib::utils::GetCurrentSystemTime();
 
         std::wstringstream stream;
-
+        
         stream << boost::wformat(kLogStringFormat) 
             % now.wHour 
             % now.wMinute 
@@ -150,50 +152,23 @@ namespace drjuke::loglib
 
     void Logger::writeToConsole(const LogString &text)
     {
-        auto& msg = text.second;	
-
-        int size_needed = ::WideCharToMultiByte
+        auto& level     = text.first;
+        auto& msg       = text.second;	
+        auto  color     = GetColor(level);
+        auto console    = ::GetStdHandle(STD_OUTPUT_HANDLE);
+        
+        ::SetConsoleTextAttribute(console, color);
+        ::WriteConsoleW
         (
-            CP_UTF8, 
-            0, 
-            msg.data(), 
-            static_cast<int>(msg.size()),
-            nullptr, 
-            0,
+            console, 
+            msg.c_str(), 
+            msg.size(),
             nullptr,
             nullptr
         );
-        
-        std::string str_to( size_needed, L'\0' );
-        
-        ::WideCharToMultiByte
-        (
-            CP_UTF8, 
-            0, 
-            msg.data(), 
-            static_cast<int>(msg.size()), 
-            &str_to[0], 
-            size_needed,
-            nullptr,
-            nullptr
-        );
-
-        if(m_file.get() != INVALID_HANDLE_VALUE)
-        {
-            DWORD bytes_written;
-
-            ::WriteFile
-            (
-                m_file.get(), 
-                str_to.data(), 
-                str_to.size(), 
-                &bytes_written,
-                nullptr
-            );
-        }
     }
 
-    Path Logger::getDefaultLogFolder() const
+    Path Logger::getDefaultLogFolder()
     {
         return winlib::filesys::GetDesktopDirectory();
     }
@@ -246,10 +221,10 @@ namespace drjuke::loglib
             auto log_string = popDeque();
 
 #ifdef CONSOLE_AGENT_LOG
-            WriteToConsole(log_string);
+            writeToConsole(log_string);
 #endif
 #ifdef FILE_AGENT_LOG
-            WriteToFile(log_string);
+            writeToFile(log_string);
 #endif
         }
     }
@@ -276,7 +251,7 @@ namespace drjuke::loglib
             nullptr
         );
         
-        std::string strTo( size_needed, L'\0' );
+        std::string str_to( size_needed, L'\0' );
         
         ::WideCharToMultiByte
         (
@@ -284,7 +259,7 @@ namespace drjuke::loglib
             0, 
             msg.data(), 
             static_cast<int>(msg.size()), 
-            &strTo[0], 
+            &str_to[0], 
             size_needed,
             nullptr,
             nullptr
@@ -297,8 +272,8 @@ namespace drjuke::loglib
             ::WriteFile
             (
                 m_file.get(), 
-                strTo.data(), 
-                strTo.size(), 
+                str_to.data(), 
+                str_to.size(), 
                 &bytes_written,
                 nullptr
             );
@@ -419,7 +394,5 @@ namespace drjuke::loglib
             0, 
             SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_DRAWFRAME
         );
-
-        m_log_thread_ptr.reset(new std::thread{ &Logger::runLog, this });
     }
 }

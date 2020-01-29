@@ -63,7 +63,7 @@ namespace drjuke::loglib
         void createLogFile();
         void createLogConsole();
 
-        [[nodiscard]] Path getDefaultLogFolder()   const;
+        [[nodiscard]] static Path getDefaultLogFolder();
         [[nodiscard]] std::wstring createLogName() const;
 
         bool emptyDeque();
