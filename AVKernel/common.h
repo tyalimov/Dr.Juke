@@ -27,7 +27,7 @@
 #define TRACE_ERROR				0x00000004
 #define TRACE_PSMON				0x00000008
 #define TRACE_PREF				0x00000010
-#define TRACE_OS_VER			0x00000020
+#define TRACE_PSLIST			0x00000020
 #define TRACE_LOAD				0x00000040
 
 #define TRACE_ALL (	TRACE_NONE \
@@ -35,17 +35,28 @@
 	| TRACE_WARN \
 	| TRACE_ERROR \
 	| TRACE_PREF \
-	| TRACE_OS_VER \
+	| TRACE_PSLIST \
 	| TRACE_LOAD)
 
-
-#define TRACE_CUSTOM (	TRACE_NONE \
+#define TRACE_STANDARD ( TRACE_NONE \
 	| TRACE_INFO \
+	| TRACE_WARN \
+	| TRACE_ERROR \
+	| TRACE_LOAD)
+
+#define TRACE_MINIMAL ( TRACE_NONE \
+	| TRACE_WARN \
+	| TRACE_ERROR \
+	| TRACE_LOAD)
+
+#define TRACE_CUSTOM ( TRACE_NONE \
+	| TRACE_INFO \
+	| TRACE_WARN \
 	| TRACE_ERROR \
 	| TRACE_PSMON \
 	| TRACE_LOAD)
 
-#define TRACE_FLAGS TRACE_CUSTOM
+#define TRACE_FLAGS TRACE_STANDARD
 
 //-------------------------------------------------------------------------------->
 // Print routines

@@ -20,12 +20,12 @@ GuardedMutex::GuardedMutex() {
 	KeInitializeGuardedMutex(&_mutex);
 }
 
-BOOLEAN IsWin8OrGreater()
+bool IsWin8OrGreater()
 {
     RTL_OSVERSIONINFOEXW VersionInfo = {0};
     ULONGLONG ConditionMask = 0;
     NTSTATUS Status;
-    BOOLEAN Result;
+    bool Result;
 
     //
     // Set VersionInfo to Win7's version number and then use
@@ -43,19 +43,13 @@ BOOLEAN IsWin8OrGreater()
                                   VER_MAJORVERSION | VER_MINORVERSION,
                                   ConditionMask);
     if (NT_SUCCESS(Status)) 
-    {
-        kprintf(TRACE_OS_VER, "This machine is running Windows 7 or an older OS");
-        Result = FALSE;
-    } 
+        Result = false;
     else if (Status == STATUS_REVISION_MISMATCH) 
-    {
-        kprintf(TRACE_OS_VER, "This machine is running Windows 8 or a newer OS");
-        Result = TRUE;
-    } 
+        Result = true;
     else 
     {
-        kprintf(TRACE_OS_VER, "RtlVerifyVersionInfo returned unexpected status 0x%08X", Status);
-        Result = FALSE;  
+        kprintf(TRACE_ERROR, "RtlVerifyVersionInfo returned unexpected status 0x%08X", Status);
+        Result = false;  
     } 
 
     return Result;

@@ -425,6 +425,9 @@ protected:
 		for (const auto& proc : processes)
 		{
 			pid = proc->ProcessId;
+			if (pid == (PID)0)
+				continue;
+
 			wstring proc_path = GetProcessImagePathByPid(pid);
 			if (proc_path.length() > 0 && proc_path == image_path) {
 				cb(pid);
@@ -537,18 +540,19 @@ public:
 					if (!(desired_access & actual_access))
 						res = false;
 
-					if (res)
-					{
-						logInfo("Allow <pid=%d> to access %ws",
-							pid, name.c_str());
-					}
-					else
-					{
-						logInfo("Deny <pid=%d> to access %ws", 
-							pid, name.c_str());
-					}
 				}
 			}
+		}
+
+		if (res)
+		{
+			logInfo("Allow <pid=%d> to access %ws",
+				pid, name.c_str());
+		}
+		else
+		{
+			logInfo("Deny <pid=%d> to access %ws", 
+				pid, name.c_str());
 		}
 
 		return res;

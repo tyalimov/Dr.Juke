@@ -7,12 +7,16 @@
 using namespace std;
 
 #define KPM_PROTECTED_OBJECTS L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\PsMonitor\\ProtectedObjects" 
+#define KPM_EXCLUDED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\PsMonitor\\ExcludedProcesses"
+
 #define KRF_PROTECTED_OBJECTS L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\RegFilter\\ProtectedObjects"
-#define KRF_ALLOWED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\RegFilter\\AllowedProcesses" 
+#define KRF_EXCLUDED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\RegFilter\\ExcludedProcesses" 
+
 #define KFF_PROTECTED_OBJECTS L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\FsFilter\\ProtectedObjects"
-#define KFF_ALLOWED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\FsFilter\\AllowedProcesses" 
+#define KFF_EXCLUDED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\FsFilter\\ExcludedProcesses" 
+
 #define KPF_PROTECTED_OBJECTS L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\PipeFilter\\ProtectedObjects"
-#define KPF_ALLOWED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\PipeFilter\\AllowedProcesses" 
+#define KPF_EXCLUDED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\PipeFilter\\ExcludedProcesses" 
 
 typedef LONG NTSTATUS;
 
@@ -175,10 +179,11 @@ enum FilterDriverType
 {
 	FsFilter,
 	PipeFilter,
-	RegFilter
+	RegFilter,
+    PsMonitor,
 };
 
-DWORD SetAccessToObject(wstring ps_image_path, FilterDriverType type, bool deny=false)
+DWORD AddRemoveExcludedProcess(wstring ps_image_path, FilterDriverType type, bool remove=false)
 {
     const wchar_t* lpSubkey;
     DWORD res;
@@ -186,23 +191,26 @@ DWORD SetAccessToObject(wstring ps_image_path, FilterDriverType type, bool deny=
 	switch (type)
 	{
     case FsFilter:
-		lpSubkey = KFF_ALLOWED_PROCESSES;
+		lpSubkey = KFF_EXCLUDED_PROCESSES;
 		break;
 	case RegFilter:
-		lpSubkey = KRF_ALLOWED_PROCESSES;
+		lpSubkey = KRF_EXCLUDED_PROCESSES;
 		break;
 	case PipeFilter:
-		lpSubkey = KPF_ALLOWED_PROCESSES;
+		lpSubkey = KPF_EXCLUDED_PROCESSES;
+		break;
+    case PsMonitor:
+		lpSubkey = KPM_EXCLUDED_PROCESSES;
 		break;
 	default:
-		return false;
+		return ERROR_UNSUPPORTED_TYPE;
 	}
 
     ps_image_path = GetFileKernelPath(ps_image_path);
     if (ps_image_path.length() == 0)
-        return false;
+        return ERROR_FILE_NOT_FOUND;
 
-    if (deny)
+    if (remove)
     {
         res = DeleteRegistryValue(HKEY_LOCAL_MACHINE,
             lpSubkey, ps_image_path.c_str());
@@ -225,7 +233,7 @@ DWORD ProtectFile(wstring file_path, ACCESS_MASK access=0, bool deprotect=false)
     file_path = GetFileKernelPath(file_path);
 
     if (file_path.length() == 0)
-        return false;
+        return ERROR_FILE_NOT_FOUND;
 
     if (deprotect)
     {
@@ -250,7 +258,7 @@ DWORD ProtectPipe(wstring pipe_path, ACCESS_MASK access=0, bool deprotect=false)
     pipe_path = GetPipeKernelPath(pipe_path);
 
     if (pipe_path.length() == 0)
-        return false;
+        return ERROR_FILE_NOT_FOUND;
 
     if (deprotect)
     {
@@ -271,12 +279,11 @@ DWORD ProtectKey(HKEY base, wstring subkey_path, ACCESS_MASK access=0, bool depr
     const wchar_t* lpSubkey;
     DWORD res;
 
-    lpSubkey = KRF_PROTECTED_OBJECTS;
     subkey_path = GetKeyKernelPath(base, subkey_path);
-
     if (subkey_path.length() == 0)
-        return false;
+        return ERROR_FILE_NOT_FOUND;
 
+    lpSubkey = KRF_PROTECTED_OBJECTS;
 	if (deprotect)
 	{
         res = DeleteRegistryValue(HKEY_LOCAL_MACHINE,
@@ -292,7 +299,7 @@ DWORD ProtectKey(HKEY base, wstring subkey_path, ACCESS_MASK access=0, bool depr
 	return res;
 }
 
-DWORD ProtectProcess(wstring ps_image_path, bool deprotect=false)
+DWORD ProtectProcess(wstring ps_image_path, ACCESS_MASK access=0, bool deprotect=false)
 {
     const wchar_t* lpSubkey;
     DWORD res;
@@ -301,7 +308,7 @@ DWORD ProtectProcess(wstring ps_image_path, bool deprotect=false)
     ps_image_path = GetFileKernelPath(ps_image_path);
     
     if (ps_image_path.length() == 0)
-        return false;
+        return ERROR_FILE_NOT_FOUND;
 
     if (deprotect)
     {
@@ -389,13 +396,15 @@ void usage()
     wprintf(L"   test-open file <file-path> <access-mask-hex>\n");
     wprintf(L"   test-open ps <pid> <access-mask-hex>\n");
     wprintf(L"\n");
-    wprintf(L"   allow key <key-path> <ps-image-path>\n");
-    wprintf(L"   allow pipe <pipe-name> <ps-image-path>\n");
-    wprintf(L"   allow file <file-path> <ps-image-path>\n");
+    wprintf(L"   flt-bypass key <ps-image-path>\n");
+    wprintf(L"   flt-bypass pipe <ps-image-path>\n");
+    wprintf(L"   flt-bypass file <ps-image-path>\n");
+    wprintf(L"   flt-bypass ps <ps-image-path>\n");
     wprintf(L"\n");
-    wprintf(L"   deny key <key-path> <ps-image-path>\n");
-    wprintf(L"   deny pipe <pipe-name> <ps-image-path>\n");
-    wprintf(L"   deny file <file-path> <ps-image-path>\n");
+    wprintf(L"   flt-no-bypass key <key-path> <ps-image-path>\n");
+    wprintf(L"   flt-no-bypass pipe <pipe-name> <ps-image-path>\n");
+    wprintf(L"   flt-no-bypass file <file-path> <ps-image-path>\n");
+    wprintf(L"   flt-no-bypass ps <file-path> <ps-image-path>\n");
 }
 
 int wmain(int argc, wchar_t *argv[])
@@ -408,9 +417,9 @@ int wmain(int argc, wchar_t *argv[])
 
     if (argc == 5)
     {
-		DWORD access = (DWORD)wcstol(argv[4], NULL, 16);
 		LPCWSTR path = argv[3];
-		DWORD res = !ERROR_SUCCESS;
+		DWORD res = ERROR_BAD_ARGUMENTS;
+		DWORD access = (DWORD)wcstol(argv[4], NULL, 16);
 
         if (!wcscmp(argv[1], L"protect"))
         {
@@ -421,7 +430,7 @@ int wmain(int argc, wchar_t *argv[])
 			else if (!wcscmp(argv[2], L"pipe"))
 				res = ProtectPipe(path, access);
 			else if (!wcscmp(argv[2], L"ps"))
-				res = ProtectProcess(path);
+				res = ProtectProcess(path, access);
 			else
 				wprintf(L"bad args\n");
         }
@@ -438,28 +447,6 @@ int wmain(int argc, wchar_t *argv[])
 			else
 				wprintf(L"bad args\n");
         }
-        else if (!wcscmp(argv[1], L"allow"))
-        {
-            if (!wcscmp(argv[2], L"key"))
-                res = SetAccessToObject(path, RegFilter);
-			else if (!wcscmp(argv[2], L"file"))
-				res = SetAccessToObject(path, FsFilter);
-			else if (!wcscmp(argv[2], L"pipe"))
-				res = SetAccessToObject(path, PipeFilter);
-			else
-				wprintf(L"bad args\n");
-        }
-        else if (!wcscmp(argv[1], L"deny"))
-        {
-            if (!wcscmp(argv[2], L"key"))
-                res = SetAccessToObject(path, RegFilter, true);
-			else if (!wcscmp(argv[2], L"file"))
-				res = SetAccessToObject(path, FsFilter, true);
-			else if (!wcscmp(argv[2], L"pipe"))
-				res = SetAccessToObject(path, PipeFilter, true);
-			else
-				wprintf(L"bad args\n");
-        }
         else
 			wprintf(L"bad args\n");
 
@@ -472,7 +459,7 @@ int wmain(int argc, wchar_t *argv[])
     else if (argc == 4)
     {
 		LPCWSTR path = argv[3];
-		bool res = false;
+		DWORD res = ERROR_BAD_ARGUMENTS;
 
         if (!wcscmp(argv[1], L"deprotect"))
         {
@@ -483,9 +470,35 @@ int wmain(int argc, wchar_t *argv[])
 			else if (!wcscmp(argv[2], L"pipe"))
 				res = ProtectPipe(path, 0, true);
 			else if (!wcscmp(argv[2], L"ps"))
-				res = ProtectProcess(path, true);
+				res = ProtectProcess(path, 0, true);
             else
                 wprintf(L"bad args\n");
+        }
+        else if (!wcscmp(argv[1], L"flt-bypass"))
+        {
+            if (!wcscmp(argv[2], L"key"))
+                res = AddRemoveExcludedProcess(path, RegFilter);
+			else if (!wcscmp(argv[2], L"file"))
+				res = AddRemoveExcludedProcess(path, FsFilter);
+			else if (!wcscmp(argv[2], L"pipe"))
+				res = AddRemoveExcludedProcess(path, PipeFilter);
+			else if (!wcscmp(argv[2], L"ps"))
+				res = AddRemoveExcludedProcess(path, PsMonitor);
+			else
+				wprintf(L"bad args\n");
+        }
+        else if (!wcscmp(argv[1], L"flt-no-bypass"))
+        {
+            if (!wcscmp(argv[2], L"key"))
+                res = AddRemoveExcludedProcess(path, RegFilter, true);
+			else if (!wcscmp(argv[2], L"file"))
+				res = AddRemoveExcludedProcess(path, FsFilter, true);
+			else if (!wcscmp(argv[2], L"pipe"))
+				res = AddRemoveExcludedProcess(path, PipeFilter, true);
+			else if (!wcscmp(argv[2], L"ps"))
+				res = AddRemoveExcludedProcess(path, PsMonitor, true);
+			else
+				wprintf(L"bad args\n");
         }
         else
 			wprintf(L"bad args\n");

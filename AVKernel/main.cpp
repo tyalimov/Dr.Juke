@@ -5,6 +5,7 @@
 #include "reg_filter.h"
 #include "fs_filter.h"
 #include "ps_monitor.h"
+#include "util.h"
 
 ZwQuerySystemInformationRoutine ZwQuerySystemInformation = nullptr;
 ZwQueryInformationProcessRoutine ZwQueryInformationProcess = nullptr;
@@ -48,8 +49,11 @@ NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 	NTSTATUS Status;
 	DriverObject->DriverUnload = DriverUnload;
 
-	if (false)
-		goto fail;
+	if (!IsWin8OrGreater())
+	{
+		kprintf(TRACE_WARN, "Target OS is not Windows 8 or greater. "
+			"Named pipe protection is not supported");
+	}
 
 	if (!DynamicLoadRoutines())
 	{

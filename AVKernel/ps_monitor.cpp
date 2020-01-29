@@ -41,10 +41,7 @@ VOID CreateProcessNotifyRoutine(
 			"<Pid=%d, ImagePath=%ws", ProcessId, ImagePath.c_str());
 
 		if (gRegMonInit == true && gRegMon != nullptr)
-		{
 			gRegMon->addProcessIfExcluded(ProcessId, ImagePath);
-			kprintf(TRACE_INFO, "addProcessIfExcluded");
-		}
 
     }
     else
@@ -211,13 +208,14 @@ wstring GetProcessImagePathByPid(PID ProcessId)
 	status = ZwOpenProcess(&hProcess, 0x1000/*PROCESS_QUERY_LIMITED_INFORMATION*/, &attribs, &clientId);
 	if (!NT_SUCCESS(status))
 	{
-		kprintf(TRACE_ERROR, "Can't open process (pid:%p) failed with code:%08x", ProcessId, status);
+		kprintf(TRACE_ERROR, "Can't open process "
+			"<pid=0x%08X, status=0x%08X>", ProcessId, status);
 		return res;
 	}
 
 	status = QueryProcessImagePath(hProcess, &ImagePath);
 	if (NT_SUCCESS(status) && ImagePath != nullptr)
-		res = wstring(ImagePath->Buffer, ImagePath->Length);
+		res = wstring(ImagePath->Buffer, ImagePath->Length / sizeof(WCHAR));
 	
 	if (ImagePath)
 		delete[] (PCHAR)ImagePath;

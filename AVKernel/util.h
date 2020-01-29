@@ -8,7 +8,7 @@ using namespace eastl;
 
 wstring GetKeyNameByHandle(HANDLE KeyHandle);
 
-BOOLEAN IsWin8OrGreater();
+bool IsWin8OrGreater();
 
 namespace str_util
 {

@@ -110,7 +110,7 @@ public:
 	ProcessList()
 	{
 		NTSTATUS status = getProcessList();
-		kprint_st(TRACE_INFO, status);
+		kprint_st(TRACE_PSLIST, status);
 	}
 
 	~ProcessList() 
