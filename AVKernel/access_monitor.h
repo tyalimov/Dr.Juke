@@ -9,7 +9,7 @@
 #include "EASTL/set.h"
 #include "EASTL/list.h"
 
-template<ULONG tr_info=TRACE_INFO, ULONG tr_err=TRACE_ERROR>
+template <typename TFilterLog, LogMode INFO, LogMode WARN, LogMode ERR>
 class AccessMonitor
 {
 protected:
@@ -40,22 +40,6 @@ public:
 	AccessMonitor(const wstring& key_path)
 	{
 		mBaseKey = key_path;
-		mEnabled = true;
-
-		// read names of protected objects
-		// and allowed access from registry
-		regReadProtectedObjects();
-
-		// read paths of excluded processes from registry
-		// and save all pids matching those paths
-		regReadExcludedProcesses();
-		updatePidsForExcludedProcesses();
-
-		if (mObjects.size() == 0)
-			kprintf(tr_err, "No protected objects found!");
-
-		if (mProcImages.size() == 0)
-			kprintf(tr_err, "No excluded processes found!");
 	}
 
 	virtual ~AccessMonitor() = default;
@@ -73,7 +57,7 @@ public:
 		mEnabled = status;
 		mLockStatus.release();
 
-		kprintf(tr_info, "Filter mode changed. mEnabled=%d", mEnabled);
+		logInfo("Filter mode changed. mEnabled=%d", mEnabled);
 	}
 
 	bool isEnabled() 
@@ -81,6 +65,11 @@ public:
 		LockGuard<GuardedMutex> guard(&mLockStatus);
 		return mEnabled;
 	}
+
+	//-------------------------------------------------------------------------------->
+	// Preferences routines
+
+
 
 	//-------------------------------------------------------------------------------->
 	// Protected objects manipulation routines
@@ -100,12 +89,12 @@ public:
 
 		if (inserted)
 		{
-			kprintf(tr_info, "Added <Object=%ws>, <Access=0x%08X>",
+			logInfo("Added <Object=%ws>, <Access=0x%08X>",
 				name.c_str(), access);
 		}
 		else
 		{
-			kprintf(tr_info, "Modified <Object=%ws>, <Access=0x%08X>",
+			logInfo("Modified <Object=%ws>, <Access=0x%08X>",
 				name.c_str(), access);
 		}
 	}
@@ -117,9 +106,9 @@ public:
 		mLockObj.release();
 
 		if (n > 0)
-			kprintf(tr_info, "Removed <Object=%ws>", name.c_str());
+			logInfo("Removed <Object=%ws>", name.c_str());
 		else
-			kprintf(tr_err, "Attempt to remove"
+			logError("Attempt to remove"
 				"non existent <Object=%ws>", name.c_str());
 	}
 
@@ -143,8 +132,8 @@ public:
 
 		if (match)
 		{
-			kprintf(tr_info, "Added new process "
-				"<pid=%d, ImagePath=%ws>", pid, image_path.c_str());
+			logInfo("Added new process <pid=%d, ImagePath=%ws>", 
+				pid, image_path.c_str());
 		}
 	}
 
@@ -157,21 +146,25 @@ public:
 		bool inserted = result.second;
 		if (inserted)
 		{
-			kprintf(tr_info, "Added new process "
-				"<UpdatePids=%d, ImagePath=%ws>", update_pids, image_path.c_str());
+			logInfo("Added new process <UpdatePids=%d, ImagePath=%ws>", 
+				update_pids, image_path.c_str());
 
 			if (update_pids)
 			{
+				// We need to atomically iterate process list
+				// See explanation inside updatePidsForExcludedProcesses
+				mLockProc.acquire();
+
 				iterateProcessInstances(image_path, [this](PID pid) {
-						mLockProc.acquire();
 						mProcPids.emplace(pid);
-						mLockProc.release();
 					});
+
+				mLockProc.release();
 			}
 		}
 		else
 		{
-			kprintf(tr_info, "Failed to add new process: already exists "
+			logError("Failed to add new process: already exists "
 				"<UpdatePids=%d, ImagePath=%ws>", update_pids, image_path.c_str());
 		}
 	}
@@ -179,30 +172,35 @@ public:
 	void removeProcessIfExcluded(PID pid)
 	{
 		mLockProc.acquire();
-		mProcPids.erase(pid);
+		auto n = mProcPids.erase(pid);
 		mLockProc.release();
+
+		if (n > 0)
+			logInfo("Process removed <pid=%d>", pid);
 	}
 
 	void removeProcess(const wstring& image_path)
 	{
+		// We need to atomically iterate process list
+		// See explanation inside updatePidsForExcludedProcesses
+		mLockProc.acquire();
+
 		iterateProcessInstances(image_path, [this](PID pid) {
-				mLockProc.acquire();
 				mProcPids.erase(pid);
-				mLockProc.release();
 			});
 
-		mLockProc.acquire();
 		auto n = mProcImages.erase(image_path);
+		
 		mLockProc.release();
 
 		if (n > 0)
 		{
-			kprintf(tr_info, "Process removed " 
+			logInfo("Process removed " 
 				"<ImagePath=%ws>", image_path.c_str());
 		}
 		else
 		{
-			kprintf(tr_err, "Unable to remove non-existent " 
+			logError("Unable to remove non-existent " 
 				"process <ImagePath=%ws>", image_path.c_str());
 		}
 	}
@@ -239,12 +237,12 @@ public:
 
 		if (res)
 		{
-			kprintf(tr_info, "Allow <pid=%d> to access %ws",
+			logInfo("Allow <pid=%d> to access %ws",
 				pid, name.c_str());
 		}
 		else
 		{
-			kprintf(tr_info, "Deny <pid=%d> to access %ws", 
+			logInfo("Deny <pid=%d> to access %ws", 
 				pid, name.c_str());
 		}
 
@@ -298,7 +296,7 @@ public:
 				modifyExcludedProcess(ValueName->Buffer, ValueName->Length, 
 					[this](const wstring& image_path) {
 
-						this->addProcess(image_path);
+						this->addProcess(image_path, true);
 
 					});
 			}
@@ -307,6 +305,30 @@ public:
 		{
 			NOTHING;
 		}
+	}
+
+	//-------------------------------------------------------------------------------->
+	// Logging routines
+
+	template<typename ...T>
+	inline void logInfo(const char* fmt, T... args)
+	{
+		if constexpr(INFO == LogMode::ON)
+			TFilterLog::logInfo(fmt, args...);
+	}
+
+	template<typename ...T>
+	inline void logWarning(const char* fmt, T... args)
+	{
+		if constexpr(WARN == LogMode::ON)
+			TFilterLog::logWarning(fmt, args...);
+	}
+
+	template<typename ...T>
+	inline void logError(const char* fmt, T... args)
+	{
+		if constexpr(ERR == LogMode::ON)
+			TFilterLog::logError(fmt, args...);
 	}
 
 protected:
@@ -323,7 +345,7 @@ protected:
 		}
 		else
 		{
-			kprintf(tr_err, "Bad process format "
+			logError("Do nothing: bad process format "
 				"<ImagePath=%ws>", image_path.c_str());
 		}
 	}
@@ -346,7 +368,7 @@ protected:
 		status = PreferencesReadBasic(proc_key.c_str(), cbAddExcludedProcess);
 		if (!NT_SUCCESS(status))
 		{
-			kprintf(tr_err, "Failed to read excluded processes registry key"
+			logError("Failed to read excluded processes registry key"
 				"<Status=0x%08X, KeyPath=%ws>", status, proc_key.c_str());
 		}
 	}
@@ -361,7 +383,9 @@ protected:
 			access = *(ACCESS_MASK*)Data;
 		else
 		{
-			kprintf(tr_err, "Type != REG_DWORD. Default set to KEY_ALL_ACCESS");
+			logWarning("Type != REG_DWORD. "
+				"Default set to KEY_ALL_ACCESS");
+
 			access = KEY_ALL_ACCESS;
 		}
 		
@@ -388,7 +412,7 @@ protected:
 		status = PreferencesReadFull(proc_key.c_str(), cbAddProtectedObject);
 		if (!NT_SUCCESS(status))
 		{
-			kprintf(tr_err, "Failed to read protected objects registry key"
+			logError("Failed to read protected objects registry key "
 				"<KeyPath=%ws>", proc_key.c_str());
 		}
 	}
@@ -410,8 +434,22 @@ protected:
 
 	void updatePidsForExcludedProcesses()
 	{
-		PID pid;
+		//
+		// Need to prevent adding processes to mProcPids
+		// while iterating process list snaphot
+		//
+		// This is done to avoid situations when snapshot 
+		// of process list is done but new process
+		// is created/terminated during this time
+		//
+		// That issue might cause another (random) process 
+		// to have access to protected objects
+		//
+
+		mLockProc.acquire();
+
 		ProcessList processes;
+		PID pid;
 
 		for (const auto& proc : processes)
 		{
@@ -422,21 +460,41 @@ protected:
 			wstring proc_path = GetProcessImagePathByPid(pid);
 			if (proc_path.length() > 0)
 			{
-				mLockProc.acquire();
-
 				auto it = mProcImages.find(proc_path);
 				if (it != mProcImages.end())
 					mProcPids.emplace(pid);
-
-				mLockProc.release();
 			}
 		}
+
+		mLockProc.release();
+	}
+
+public:
+
+	void readConfiguration()
+	{
+		setEnabled(true);
+
+		// Read names of protected objects
+		// and allowed access from registry
+		regReadProtectedObjects();
+
+		// Read paths of excluded processes from registry
+		// and save all pids matching those paths
+		regReadExcludedProcesses();
+		updatePidsForExcludedProcesses();
+
+		if (mObjects.size() == 0)
+			logWarning("No protected objects found!");
+
+		if (mProcImages.size() == 0)
+			logWarning("No excluded processes found!");
 	}
 
 };
 
-template <ULONG tr_info, ULONG tr_err>
-class __RegistryAccessMonitor : public AccessMonitor<tr_info, tr_err>
+template <typename TFilterLog, LogMode INFO, LogMode WARN, LogMode ERR>
+class FoldingAccessMonitor : public AccessMonitor<TFilterLog, INFO, WARN, ERR>
 {
 private:
 
@@ -462,7 +520,7 @@ private:
 
 public:
 
-	__RegistryAccessMonitor(const wstring& key_path) : AccessMonitor(key_path) {}
+	FoldingAccessMonitor(const wstring& key_path) : AccessMonitor(key_path) {}
 
 	virtual bool isAccessAllowed(PID pid, const wstring& name, ACCESS_MASK desired_access)
 	{
@@ -481,12 +539,12 @@ public:
 
 					if (res)
 					{
-						kprintf(tr_info, "Allow <pid=%d> to access %ws",
+						logInfo("Allow <pid=%d> to access %ws",
 							pid, name.c_str());
 					}
 					else
 					{
-						kprintf(tr_info, "Deny <pid=%d> to access %ws", 
+						logInfo("Deny <pid=%d> to access %ws", 
 							pid, name.c_str());
 					}
 				}
@@ -497,6 +555,12 @@ public:
 	}
 };
 
-using RegistryAccessMonitor = __RegistryAccessMonitor<TRACE_REGFILTER_INFO, TRACE_REGFILTER_ERROR>;
-using PRegistryAccessMonitor = RegistryAccessMonitor*;
+using PipeAccessMonitor = FoldingAccessMonitor<FilterLog<PipeFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using FileSystemAccessMonitor = FoldingAccessMonitor<FilterLog<FsFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using RegistryAccessMonitor = FoldingAccessMonitor<FilterLog<RegFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using ProcessAccessMonitor = FoldingAccessMonitor<FilterLog<PsMonitorPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
 
+using PPipeAccessMonitor = PipeAccessMonitor*;
+using PFileSystemAccessMonitor = FileSystemAccessMonitor*;
+using PRegistryAccessMonitor = RegistryAccessMonitor*;
+using PProcessAccessMonitor = ProcessAccessMonitor*;

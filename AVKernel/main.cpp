@@ -27,7 +27,16 @@ void DriverUnload(PDRIVER_OBJECT DriverObject)
 {
 	UNREFERENCED_PARAMETER(DriverObject);
 	
+	//
+	// Process monitor must exit first
+	// because it uses filter context pointers
+	//
+	// If we call XXXFilterExit before it
+	// there's may be a null-deref during driver unload
+	//
+
 	PsMonExit();
+
 	RegFilterExit();
 
 	kprintf(TRACE_LOAD, "Driver unloaded");
@@ -48,16 +57,17 @@ NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 		goto fail;
 	}
 
-	Status = RegFilterInit(DriverObject);
+	Status = PsMonInit();
 	if (!NT_SUCCESS(Status))
 		goto fail;
 
-	Status = PsMonInit();
+	Status = RegFilterInit(DriverObject);
 	if (!NT_SUCCESS(Status))
 	{
-		RegFilterExit();
+		PsMonExit();
 		goto fail;
 	}
+
 
 	kprintf(TRACE_LOAD, "Driver initialization successfull");
 	return STATUS_SUCCESS;

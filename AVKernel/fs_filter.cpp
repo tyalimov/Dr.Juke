@@ -143,13 +143,14 @@ NTSTATUS FsFilterInit(PDRIVER_OBJECT DriverObject)
 		}
 	}
 
-	kprint_st(TRACE_FSFILTER, Status);
+	kprintf(TRACE_INFO, "Driver %ws init status: 0x%08X", FSFILTER, Status);
 	return Status;
 }
 
 NTSTATUS FsFilterExit(FLT_FILTER_UNLOAD_FLAGS Flags)
 {
 	UNREFERENCED_PARAMETER(Flags);
+	NTSTATUS Status = STATUS_SUCCESS;
 
 	if (gFilterHandle != nullptr)
 	{
@@ -157,8 +158,8 @@ NTSTATUS FsFilterExit(FLT_FILTER_UNLOAD_FLAGS Flags)
 		gFilterHandle = nullptr;
 	}
 
-	kprint_st(TRACE_FSFILTER, STATUS_SUCCESS);
-	return STATUS_SUCCESS;
+	kprintf(TRACE_INFO, "Driver %ws exit status: 0x%08X", FSFILTER, Status);
+	return Status;
 }
       
 NTSTATUS

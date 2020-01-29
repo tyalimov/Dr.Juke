@@ -5,6 +5,7 @@
 #include "access_monitor.h"
 
 extern PRegistryAccessMonitor gRegMon;
+extern volatile bool gRegMonInit;
 
 BOOLEAN ProcessNotifyRoutineSet = FALSE;
 extern ZwQuerySystemInformationRoutine ZwQuerySystemInformation;
@@ -36,9 +37,10 @@ VOID CreateProcessNotifyRoutine(
         //);
 
 		wstring ImagePath = GetProcessImagePathByPid(ProcessId);
-		kprintf(TRACE_INFO, "Create process: %ws", ImagePath.c_str());
+		kprintf(TRACE_PSMON, "Created process "
+			"<Pid=%d, ImagePath=%ws", ProcessId, ImagePath.c_str());
 
-		if (gRegMon)
+		if (gRegMonInit == true && gRegMon != nullptr)
 		{
 			gRegMon->addProcessIfExcluded(ProcessId, ImagePath);
 			kprintf(TRACE_INFO, "addProcessIfExcluded");
@@ -47,11 +49,9 @@ VOID CreateProcessNotifyRoutine(
     }
     else
     {
-		if (gRegMon)
-		{
+		kprintf(TRACE_PSMON, "Terminated process <Pid=%d>", ProcessId);
+		if (gRegMonInit == true && gRegMon != nullptr)
 			gRegMon->removeProcessIfExcluded(ProcessId);
-			kprintf(TRACE_INFO, "removeProcessIfExcluded");
-		}
 
         //DbgPrint(
         //    "ObCallbackTest: TdCreateProcessNotifyRoutine2: process %p (ID 0x%p) destroyed\n",

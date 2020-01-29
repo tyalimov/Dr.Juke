@@ -25,6 +25,7 @@ RegPreCreateKeyEx(_Inout_ PVOID Argument2);
 // Registry filter
 
 PRegistryAccessMonitor gRegMon = nullptr;
+volatile bool gRegMonInit = FALSE;
 LARGE_INTEGER gCookie = { 0 };
 
 NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
@@ -34,7 +35,7 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 	UNICODE_STRING Altitude = RTL_CONSTANT_STRING(REGFILTER_ALTITUDE);
 
     CmGetCallbackVersion(&MajorVersion, &MinorVersion);
-    kprintf(TRACE_REGFILTER_INFO, "Callback version %u.%u", MajorVersion, MinorVersion);
+    kprintf(TRACE_INFO, "%ws Callback version %u.%u", REGFILTER, MajorVersion, MinorVersion);
 
 	gRegMon = new RegistryAccessMonitor(KRF_BASE_KEY);
 	if (gRegMon)
@@ -47,20 +48,26 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 			&gCookie,
 			NULL);
 
-		if (!NT_SUCCESS(Status))
+		if (NT_SUCCESS(Status))
+		{
+			gRegMonInit = true;
+			gRegMon->readConfiguration();
+		}
+		else
 		{
 			delete gRegMon;
 			gRegMon = nullptr;
 		}
 	}
 
-	kprint_st(TRACE_REGFILTER_INFO, Status);
+	kprint_st(TRACE_INFO, Status);
 	return Status;
 }
 
 void RegFilterExit()
 {
 	NTSTATUS Status = STATUS_UNSUCCESSFUL;
+	gRegMonInit = false;
 	
 	if (gRegMon)
 	{
@@ -70,7 +77,7 @@ void RegFilterExit()
 		gRegMon = nullptr;
 	}
 
-	kprint_st(TRACE_REGFILTER_INFO, Status);
+	kprint_st(TRACE_INFO, Status);
 }
 
 static NTSTATUS
@@ -92,7 +99,7 @@ RegFilterCallback(
 
 	if (Argument2 == NULL)
 	{
-		kprintf(TRACE_REGFILTER_INFO, "Argument 2 unexpectedly 0. Abort with STATUS_SUCCESS");
+		kprintf(TRACE_ERROR, "Argument 2 unexpectedly 0. Abort with STATUS_SUCCESS");
 		return STATUS_SUCCESS;
 	}
 
@@ -124,7 +131,7 @@ RegPreCreateKeyEx(_Inout_ PVOID Argument2)
 	PreCreateInfo = (PREG_CREATE_KEY_INFORMATION_V1) Argument2;
 	if ((ULONG_PTR)PreCreateInfo->Version != 1)
 	{
-		kprintf(TRACE_REGFILTER_INFO, "PreCreateInfo type is not PREG_CREATE_KEY_INFORMATION_V1");
+		kprintf(TRACE_ERROR, "PreCreateInfo type is not PREG_CREATE_KEY_INFORMATION_V1");
 		return STATUS_SUCCESS;
 	}
 
@@ -140,7 +147,7 @@ RegPreCreateKeyEx(_Inout_ PVOID Argument2)
 
 		if (!NT_SUCCESS(Status))
 		{
-			kprintf(TRACE_REGFILTER_INFO, "CmCallbackGetKeyObjectID failed with status=0x%08X", Status);
+			kprintf(TRACE_ERROR, "CmCallbackGetKeyObjectID failed with status=0x%08X", Status);
 			return STATUS_SUCCESS;
 		}
 		else
@@ -180,7 +187,7 @@ RegPostSetValueKey(
 
 	if (!NT_SUCCESS(Status))
 	{
-		kprintf(TRACE_REGFILTER_INFO, "CmCallbackGetKeyObjectID failed with status=0x%08X", Status);
+		kprintf(TRACE_ERROR, "CmCallbackGetKeyObjectID failed with status=0x%08X", Status);
 		return STATUS_SUCCESS;
 	}
 	
