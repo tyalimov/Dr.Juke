@@ -38,9 +38,7 @@ public:
 
 	// Must be called before filter callback is registered
 	AccessMonitor(const wstring& key_path)
-	{
-		mBaseKey = key_path;
-	}
+		: mBaseKey(key_path) {}
 
 	virtual ~AccessMonitor() = default;
 
@@ -65,11 +63,6 @@ public:
 		LockGuard<GuardedMutex> guard(&mLockStatus);
 		return mEnabled;
 	}
-
-	//-------------------------------------------------------------------------------->
-	// Preferences routines
-
-
 
 	//-------------------------------------------------------------------------------->
 	// Protected objects manipulation routines
@@ -221,7 +214,12 @@ public:
 
 		if (isEnabled())
 		{
-			if (!isProcessExcluded(pid))
+			if (isProcessExcluded(pid))
+			{
+				logInfo("Allow excluded <pid=%d> to access %ws",
+					pid, name.c_str());
+			}
+			else
 			{
 				LockGuard<GuardedMutex> guard(&mLockObj);
 
@@ -231,20 +229,21 @@ public:
 					ACCESS_MASK actual_access = it->second;
 					if (!(desired_access & actual_access))
 						res = false;
+
+					if (res)
+					{
+						logInfo("Allow <pid=%d> to access %ws",
+							pid, name.c_str());
+					}
+					else
+					{
+						logInfo("Deny <pid=%d> to access %ws", 
+							pid, name.c_str());
+					}
 				}
 			}
 		}
 
-		if (res)
-		{
-			logInfo("Allow <pid=%d> to access %ws",
-				pid, name.c_str());
-		}
-		else
-		{
-			logInfo("Deny <pid=%d> to access %ws", 
-				pid, name.c_str());
-		}
 
 		return res;
 	}
@@ -390,7 +389,15 @@ protected:
 		}
 		
 		wstring obj_path(Name, NameLen / sizeof(WCHAR));
-		cb(obj_path, access);
+		bool ok = false;
+		
+		ok |= str_util::startsWith(obj_path, L"\\Device");
+		ok |= str_util::startsWith(obj_path, L"\\REGISTRY");
+
+		if (ok)
+			cb(obj_path, access);
+		else
+			logError("Do nothing: bad format <ObjectPath=%ws>", obj_path.c_str());
 	}
 
 	void regReadProtectedObjects()
@@ -531,7 +538,12 @@ public:
 
 		if (isEnabled())
 		{
-			if (!isProcessExcluded(pid))
+			if (isProcessExcluded(pid))
+			{
+				logInfo("Allow excluded <pid=%d> to access %ws",
+					pid, name.c_str());
+			}
+			else
 			{
 				auto it = findRule(name);
 				if (it != mObjects.end())
@@ -540,19 +552,18 @@ public:
 					if (!(desired_access & actual_access))
 						res = false;
 
+					if (res)
+					{
+						logInfo("Allow <pid=%d> to access %ws",
+							pid, name.c_str());
+					}
+					else
+					{
+						logInfo("Deny <pid=%d> to access %ws", 
+							pid, name.c_str());
+					}
 				}
 			}
-		}
-
-		if (res)
-		{
-			logInfo("Allow <pid=%d> to access %ws",
-				pid, name.c_str());
-		}
-		else
-		{
-			logInfo("Deny <pid=%d> to access %ws", 
-				pid, name.c_str());
 		}
 
 		return res;

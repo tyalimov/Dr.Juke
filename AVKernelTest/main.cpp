@@ -6,6 +6,22 @@
 
 using namespace std;
 
+#define DR_JUKE_BASE_KEY L"SOFTWARE\\Dr.Juke"
+#define DR_JUKE_SEC_KEY L"SOFTWARE\\Dr.Juke\\AVSecGeneric"
+#define DR_JUKE_TEST_KEY L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\Test"
+
+
+const wchar_t* keys[] = {
+    L"AVSecGeneric\\PsMonitor\\ProtectedObjects",
+    L"AVSecGeneric\\PsMonitor\\ExcludedProcesses",
+    L"AVSecGeneric\\RegFilter\\ProtectedObjects",
+    L"AVSecGeneric\\RegFilter\\ExcludedProcesses",
+    L"AVSecGeneric\\FsFilter\\ProtectedObjects",
+    L"AVSecGeneric\\FsFilter\\ExcludedProcesses",
+    L"AVSecGeneric\\PipeFilter\\ProtectedObjects",
+    L"AVSecGeneric\\PipeFilter\\ExcludedProcesses",
+};
+
 #define KPM_PROTECTED_OBJECTS L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\PsMonitor\\ProtectedObjects" 
 #define KPM_EXCLUDED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\PsMonitor\\ExcludedProcesses"
 
@@ -54,6 +70,7 @@ typedef DWORD (__stdcall *NtQueryKeyFunc)(
 	ULONG  Length,
 	PULONG  ResultLength);
 
+#pragma region api
 
 DWORD WriteRegistryKey(HKEY hBaseKey, LPCWSTR lpSubKey, 
 	LPCWSTR ValueName, LPCVOID Data, DWORD DataLen, DWORD DataType)
@@ -324,6 +341,10 @@ DWORD ProtectProcess(wstring ps_image_path, ACCESS_MASK access=0, bool deprotect
 	return res;
 }
 
+#pragma endregion api
+
+#pragma region test_primitives
+
 DWORD TestOpenKey(HKEY base, const wstring& subkey_path, ACCESS_MASK access)
 {
     HKEY hKey;
@@ -368,6 +389,93 @@ DWORD TestOpenProcess(DWORD pid, ACCESS_MASK access)
     return GetLastError();
 }
 
+#pragma endregion test_primitives
+
+#pragma region tests
+
+bool TestBadValue()
+{
+    DWORD Data = 0x12345678;
+    HKEY hBase = HKEY_LOCAL_MACHINE;
+    const wchar_t* ValueName1 = L"bla-bla";
+    const wchar_t* ValueName2 = L"bla-bla2";
+
+    // Bad reg dword value
+    WriteRegistryKey(HKEY_LOCAL_MACHINE, KRF_PROTECTED_OBJECTS, 
+        ValueName1, &Data, sizeof(DWORD), REG_DWORD);
+
+    // Bad value type 
+    WriteRegistryKey(HKEY_LOCAL_MACHINE, KRF_PROTECTED_OBJECTS, 
+        ValueName2, 0, 0, REG_SZ);
+
+    DeleteRegistryValue(HKEY_LOCAL_MACHINE, KRF_PROTECTED_OBJECTS, ValueName1);
+    DeleteRegistryValue(HKEY_LOCAL_MACHINE, KRF_PROTECTED_OBJECTS, ValueName2);
+
+    return true;
+}
+
+void resetRegistryKeys()
+{
+    HKEY hKey;
+    HKEY hOut;
+    DWORD err;
+    
+    err = RegCreateKeyEx(HKEY_LOCAL_MACHINE, 
+            DR_JUKE_BASE_KEY, 0, 0, 0, KEY_ALL_ACCESS, NULL, &hKey, 0);
+
+    if (err == ERROR_SUCCESS)
+    {
+        for (int i = 0; i < RTL_NUMBER_OF(keys); i++)
+        {
+            err = RegDeleteKey(hKey, keys[i]);
+        }
+
+        CloseHandle(hKey);
+    }
+
+    err = RegCreateKeyEx(HKEY_LOCAL_MACHINE, 
+            DR_JUKE_BASE_KEY, 0, 0, 0, KEY_ALL_ACCESS, NULL, &hKey, 0);
+
+    if (err == ERROR_SUCCESS)
+    {
+		for (int i = 0; i < RTL_NUMBER_OF(keys); i++)
+		{
+		    err = RegCreateKey(hKey, keys[i], &hOut);
+            CloseHandle(hOut);
+		}
+
+        CloseHandle(hKey);
+    }
+
+}
+
+void TestExistingPid(const wchar_t* self)
+{
+    HKEY hKey;
+    DWORD err;
+
+    resetRegistryKeys();
+
+	err = RegCreateKey(HKEY_LOCAL_MACHINE, DR_JUKE_TEST_KEY, &hKey);
+
+    ProtectKey(HKEY_LOCAL_MACHINE, DR_JUKE_TEST_KEY, 0);
+
+    err = TestOpenKey(HKEY_LOCAL_MACHINE, DR_JUKE_TEST_KEY, KEY_READ);
+    printf("TestOpenKey open res=%d\n", err);
+	
+    AddRemoveExcludedProcess(self, RegFilter);
+
+    err = TestOpenKey(HKEY_LOCAL_MACHINE, DR_JUKE_TEST_KEY, KEY_READ);
+    printf("TestOpenKey open after exclude res=%d\n", err);
+
+    err = RegDeleteKey(HKEY_LOCAL_MACHINE, DR_JUKE_TEST_KEY);
+
+    CloseHandle(hKey);
+    resetRegistryKeys();
+}
+
+#pragma endregion tests
+
 void usage()
 {
     // protect key SOFTWARE\Microsoft 0x00020000
@@ -409,6 +517,12 @@ void usage()
 
 int wmain(int argc, wchar_t *argv[])
 {
+
+    TestExistingPid(argv[0]);
+
+    if (true)
+        return 1;
+
     if (argc == 1)
     {
         usage();
