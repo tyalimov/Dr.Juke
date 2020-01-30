@@ -9,4 +9,5 @@ NTSTATUS PreferencesReadFull(LPCWSTR AbsRegPath,
 NTSTATUS PreferencesReadBasic(LPCWSTR AbsRegPath,
 	eastl::function<void(PWCH Name, ULONG NameLength)> onRecord);
 
-NTSTATUS PreferencesReset(LPCWSTR AbsRegPath);
+NTSTATUS PreferencesQueryKeyValue(const wchar_t* szAbsRegPath,
+	const wchar_t* szValueName, eastl::function<void(PKEY_VALUE_FULL_INFORMATION)> onRecord);

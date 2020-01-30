@@ -51,7 +51,7 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 		if (NT_SUCCESS(Status))
 		{
 			gRegMonInit = true;
-			gRegMon->readConfiguration();
+			gRegMon->regReadConfiguration();
 		}
 		else
 		{

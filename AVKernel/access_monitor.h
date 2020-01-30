@@ -14,9 +14,9 @@ class AccessMonitor
 {
 protected:
 
-	wstring mBaseKey;
-	const wstring mcExcludedProcesses = L"\\ExcludedProcesses";
-	const wstring mcProtectedObjects = L"\\ProtectedObjects";
+	wstring mKeyBase;
+	const wstring mKeyExcludedProcesses = L"\\ExcludedProcesses";
+	const wstring mKeyProtectedObjects = L"\\ProtectedObjects";
 
 	// Protected objects
 	hash_map<wstring, ACCESS_MASK> mObjects;
@@ -27,10 +27,7 @@ protected:
 
 	GuardedMutex mLockProc;
 	GuardedMutex mLockObj;
-	GuardedMutex mLockStatus;
 	
-	bool mEnabled = false;
-
 public:
 
 	//-------------------------------------------------------------------------------->
@@ -38,31 +35,13 @@ public:
 
 	// Must be called before filter callback is registered
 	AccessMonitor(const wstring& key_path)
-		: mBaseKey(key_path) {}
+		: mKeyBase(key_path) {}
 
 	virtual ~AccessMonitor() = default;
 
 	// Forbid copy/move
 	AccessMonitor(const AccessMonitor&) = delete;
 	AccessMonitor(AccessMonitor&&) = delete;
-
-	//-------------------------------------------------------------------------------->
-	// Driver <enable/disable/get state> routines
-
-	void setEnabled(bool status)
-	{
-		mLockStatus.acquire();
-		mEnabled = status;
-		mLockStatus.release();
-
-		logInfo("Filter mode changed. mEnabled=%d", mEnabled);
-	}
-
-	bool isEnabled() 
-	{
-		LockGuard<GuardedMutex> guard(&mLockStatus);
-		return mEnabled;
-	}
 
 	//-------------------------------------------------------------------------------->
 	// Protected objects manipulation routines
@@ -212,34 +191,31 @@ public:
 	{
 		bool res = true;
 
-		if (isEnabled())
+		if (isProcessExcluded(pid))
 		{
-			if (isProcessExcluded(pid))
-			{
-				logInfo("Allow excluded <pid=%d> to access %ws",
-					pid, name.c_str());
-			}
-			else
-			{
-				LockGuard<GuardedMutex> guard(&mLockObj);
+			logInfo("Allow excluded <pid=%d> to access %ws",
+				pid, name.c_str());
+		}
+		else
+		{
+			LockGuard<GuardedMutex> guard(&mLockObj);
 
-				auto it = mObjects.find(name);
-				if (it != mObjects.end())
+			auto it = mObjects.find(name);
+			if (it != mObjects.end())
+			{
+				ACCESS_MASK actual_access = it->second;
+				if (!(desired_access & actual_access))
+					res = false;
+
+				if (res)
 				{
-					ACCESS_MASK actual_access = it->second;
-					if (!(desired_access & actual_access))
-						res = false;
-
-					if (res)
-					{
-						logInfo("Allow <pid=%d> to access %ws",
-							pid, name.c_str());
-					}
-					else
-					{
-						logInfo("Deny <pid=%d> to access %ws", 
-							pid, name.c_str());
-					}
+					logInfo("Allow <pid=%d> to access %ws",
+						pid, name.c_str());
+				}
+				else
+				{
+					logInfo("Deny <pid=%d> to access %ws", 
+						pid, name.c_str());
 				}
 			}
 		}
@@ -255,7 +231,7 @@ public:
 		PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted)
 	{
 		PUNICODE_STRING ValueName = PreInfo->ValueName;
-		if (KeyPath == mBaseKey + mcProtectedObjects)
+		if (KeyPath == mKeyBase + mKeyProtectedObjects)
 		{
 			if (bDeleted)
 			{
@@ -279,7 +255,7 @@ public:
 					});
 			}
 		}
-		else if (KeyPath == mBaseKey + mcExcludedProcesses)
+		else if (KeyPath == mKeyBase + mKeyExcludedProcesses)
 		{
 			if (bDeleted)
 			{
@@ -352,7 +328,7 @@ protected:
 	void regReadExcludedProcesses()
 	{
 		NTSTATUS status;
-		wstring proc_key = mBaseKey + mcExcludedProcesses;
+		wstring proc_key = mKeyBase + mKeyExcludedProcesses;
 
 		const auto cbAddExcludedProcess = [this](PWCH name, ULONG name_len)
 		{
@@ -403,7 +379,7 @@ protected:
 	void regReadProtectedObjects()
 	{
 		NTSTATUS status;
-		wstring proc_key = mBaseKey + mcProtectedObjects;
+		wstring proc_key = mKeyBase + mKeyProtectedObjects;
 
 		const auto cbAddProtectedObject = [this](PWCH Name, 
 			ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type)
@@ -481,10 +457,8 @@ protected:
 
 public:
 
-	void readConfiguration()
+	void regReadConfiguration()
 	{
-		setEnabled(true);
-
 		// Read names of protected objects
 		// and allowed access from registry
 		regReadProtectedObjects();
@@ -495,16 +469,16 @@ public:
 		updatePidsForExcludedProcesses();
 
 		if (mObjects.size() == 0)
-			logWarning("No protected objects found!");
+			logWarning("Configuration: No protected objects found!");
 
 		if (mProcImages.size() == 0)
-			logWarning("No excluded processes found!");
+			logWarning("Configuration: No excluded processes found!");
 	}
 
 };
 
 template <typename TFilterLog, LogMode INFO, LogMode WARN, LogMode ERR>
-class FoldingAccessMonitor : public AccessMonitor<TFilterLog, INFO, WARN, ERR>
+class HierarchyAccessMonitor : public AccessMonitor<TFilterLog, INFO, WARN, ERR>
 {
 private:
 
@@ -530,38 +504,35 @@ private:
 
 public:
 
-	FoldingAccessMonitor(const wstring& key_path) : AccessMonitor(key_path) {}
+	HierarchyAccessMonitor(const wstring& key_path) : AccessMonitor(key_path) {}
 
 	virtual bool isAccessAllowed(PID pid, const wstring& name, ACCESS_MASK desired_access)
 	{
 		bool res = true;
 
-		if (isEnabled())
+		if (isProcessExcluded(pid))
 		{
-			if (isProcessExcluded(pid))
+			logInfo("Allow excluded <pid=%d> to access %ws",
+				pid, name.c_str());
+		}
+		else
+		{
+			auto it = findRule(name);
+			if (it != mObjects.end())
 			{
-				logInfo("Allow excluded <pid=%d> to access %ws",
-					pid, name.c_str());
-			}
-			else
-			{
-				auto it = findRule(name);
-				if (it != mObjects.end())
-				{
-					ACCESS_MASK actual_access = it->second;
-					if (!(desired_access & actual_access))
-						res = false;
+				ACCESS_MASK actual_access = it->second;
+				if (!(desired_access & actual_access))
+					res = false;
 
-					if (res)
-					{
-						logInfo("Allow <pid=%d> to access %ws",
-							pid, name.c_str());
-					}
-					else
-					{
-						logInfo("Deny <pid=%d> to access %ws", 
-							pid, name.c_str());
-					}
+				if (res)
+				{
+					logInfo("Allow <pid=%d> to access %ws",
+						pid, name.c_str());
+				}
+				else
+				{
+					logInfo("Deny <pid=%d> to access %ws", 
+						pid, name.c_str());
 				}
 			}
 		}
@@ -570,12 +541,12 @@ public:
 	}
 };
 
-using PipeAccessMonitor = FoldingAccessMonitor<FilterLog<PipeFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
-using FileSystemAccessMonitor = FoldingAccessMonitor<FilterLog<FsFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
-using RegistryAccessMonitor = FoldingAccessMonitor<FilterLog<RegFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
-using ProcessAccessMonitor = FoldingAccessMonitor<FilterLog<PsMonitorPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using ProcessAccessMonitor = AccessMonitor<FilterLog<PsMonitorPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using NamedPipeAccessMonitor = AccessMonitor<FilterLog<PipeFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using RegistryAccessMonitor = HierarchyAccessMonitor<FilterLog<RegFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using FileSystemAccessMonitor = HierarchyAccessMonitor<FilterLog<FsFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
 
-using PPipeAccessMonitor = PipeAccessMonitor*;
+using PNamedPipeAccessMonitor = NamedPipeAccessMonitor*;
 using PFileSystemAccessMonitor = FileSystemAccessMonitor*;
 using PRegistryAccessMonitor = RegistryAccessMonitor*;
 using PProcessAccessMonitor = ProcessAccessMonitor*;

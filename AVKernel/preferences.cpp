@@ -33,23 +33,23 @@ NTSTATUS PreferencesReadFull(LPCWSTR AbsRegPath,
 
 			if (DataSize > 0)
 			{
-				CHAR* kvfi_ch = new CHAR[DataSize];
-				KEY_VALUE_FULL_INFORMATION* kvfi = (KEY_VALUE_FULL_INFORMATION*)kvfi_ch;
-				if (kvfi)
+				CHAR* InfoBuffer = new CHAR[DataSize];
+				KEY_VALUE_FULL_INFORMATION* Info = (KEY_VALUE_FULL_INFORMATION*)InfoBuffer;
+				if (Info)
 				{
-					Status = ZwEnumerateValueKey(KeyHandle, idx, KeyValueFullInformation, kvfi, DataSize, &DataSize);
+					Status = ZwEnumerateValueKey(KeyHandle, idx, KeyValueFullInformation, Info, DataSize, &DataSize);
 					if (NT_SUCCESS(Status))
 					{
 						onRecord(
-							kvfi->Name, kvfi->NameLength,
-							(PVOID)(kvfi_ch + kvfi->DataOffset), 
-							kvfi->DataLength, kvfi->Type
+							Info->Name, Info->NameLength,
+							(PVOID)(InfoBuffer + Info->DataOffset), 
+							Info->DataLength, Info->Type
 						);
 					}
 					else
 						kprintf(TRACE_ERROR, "ZwEnumerateValueKey failed");
 
-					delete[] kvfi_ch;
+					delete[] InfoBuffer;
 				}
 				else
 					kprintf(TRACE_ERROR, "Operator new returned nullptr");
@@ -101,17 +101,17 @@ NTSTATUS PreferencesReadBasic(LPCWSTR AbsRegPath,
 
 			if (DataSize > 0)
 			{
-				CHAR* kvbi_ch = new CHAR[DataSize];
-				KEY_VALUE_BASIC_INFORMATION* kvbi = (KEY_VALUE_BASIC_INFORMATION*)kvbi_ch;
-				if (kvbi)
+				CHAR* InfoBuffer = new CHAR[DataSize];
+				KEY_VALUE_BASIC_INFORMATION* Info = (KEY_VALUE_BASIC_INFORMATION*)InfoBuffer;
+				if (Info)
 				{
-					Status = ZwEnumerateValueKey(KeyHandle, idx, KeyValueBasicInformation, kvbi, DataSize, &DataSize);
+					Status = ZwEnumerateValueKey(KeyHandle, idx, KeyValueBasicInformation, Info, DataSize, &DataSize);
 					if (NT_SUCCESS(Status))
-						onRecord(kvbi->Name, kvbi->NameLength);
+						onRecord(Info->Name, Info->NameLength);
 					else
 						kprintf(TRACE_ERROR, "ZwEnumerateValueKey failed");
 
-					delete[] kvbi_ch;
+					delete[] InfoBuffer;
 				}
 				else
 					kprintf(TRACE_ERROR, "Operator new returned nullptr");
@@ -132,25 +132,61 @@ NTSTATUS PreferencesReadBasic(LPCWSTR AbsRegPath,
 	return Status;
 }
 
-NTSTATUS PreferencesReset(LPCWSTR AbsRegPath)
+NTSTATUS PreferencesQueryKeyValue(const wchar_t* szAbsRegPath, 
+	const wchar_t* szValueName, function<void(PKEY_VALUE_FULL_INFORMATION)> onRecord)
 {
 	NTSTATUS Status;
 	HANDLE KeyHandle;
 	OBJECT_ATTRIBUTES Attrs;
 	UNICODE_STRING KeyPath;
+	UNICODE_STRING ValueName;
+	ULONG Size = 0;
+	CHAR* InfoBuffer;
+	PKEY_VALUE_FULL_INFORMATION Info;
 
-	RtlInitUnicodeString(&KeyPath, AbsRegPath);
+	RtlInitUnicodeString(&KeyPath, szAbsRegPath);
 	InitializeObjectAttributes(&Attrs, &KeyPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
-	Status = ZwOpenKeyEx(&KeyHandle, KEY_WRITE, &Attrs, 0);
-
-	if (NT_SUCCESS(Status))
+	Status = ZwOpenKeyEx(&KeyHandle, KEY_READ, &Attrs, 0);
+	if (!NT_SUCCESS(Status))
 	{
-		ZwDeleteKey(KeyHandle);
-		ZwClose(KeyHandle);
+		kprintf(TRACE_ERROR, 
+			"ZwOpenKeyEx failed <Status=0x%08X>", Status);
+
+		return Status;
 	}
 
-	Status = ZwCreateKey(&KeyHandle, KEY_WRITE,
-		&Attrs, 0, NULL, REG_OPTION_NON_VOLATILE, NULL);
+	RtlInitUnicodeString(&ValueName, szValueName);
+	Status = ZwQueryValueKey(KeyHandle, &ValueName,
+		KeyValueFullInformation, NULL, Size, &Size);
+
+	if (Status != STATUS_BUFFER_TOO_SMALL && Status != STATUS_BUFFER_OVERFLOW)
+	{
+		kprintf(TRACE_ERROR, 
+			"ZwQueryValueKey failed <Status=0x%08X>", Status);
+
+		return Status;
+	}
+
+	if (Size > 0)
+	{
+		InfoBuffer = new CHAR[Size];
+		if (InfoBuffer)
+		{
+			Info = (PKEY_VALUE_FULL_INFORMATION)InfoBuffer;
+			Status = ZwQueryValueKey(KeyHandle, &ValueName, 
+				KeyValueFullInformation, InfoBuffer, Size, &Size);
+
+			if (NT_SUCCESS(Status))
+				onRecord(Info);
+
+			delete[] InfoBuffer;
+		}
+		else
+			Status = STATUS_INSUFFICIENT_RESOURCES;
+	}
+	else
+		Status = STATUS_BUFFER_TOO_SMALL;
+
 	ZwClose(KeyHandle);
 
 	kprint_st(TRACE_PREF, Status);
