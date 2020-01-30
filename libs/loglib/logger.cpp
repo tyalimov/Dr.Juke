@@ -1,6 +1,6 @@
 ﻿#include "logger.h"
+#include "log_objects.h"
 
-#include <common/aliases.h>
 #include <winlib/filesys.h>
 #include <winlib/utils.h>
 #include <winlib/windows_exception.h>
@@ -16,108 +16,31 @@
 #include <shlobj.h>
 #include <io.h>
 #include <fcntl.h>
-
+#include <iostream>
 
 #define ERROR_WIDE_STRING L""
 #define ERROR_BYTES_STRING ""
 
 const std::wstring kLogStringFormat = L"%02d:%02d:%02d.%03d [%s] %s";
-const std::wstring kLogExtension    = L"log"; 
+const std::wstring kLogExtension    = L".log"; 
 
 namespace drjuke::loglib
 {
-    enum LogColor
-    {
-        kLogTrace = FOREGROUND_BLUE  | FOREGROUND_GREEN     | FOREGROUND_RED       | FOREGROUND_INTENSITY,
-        kLogInfo  = FOREGROUND_BLUE  | FOREGROUND_GREEN     | FOREGROUND_INTENSITY,
-        kLogWarn  = FOREGROUND_RED   | FOREGROUND_GREEN     | FOREGROUND_INTENSITY,
-        kLogFatal = FOREGROUND_RED   | FOREGROUND_BLUE      | FOREGROUND_INTENSITY,
-        kLogDebug = FOREGROUND_GREEN | FOREGROUND_INTENSITY,
-        kLogError = FOREGROUND_RED   | FOREGROUND_INTENSITY,
-    };
 
-    namespace
-    {
-        std::map<LogLevel, std::wstring> g_TypesStr
-        {
-            { LogLevel::kLogTrace, L"TRACE" },
-            { LogLevel::kLogInfo,  L"INFO"  },
-            { LogLevel::kLogDebug, L"DEBUG" },
-            { LogLevel::kLogWarn,  L"WARN"  },
-            { LogLevel::kLogError, L"ERROR" },
-            { LogLevel::kLogFatal, L"FATAL" },
-        };
-
-        std::map<LogLevel, LogColor> g_TypesColors
-        {
-            { LogLevel::kLogTrace, LogColor::kLogTrace },
-            { LogLevel::kLogInfo,  LogColor::kLogInfo  },
-            { LogLevel::kLogDebug, LogColor::kLogDebug },
-            { LogLevel::kLogWarn,  LogColor::kLogWarn  },
-            { LogLevel::kLogError, LogColor::kLogError },
-            { LogLevel::kLogFatal, LogColor::kLogFatal },
-        };
-
-        constexpr unsigned int kWaitLogTimeout{ 1000 };
-    }
-
-    std::shared_ptr<Logger> LogWriter::m_logger = std::make_shared<Logger>();
-
-    std::wstring ToString(LogLevel type)
-    {
-        return g_TypesStr[type];
-    }
-    
-    unsigned int GetColor(LogLevel level)
-    {
-        return g_TypesColors[level];
-    }
-
-    void LogWriter::log(const LogLevel &type, const std::wstring &text)
-    {
-        assert(m_log);
-
-        std::wstring log_text = m_logger_name + L" - " + text;
-
-        if (m_logger)
-        {
-            m_logger->write(type, text);
-        }
-    }
-
-    void LogWriter::setMaxLogSize(size_t size)
-    {
-        m_logger->setMaxLogSize(size);
-    }
-
-    void LogWriter::startLog()
-    {
-        assert(!m_Log && "Log has already started!");
-        
-        if(!m_logger) 
-        {
-            m_logger.reset(new Logger());
-        }
-    }
-
-    void LogWriter::stopLog()
-    {
-        m_logger.reset();
-    }
-
-#define CONSOLE_AGENT_LOG
-
-    Logger::Logger()
-        : m_exit(false)
+    Logger::Logger(LogOutput direction)
+        : m_direction(direction)
+        , m_exit(false)
         , m_max_file_size(0)
     {
-#ifdef FILE_AGENT_LOG
-        createLogFile();
-#endif
 
-#ifdef CONSOLE_AGENT_LOG
-        createLogConsole();
-#endif
+        switch (m_direction)
+        {
+            case LogOutput::kFile:           createLogFile();                     break;
+            case LogOutput::kRemoteConsole:  createLogConsole();                  break;
+            case LogOutput::kDefaultConsole: /*do nothing*/                       break;
+            default:                         createLogFile();                     break;
+        }
+
         m_log_thread_ptr.reset(new std::thread{ &Logger::runLog, this });
     }
 
@@ -145,17 +68,12 @@ namespace drjuke::loglib
         m_non_empty_queue.notify_one();
     }
 
-    void Logger::setMaxLogSize(long long size)
-    {
-        m_max_file_size = size;
-    }
-
     void Logger::writeToConsole(const LogString &text)
     {
         auto& level     = text.first;
         auto& msg       = text.second;	
         auto  color     = GetColor(level);
-        auto console    = ::GetStdHandle(STD_OUTPUT_HANDLE);
+        auto  console   = ::GetStdHandle(STD_OUTPUT_HANDLE);
         
         ::SetConsoleTextAttribute(console, color);
         ::WriteConsoleW
@@ -170,22 +88,21 @@ namespace drjuke::loglib
 
     Path Logger::getDefaultLogFolder()
     {
-        return winlib::filesys::GetDesktopDirectory();
+        return winlib::filesys::getDesktopDirectory();
     }
 
     std::wstring Logger::createLogName() const
     {
         auto time = winlib::utils::GetCurrentSystemTime();
-        auto user = winlib::utils::GetCurrentUserName();
-
+       
         std::wstringstream stream;
-        stream << boost::wformat(L"drjuke.%s.%d%02d%02d") 
-            % user 
-            % time.wYear 
+        stream << boost::wformat(L"drjuke_log_%d.%02d.%02d.%s") 
+            % time.wDay
             % time.wMonth 
-            % time.wDay;
+            % time.wYear 
+            % kLogExtension;
 
-        return  stream.str();
+        return stream.str();
     }
 
     bool Logger::emptyDeque()
@@ -209,7 +126,7 @@ namespace drjuke::loglib
             while (emptyDeque())
             {
                 std::unique_lock<std::mutex> lock(m_non_empty_queue_mutex);
-                if (m_non_empty_queue.wait_until(lock, std::chrono::system_clock::now() + std::chrono::milliseconds(kWaitLogTimeout)) == std::cv_status::timeout)
+                if (m_non_empty_queue.wait_until(lock, std::chrono::system_clock::now() + std::chrono::milliseconds(WAIT_LOG_TIMEOUT)) == std::cv_status::timeout)
                 {
                     if (!isLogRunning())
                     {
@@ -220,12 +137,12 @@ namespace drjuke::loglib
 
             auto log_string = popDeque();
 
-#ifdef CONSOLE_AGENT_LOG
-            writeToConsole(log_string);
-#endif
-#ifdef FILE_AGENT_LOG
-            writeToFile(log_string);
-#endif
+            switch (m_direction)
+            {
+                case LogOutput::kFile:           writeToFile(log_string);    break;
+                case LogOutput::kRemoteConsole:  writeToConsole(log_string); break;
+                case LogOutput::kDefaultConsole: writeToDefaultConsole(log_string); break;
+            }
         }
     }
 
@@ -280,21 +197,20 @@ namespace drjuke::loglib
         }
     }
 
+    void Logger::writeToDefaultConsole(const LogString &text)
+    {
+        std::wcout << text.second << std::endl;
+    }
+
     void Logger::createLogFile()
     {
         auto log_dir  = getDefaultLogFolder();
         auto log_mame = createLogName();
 
-        std::wstringstream stream;
-        stream << boost::wformat(L"%s\\%s.%s") 
-            % log_dir 
-            % log_mame 
-            % kLogExtension;
+        m_log_file_path = log_dir / log_mame;
 
-        m_log_file_path = stream.str();
-        stream.str(std::wstring());
-
-        winlib::filesys::CreateNewFile(m_log_file_path);
+        winlib::filesys::deleteFile(m_log_file_path);
+        winlib::filesys::createFile(m_log_file_path);
 
         m_file = winlib::UniqueHandle(::CreateFileW
         (

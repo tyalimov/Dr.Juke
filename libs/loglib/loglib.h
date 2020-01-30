@@ -1,9 +1,6 @@
 ﻿#pragma once
 
-#include "logger.h"
+#include "log_writer.h"
 #include "loghlp.h"
 
 #include <boost/format/format_fwd.hpp>
-#include <undecorate.h>
-
-//BOOST_LINK_LIBRARY("format")

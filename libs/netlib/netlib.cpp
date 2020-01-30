@@ -11,7 +11,7 @@ namespace drjuke::netlib
 
     UpdaterPtr Factory::getUpdater(const std::vector<Path>& filenames, 
                                          const Path&              destination,
-                                         ProgressBarPtr           progress_bar)
+                                         LoadingProgressPtr           progress_bar)
     {
         return std::make_unique<Updater>(filenames, destination, progress_bar);
     }

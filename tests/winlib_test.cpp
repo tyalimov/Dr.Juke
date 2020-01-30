@@ -33,7 +33,7 @@ catch (const std::exception& ex)
 
 TEST(winlib, GetDesktopDirectory) try
 {
-    auto path = winlib::filesys::GetDesktopDirectory();
+    auto path = winlib::filesys::getDesktopDirectory();
     std::cout << path << std::endl;
     SUCCEED();
 }

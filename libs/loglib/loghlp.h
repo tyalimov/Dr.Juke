@@ -1,7 +1,7 @@
 #pragma once
 
 #include "log_stream.h"
-#include "logger.h"
+#include "log_writer.h"
 
 #include <sstream>
 #include <tchar.h>
@@ -38,8 +38,8 @@
 
 #   define LOG_TRACE(msg)  LOG_WITH_LEVEL(drjuke::loglib::LogLevel::kLogTrace, msg)
 #   define LOG_DEBUG(msg)  LOG_WITH_LEVEL(drjuke::loglib::LogLevel::kLogDebug, msg)
-#   define LOG_INFO (msg)  LOG_WITH_LEVEL(drjuke::loglib::LogLevel::kLogInfo,  msg)
-#   define LOG_WARN (msg)  LOG_WITH_LEVEL(drjuke::loglib::LogLevel::kLogWarn,  msg)
+#   define LOG_INFO(msg)   LOG_WITH_LEVEL(drjuke::loglib::LogLevel::kLogInfo,  msg)
+#   define LOG_WARN(msg)   LOG_WITH_LEVEL(drjuke::loglib::LogLevel::kLogWarn,  msg)
 #   define LOG_ERROR(msg)  LOG_WITH_LEVEL(drjuke::loglib::LogLevel::kLogError, msg)
 #   define LOG_FATAL(msg)  LOG_WITH_LEVEL(drjuke::loglib::LogLevel::kLogFatal, msg)
 
@@ -47,7 +47,12 @@
 
 #   define SAFE_LOG_TRACE(msg)  LOGHLP_TRY_CATCH_BLOCK(LOG_TRACE(msg))
 #   define SAFE_LOG_DEBUG(msg)  LOGHLP_TRY_CATCH_BLOCK(LOG_DEBUG(msg))
-#   define SAFE_LOG_INFO (msg)  LOGHLP_TRY_CATCH_BLOCK(LOG_INFO (msg))
-#   define SAFE_LOG_WARN (msg)  LOGHLP_TRY_CATCH_BLOCK(LOG_WARN (msg))
+#   define SAFE_LOG_INFO(msg)   LOGHLP_TRY_CATCH_BLOCK(LOG_INFO (msg))
+#   define SAFE_LOG_WARN(msg)   LOGHLP_TRY_CATCH_BLOCK(LOG_WARN (msg))
 #   define SAFE_LOG_ERROR(msg)  LOGHLP_TRY_CATCH_BLOCK(LOG_ERROR(msg))
 #   define SAFE_LOG_FATAL(msg)  LOGHLP_TRY_CATCH_BLOCK(LOG_FATAL(msg))
+
+
+#define START_FILE_LOG()            drjuke::loglib::LogWriter::startLog(drjuke::loglib::LogOutput::kFile);
+#define START_REMOTE_CONSOLE_LOG()  drjuke::loglib::LogWriter::startLog(drjuke::loglib::LogOutput::kRemoteConsole);
+#define START_DEFAULT_CONSOLE_LOG() drjuke::loglib::LogWriter::startLog(drjuke::loglib::LogOutput::kDefaultConsole);

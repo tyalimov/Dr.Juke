@@ -1,11 +1,14 @@
 #include "updater.h"
 
 #include <winlib/filesys.h>
+#include <boost/format.hpp>
 
 #include <iostream>
 
 namespace drjuke::netlib
 {
+    IMPLEMENT_CLASS_LOGGER(Updater);
+
     void Updater::downloadFiles()
     {
         for (const auto& file : m_filenames)
@@ -16,23 +19,23 @@ namespace drjuke::netlib
 
     void Updater::initialize()
     {
-        curl_easy_setopt(m_curl.get(), CURLOPT_VERBOSE,       1L);
         curl_easy_setopt(m_curl.get(), CURLOPT_WRITEFUNCTION, on_ftp_data);
-        curl_easy_setopt(m_curl.get(), CURLOPT_WRITEDATA,     &m_current_download);
+        curl_easy_setopt(m_curl.get(), CURLOPT_WRITEDATA,     m_progress_bar.get());
         curl_easy_setopt(m_curl.get(), CURLOPT_USERNAME,      "test");
         curl_easy_setopt(m_curl.get(), CURLOPT_PASSWORD,      "test");
     }
 
     void Updater::downloadFile(const std::string &filename)
     {
-        auto url = R"(http://127.0.0.1:21/)" + filename;
+        LOG_TRACE(__FUNCTIONW__)
+
+        auto url = R"(ftp://127.0.0.1:21/)" + filename;
 
         curl_easy_setopt(m_curl.get(), CURLOPT_URL, url.c_str());
 
-        // TODO: loglib
-        std::cout << "Started URL=" << url << std::endl;
+        LOG_TRACE(L"Started URL: " + std::wstring(url.begin(), url.end()));
 
-        *m_progress_bar = ProgressBar(filename);
+        *m_progress_bar = LoadingProgress(filename);
 
         curl_easy_perform(m_curl.get());
     }
@@ -40,26 +43,24 @@ namespace drjuke::netlib
     size_t Updater::on_ftp_data(void *buffer, size_t size, size_t nmemb, void *stream)
     try
     {
-        auto       ftp_file  = static_cast<FtpFile*>(stream);
+        auto       progress_bar  = static_cast<LoadingProgress*>(stream);
         const auto real_size = size * nmemb;
 
-        winlib::filesys::AppendFile(ftp_file->filename,
-                                    std::string(static_cast<char*>(buffer), real_size));
+        winlib::filesys::appendFile(progress_bar->m_filename, std::string(static_cast<char*>(buffer), real_size));
 
-        ftp_file->downloaded               += real_size;
-        ftp_file->progress_bar->percentage =  double(ftp_file->downloaded) / double(ftp_file->actual_size);
+        progress_bar->m_loaded += real_size;
 
-        std::cout
-            << "loaded: "              << ftp_file->downloaded               << std::endl
-            << "total: "               << ftp_file->actual_size              << std::endl
-            << "percentage: "          << ftp_file->progress_bar->percentage << std::endl
-            << "---------------------" << std::endl;
-        
+        LOG_TRACE(boost::wformat(L"## file = %s | income = %d | loaded = %d | total = %d")
+            % progress_bar->m_filename
+            % real_size
+            % progress_bar->m_loaded
+            % progress_bar->m_total);
+
         return real_size;
     }
-    catch (...)
+    catch (const std::exception& ex)
     {
-        std::cout << "something went wrong" << std::endl;
+        LOG_ERROR(ex.what());
         return 0;
     }
 }

@@ -7,11 +7,14 @@
 #pragma warning ( pop )
 
 #include <netlib/netlib.h>
+#include "utils.h"
 
 using namespace  drjuke::netlib;
 
 TEST(netlib, UpdateChecker_Regular) try
 {
+    InitialiseEnvironment();
+
     auto update_checker = Factory::getUpdateChecker();
     auto hashes         = update_checker->getActualHashes();
 
@@ -34,13 +37,15 @@ catch (const std::exception& ex)
 
 TEST(netlib, Updater_Regular) try
 {
+    InitialiseEnvironment();
+
     std::vector<drjuke::Path> files
     {
         "test_1.txt",
         "test_2.txt"
     };
 
-    auto progress_bar = std::make_shared<ProgressBar>();
+    auto progress_bar = std::make_shared<LoadingProgress>();
     auto updater = Factory::getUpdater(files, "loaded", progress_bar);
 
     updater->downloadFiles();

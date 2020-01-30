@@ -27,6 +27,15 @@
     <ClInclude Include="..\..\libs\loglib\logger.h">
       <Filter>logging</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\loglib\log_writer.h">
+      <Filter>logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\loglib\log_types.h">
+      <Filter>logging</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\loglib\log_objects.h">
+      <Filter>logging</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\loglib\log_stream.cpp">
@@ -36,6 +45,9 @@
       <Filter>log_stream</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libs\loglib\logger.cpp">
+      <Filter>logging</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\loglib\log_writer.cpp">
       <Filter>logging</Filter>
     </ClCompile>
   </ItemGroup>

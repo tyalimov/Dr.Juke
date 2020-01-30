@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
-#include <minwinbase.h>
+#include <windows.h>
+
 namespace drjuke::winlib::utils
 {
     std::wstring GetCurrentUserName();

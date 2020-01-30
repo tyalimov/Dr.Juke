@@ -5,9 +5,13 @@
 #include <filesystem>
 #include <shlobj.h>
 
+#undef DeleteFile
+#undef CreateFile
+
+// ReSharper disable CppInconsistentNaming
 namespace drjuke::winlib::filesys
 {
-    void CreateNewFile(const Path &file)
+    void createFile(const Path &file)
     {
         UniqueHandle file_handle(CreateFileW
         (
@@ -21,15 +25,26 @@ namespace drjuke::winlib::filesys
         ));
 
         if (file_handle.get() == INVALID_HANDLE_VALUE)
-        {
-            throw WindowsException(("Can't create file - " + file.generic_string()).c_str());
-        }
+            throw WindowsException("Can't create file");
+        
     }
-    void AppendFile(const Path &file, const std::string &data)
+
+    void deleteFile(const Path &file)
+    {
+        if (!fs::exists(file))
+            return;
+
+        auto status = DeleteFileW(file.generic_wstring().c_str());
+
+        if (!status)
+            throw WindowsException("Can't delete file");
+    }
+
+    void appendFile(const Path &file, const std::string &data)
     {
         if (!fs::exists(file))
         {
-            CreateNewFile(file);
+            createFile(file);
         }
 
         UniqueHandle file_handle(CreateFileW
@@ -44,9 +59,7 @@ namespace drjuke::winlib::filesys
         ));
 
         if (file_handle.get() == INVALID_HANDLE_VALUE)
-        {
-            throw WindowsException(("Can't open file - " + file.generic_string()).c_str());
-        }
+            throw WindowsException("Can't open file");
 
         DWORD bytes_written{ 0 };
 
@@ -60,12 +73,10 @@ namespace drjuke::winlib::filesys
         );
 
         if (status == FALSE || data.size() != bytes_written)
-        {
-            throw WindowsException(("Error appending to file - " + file.generic_string()).c_str());
-        }
+            throw WindowsException("Can't append file");
     }
 
-    Path GetDesktopDirectory()
+    Path getDesktopDirectory()
     {
         static wchar_t path[ MAX_PATH + 1 ]{0};
 
@@ -79,10 +90,9 @@ namespace drjuke::winlib::filesys
         );
 
         if (status != S_OK)
-        {
             throw WindowsException("can't get desktop directory", status);
-        }
 
         return Path(path);
     }
 }
+// ReSharper restore CppInconsistentNaming

@@ -20,14 +20,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\loglib\loglib.h" />
+    <ClInclude Include="..\..\libs\loglib\log_objects.h" />
     <ClInclude Include="..\..\libs\loglib\log_stream.h" />
     <ClInclude Include="..\..\libs\loglib\loghlp.h" />
     <ClInclude Include="..\..\libs\loglib\logger.h" />
+    <ClInclude Include="..\..\libs\loglib\log_types.h" />
+    <ClInclude Include="..\..\libs\loglib\log_writer.h" />
     <ClInclude Include="..\..\libs\loglib\string_conv.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\loglib\log_stream.cpp" />
     <ClCompile Include="..\..\libs\loglib\logger.cpp" />
+    <ClCompile Include="..\..\libs\loglib\log_writer.cpp" />
     <ClCompile Include="..\..\libs\loglib\string_conv.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

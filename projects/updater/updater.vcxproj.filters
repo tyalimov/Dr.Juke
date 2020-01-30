@@ -11,6 +11,9 @@
     <Filter Include="winapi_stuff">
       <UniqueIdentifier>{cae2730b-c630-49f4-9ce4-f2e8c3b3b463}</UniqueIdentifier>
     </Filter>
+    <Filter Include="windows">
+      <UniqueIdentifier>{b9503582-5b70-4527-a1fd-e1c8e7e16291}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\apps\updater\updater.h">
@@ -25,10 +28,22 @@
     <ClInclude Include="..\..\apps\updater\framework.h">
       <Filter>winapi_stuff</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\apps\updater\main_window.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\updater\progress_bar.h">
+      <Filter>windows</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\apps\updater\updater.cpp">
       <Filter>updater</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\updater\main_window.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\updater\progress_bar.cpp">
+      <Filter>windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

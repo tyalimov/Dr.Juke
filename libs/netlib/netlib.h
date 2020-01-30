@@ -13,23 +13,26 @@ LINK_LIBRARY("curl\\libcurl")
 
 namespace drjuke::netlib
 {
-    struct ProgressBar
+    struct LoadingProgress
     {
-        Path   filename;
-        double percentage;
+        Path   m_filename;
+        size_t m_loaded;
+        size_t m_total;
 
-        ProgressBar()
-            : filename()
-            , percentage(0.0)
+        LoadingProgress()
+            : m_filename()
+            , m_loaded(0)
+            , m_total(0)
         {}
 
-        explicit ProgressBar(Path filename_)
-            : filename(filename_)
-            , percentage(0.0)
+        explicit LoadingProgress(const Path& filename)
+            : m_filename(filename)
+            , m_loaded(0)
+            , m_total(fs::file_size(filename))
         {}
     };
 
-    using ProgressBarPtr = std::shared_ptr<ProgressBar>;
+    using LoadingProgressPtr = std::shared_ptr<LoadingProgress>;
     
     class Factory
     {
@@ -37,7 +40,7 @@ namespace drjuke::netlib
         [[nodiscard]] static UpdateCheckerPtr getUpdateChecker();
         [[nodiscard]] static UpdaterPtr       getUpdater(const std::vector<Path>& filenames,
                                                          const Path&              destination,
-                                                         ProgressBarPtr           progress_bar);
+                                                         LoadingProgressPtr       progress_bar);
     };
 
 

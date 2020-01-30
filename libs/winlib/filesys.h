@@ -1,9 +1,16 @@
-#pragma once
+﻿#pragma once
 #include <common/aliases.h>
 
+// Здесь была изменена конвенция именования
+// из-за конфликтов с макросами из windows.h
 namespace drjuke::winlib::filesys
 {
-    void CreateNewFile(const Path& file);
-    void AppendFile(const Path& file, const std::string& data);
-    Path GetDesktopDirectory();
+    // ReSharper disable CppInconsistentNaming
+
+    void createFile(const Path& file);
+    void deleteFile(const Path& file);
+    void appendFile(const Path& file, const std::string& data);
+    Path getDesktopDirectory();
+
+    // ReSharper restore CppInconsistentNaming
 }
