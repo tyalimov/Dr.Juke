@@ -47,6 +47,32 @@ FsFilterExit (
     _In_ FLT_FILTER_UNLOAD_FLAGS Flags
     );
 
+PFileSystemAccessMonitor gFsMon = nullptr;
+GuardedMutex gFsMonLock;
+
+PFileSystemAccessMonitor FsFilterGetInstancePtr() 
+{
+	LockGuard<GuardedMutex> guard(&gFsMonLock);
+	return gFsMon;
+}
+
+bool FsFilterNewInstance()
+{
+	LockGuard<GuardedMutex> guard(&gFsMonLock);
+
+	gFsMon = new FileSystemAccessMonitor(KFF_BASE_KEY);
+	gFsMon->regReadConfiguration();
+	return gFsMon != nullptr;
+}
+
+void FsFilterDeleteInstance()
+{
+	gFsMonLock.acquire();
+	delete gFsMon;
+	gFsMon = nullptr;
+	gFsMonLock.release();
+}
+
 PFLT_FILTER gFilterHandle = nullptr;
 
 CONST FLT_REGISTRATION FilterRegistration = {
@@ -99,31 +125,46 @@ FLT_PREOP_CALLBACK_STATUS FltCreatePreOperation(
 {
 	NTSTATUS Status;
 	ACCESS_MASK DesiredAccess;
-	PFLT_FILE_NAME_INFORMATION fltName;
+	PFLT_FILE_NAME_INFORMATION fltFileInfo;
 
 	UNREFERENCED_PARAMETER(FltObjects);
 	UNREFERENCED_PARAMETER(CompletionContext);
 
+	// Ignore windows system process
+	PID CurrentProcessId = PsGetCurrentProcessId();
+	if (CurrentProcessId == (PID)4)
+		return FLT_PREOP_SUCCESS_NO_CALLBACK;
+
 	DesiredAccess = Data->Iopb->Parameters.Create.SecurityContext->DesiredAccess;
-	Status = FltGetFileNameInformation(Data, FLT_FILE_NAME_NORMALIZED, &fltName);
+	Status = FltGetFileNameInformation(Data, FLT_FILE_NAME_NORMALIZED, &fltFileInfo);
 
 	if (!NT_SUCCESS(Status))
 	{
 		if (Status != STATUS_OBJECT_PATH_NOT_FOUND)
-			kprintf(TRACE_INFO, "FltGetFileNameInformation() failed with code:%08x", Status);
+		{
+			kprintf(TRACE_ERROR, "FltGetFileNameInformation() "
+				"failed <Status=0x%08X>", Status);
+		}
 
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
 
-	//kprintf(TRACE_FSFILTER, "%Name=%wZ Component=%wZ", fltName->Name, fltName->FinalComponent);
-	FltReleaseFileNameInformation(fltName);
+	bool allowed = true;
+	PUNICODE_STRING usName = &fltFileInfo->Name;
 
-	// if (FALSE)
-	// {
-	// 	kprintf(TRACE_INFO, "Operation has been cancelled for: %wZ", &Data->Iopb->TargetFileObject->FileName);
-	// 	Data->IoStatus.Status = STATUS_NO_SUCH_FILE;
-	// 	return FLT_PREOP_COMPLETE;
-	// }
+	if (gFsMon != nullptr)
+	{
+		wstring name(usName->Buffer, usName->Length / sizeof(WCHAR));
+		allowed = gFsMon->isAccessAllowed(CurrentProcessId, name, DesiredAccess);
+	}
+
+	FltReleaseFileNameInformation(fltFileInfo);
+
+	if (!allowed)
+	{
+		Data->IoStatus.Status = STATUS_ACCESS_DENIED;
+		return FLT_PREOP_COMPLETE;
+	}
 
 	return FLT_PREOP_SUCCESS_NO_CALLBACK;
 }
@@ -131,19 +172,29 @@ FLT_PREOP_CALLBACK_STATUS FltCreatePreOperation(
 NTSTATUS FsFilterInit(PDRIVER_OBJECT DriverObject)
 {
 	NTSTATUS Status;
-	Status = FltRegisterFilter(DriverObject, &FilterRegistration, &gFilterHandle);
 
-	if (NT_SUCCESS(Status))
+	bool ok = FsFilterNewInstance();
+	if (!ok)
+		Status = STATUS_INSUFFICIENT_RESOURCES;
+	else
 	{
-		Status = FltStartFiltering(gFilterHandle);
-		if (!NT_SUCCESS(Status))
+		Status = FltRegisterFilter(DriverObject,
+			&FilterRegistration, &gFilterHandle);
+
+		if (NT_SUCCESS(Status))
 		{
-			FltUnregisterFilter(gFilterHandle);
-			gFilterHandle = nullptr;
+			Status = FltStartFiltering(gFilterHandle);
+			if (!NT_SUCCESS(Status))
+			{
+				FltUnregisterFilter(gFilterHandle);
+				gFilterHandle = nullptr;
+
+				FsFilterDeleteInstance();
+			}
 		}
 	}
 
-	kprintf(TRACE_INFO, "Driver %ws init status: 0x%08X", FSFILTER, Status);
+	kprint_st(TRACE_INFO, Status);
 	return Status;
 }
 
@@ -152,13 +203,23 @@ NTSTATUS FsFilterExit(FLT_FILTER_UNLOAD_FLAGS Flags)
 	UNREFERENCED_PARAMETER(Flags);
 	NTSTATUS Status = STATUS_SUCCESS;
 
-	if (gFilterHandle != nullptr)
-	{
-		FltUnregisterFilter(gFilterHandle);
-		gFilterHandle = nullptr;
-	}
+	bool unload = !gFsMon->noUnload()
+		|| (FlagOn(FLTFL_FILTER_UNLOAD_MANDATORY, Flags));
 
-	kprintf(TRACE_INFO, "Driver %ws exit status: 0x%08X", FSFILTER, Status);
+	if (unload)
+	{
+		if (gFilterHandle != nullptr)
+		{
+			FltUnregisterFilter(gFilterHandle);
+			gFilterHandle = nullptr;
+
+			FsFilterDeleteInstance();
+		}
+	}
+	else
+		Status = STATUS_FLT_DO_NOT_DETACH;
+
+	kprint_st(TRACE_INFO, Status);
 	return Status;
 }
       

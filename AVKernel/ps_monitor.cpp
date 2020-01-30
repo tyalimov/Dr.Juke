@@ -2,10 +2,8 @@
 #include "util.h"
 #include <ntddk.h>
 #include "ps_monitor.h"
-#include "access_monitor.h"
-
-extern PRegistryAccessMonitor gRegMon;
-extern volatile bool gRegMonInit;
+#include "reg_filter.h"
+#include "fs_filter.h"
 
 BOOLEAN ProcessNotifyRoutineSet = FALSE;
 extern ZwQuerySystemInformationRoutine ZwQuerySystemInformation;
@@ -40,15 +38,27 @@ VOID CreateProcessNotifyRoutine(
 		kprintf(TRACE_PSMON, "Created process "
 			"<Pid=%d, ImagePath=%ws", ProcessId, ImagePath.c_str());
 
-		if (gRegMonInit == true && gRegMon != nullptr)
-			gRegMon->addProcessIfExcluded(ProcessId, ImagePath);
+		PRegistryAccessMonitor RegFilterPtr = RegFilterGetInstancePtr();
+		if (RegFilterPtr != nullptr)
+			RegFilterPtr->addProcessIfExcluded(ProcessId, ImagePath);
+
+		PFileSystemAccessMonitor FsFilterPtr = FsFilterGetInstancePtr();
+		if (FsFilterPtr != nullptr)
+			FsFilterPtr->addProcessIfExcluded(ProcessId, ImagePath);
+
 
     }
     else
     {
 		kprintf(TRACE_PSMON, "Terminated process <Pid=%d>", ProcessId);
-		if (gRegMonInit == true && gRegMon != nullptr)
-			gRegMon->removeProcessIfExcluded(ProcessId);
+
+		PRegistryAccessMonitor RegFilterPtr = RegFilterGetInstancePtr();
+		if (RegFilterPtr != nullptr)
+			RegFilterPtr->removeProcessIfExcluded(ProcessId);
+
+		PFileSystemAccessMonitor FsFilterPtr = FsFilterGetInstancePtr();
+		if (FsFilterPtr != nullptr)
+			FsFilterPtr->removeProcessIfExcluded(ProcessId);
 
         //DbgPrint(
         //    "ObCallbackTest: TdCreateProcessNotifyRoutine2: process %p (ID 0x%p) destroyed\n",

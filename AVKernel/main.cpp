@@ -40,6 +40,9 @@ void DriverUnload(PDRIVER_OBJECT DriverObject)
 
 	RegFilterExit();
 
+	// Callback is called instead
+	// FsFilterExit();
+
 	kprintf(TRACE_LOAD, "Driver unloaded");
 }
 
@@ -69,6 +72,14 @@ NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 	if (!NT_SUCCESS(Status))
 	{
 		PsMonExit();
+		goto fail;
+	}
+
+	Status = FsFilterInit(DriverObject);
+	if (!NT_SUCCESS(Status))
+	{
+		PsMonExit();
+		RegFilterExit();
 		goto fail;
 	}
 

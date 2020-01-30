@@ -191,12 +191,7 @@ public:
 	{
 		bool res = true;
 
-		if (isProcessExcluded(pid))
-		{
-			logInfo("Allow excluded <pid=%d> to access %ws",
-				pid, name.c_str());
-		}
-		else
+		if (!isProcessExcluded(pid))
 		{
 			LockGuard<GuardedMutex> guard(&mLockObj);
 
@@ -227,7 +222,7 @@ public:
 	//-------------------------------------------------------------------------------->
 	// Driver regitry config key change event handler
 
-	void onRegKeyChange(const wstring& KeyPath, 
+	virtual void onRegKeyChange(const wstring& KeyPath, 
 		PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted)
 	{
 		PUNICODE_STRING ValueName = PreInfo->ValueName;
@@ -320,7 +315,7 @@ protected:
 		}
 		else
 		{
-			logError("Do nothing: bad process format "
+			logError("Do nothing. Bad process format "
 				"<ImagePath=%ws>", image_path.c_str());
 		}
 	}
@@ -358,10 +353,9 @@ protected:
 			access = *(ACCESS_MASK*)Data;
 		else
 		{
+			access = 0;
 			logWarning("Type != REG_DWORD. "
-				"Default set to KEY_ALL_ACCESS");
-
-			access = KEY_ALL_ACCESS;
+				"Default <Access=0x%08X>", access);
 		}
 		
 		wstring obj_path(Name, NameLen / sizeof(WCHAR));
@@ -373,7 +367,7 @@ protected:
 		if (ok)
 			cb(obj_path, access);
 		else
-			logError("Do nothing: bad format <ObjectPath=%ws>", obj_path.c_str());
+			logError("Do nothing. Bad format <ObjectPath=%ws>", obj_path.c_str());
 	}
 
 	void regReadProtectedObjects()
@@ -457,7 +451,7 @@ protected:
 
 public:
 
-	void regReadConfiguration()
+	virtual void regReadConfiguration()
 	{
 		// Read names of protected objects
 		// and allowed access from registry
@@ -510,12 +504,7 @@ public:
 	{
 		bool res = true;
 
-		if (isProcessExcluded(pid))
-		{
-			logInfo("Allow excluded <pid=%d> to access %ws",
-				pid, name.c_str());
-		}
-		else
+		if (!isProcessExcluded(pid))
 		{
 			auto it = findRule(name);
 			if (it != mObjects.end())
@@ -534,6 +523,7 @@ public:
 					logInfo("Deny <pid=%d> to access %ws", 
 						pid, name.c_str());
 				}
+				
 			}
 		}
 
@@ -541,10 +531,80 @@ public:
 	}
 };
 
+template <typename TFilterLog, LogMode INFO, LogMode WARN, LogMode ERR>
+class NoUnloadHierarchyAccessMonitor : public HierarchyAccessMonitor<TFilterLog, INFO, WARN, ERR>
+{
+private:
+
+	bool mNoUnload = false;
+	const wchar_t* mValueNoUnload = L"NoUnload";
+
+	void regReadNonUnload()
+	{
+		NTSTATUS Status;
+		DWORD32 NoUnload = FALSE;
+
+		Status = PreferencesQueryKeyValue(mKeyBase.c_str(), mValueNoUnload,
+			[&NoUnload](PKEY_VALUE_FULL_INFORMATION Info) {
+
+				if (Info->Type == REG_DWORD)
+				{
+					NoUnload = *(DWORD32*)((PCH)Info + Info->DataOffset);
+					return STATUS_SUCCESS;
+				}
+				else
+					return STATUS_INVALID_PARAMETER;
+
+			});
+
+		if (!NT_SUCCESS(Status))
+			logError("Failed to read NoUnload option");
+
+		mNoUnload = (bool)NoUnload;
+		logInfo("Mode <mNoUnload=%d>", NoUnload);
+	}
+
+public:
+
+	NoUnloadHierarchyAccessMonitor(const wstring& key_path) 
+		: HierarchyAccessMonitor(key_path) {}
+
+	bool noUnload() {
+		return mNoUnload;
+	}
+	
+	virtual void regReadConfiguration() override
+	{
+		HierarchyAccessMonitor::regReadConfiguration();
+		regReadNonUnload();
+	}
+
+	virtual void onRegKeyChange(const wstring& KeyPath,
+		PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted) override
+	{
+		HierarchyAccessMonitor::onRegKeyChange(KeyPath, PreInfo, bDeleted);
+
+		PUNICODE_STRING ValueName = PreInfo->ValueName;
+		if (KeyPath == mKeyBase)
+		{
+			if (bDeleted)
+				mNoUnload = false;
+			else
+			{
+				UNICODE_STRING NoUnload = RTL_CONSTANT_STRING(mValueNoUnload);
+				if (RtlEqualUnicodeString(&NoUnload, ValueName, FALSE))
+					regReadNonUnload();
+			}
+		}
+	}
+
+};
+
+
 using ProcessAccessMonitor = AccessMonitor<FilterLog<PsMonitorPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
 using NamedPipeAccessMonitor = AccessMonitor<FilterLog<PipeFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
 using RegistryAccessMonitor = HierarchyAccessMonitor<FilterLog<RegFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
-using FileSystemAccessMonitor = HierarchyAccessMonitor<FilterLog<FsFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using FileSystemAccessMonitor = NoUnloadHierarchyAccessMonitor<FilterLog<FsFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
 
 using PNamedPipeAccessMonitor = NamedPipeAccessMonitor*;
 using PFileSystemAccessMonitor = FileSystemAccessMonitor*;

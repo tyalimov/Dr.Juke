@@ -1,7 +1,7 @@
 #include "reg_filter.h"
+#include "fs_filter.h"
 #include "preferences.h"
 #include "util.h"
-#include "access_monitor.h"
 
 //------------------------------------------------------------>
 // Prototypes
@@ -24,9 +24,32 @@ RegPreCreateKeyEx(_Inout_ PVOID Argument2);
 //------------------------------------------------------------>
 // Registry filter
 
-PRegistryAccessMonitor gRegMon = nullptr;
-volatile bool gRegMonInit = FALSE;
 LARGE_INTEGER gCookie = { 0 };
+PRegistryAccessMonitor gRegMon = nullptr;
+GuardedMutex gRegMonLock;
+
+PRegistryAccessMonitor RegFilterGetInstancePtr() 
+{
+	LockGuard<GuardedMutex> guard(&gRegMonLock);
+	return gRegMon;
+}
+
+bool RegFilterNewInstance()
+{
+	LockGuard<GuardedMutex> guard(&gRegMonLock);
+
+	gRegMon = new RegistryAccessMonitor(KRF_BASE_KEY);
+	gRegMon->regReadConfiguration();
+	return gRegMon != nullptr;
+}
+
+void RegFilterDeleteInstance()
+{
+	gRegMonLock.acquire();
+	delete gRegMon;
+	gRegMon = nullptr;
+	gRegMonLock.release();
+}
 
 NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 {
@@ -35,10 +58,12 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 	UNICODE_STRING Altitude = RTL_CONSTANT_STRING(REGFILTER_ALTITUDE);
 
     CmGetCallbackVersion(&MajorVersion, &MinorVersion);
-    kprintf(TRACE_INFO, "%ws Callback version %u.%u", REGFILTER, MajorVersion, MinorVersion);
+    kprintf(TRACE_INFO, "Callback version %u.%u", MajorVersion, MinorVersion);
 
-	gRegMon = new RegistryAccessMonitor(KRF_BASE_KEY);
-	if (gRegMon)
+	bool ok = RegFilterNewInstance();
+	if (!ok)
+		Status = STATUS_INSUFFICIENT_RESOURCES;
+	else
 	{
 		Status = CmRegisterCallbackEx(
 			RegFilterCallback,
@@ -48,16 +73,8 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 			&gCookie,
 			NULL);
 
-		if (NT_SUCCESS(Status))
-		{
-			gRegMonInit = true;
-			gRegMon->regReadConfiguration();
-		}
-		else
-		{
-			delete gRegMon;
-			gRegMon = nullptr;
-		}
+		if (!NT_SUCCESS(Status))
+			RegFilterDeleteInstance();
 	}
 
 	kprint_st(TRACE_INFO, Status);
@@ -67,14 +84,11 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 void RegFilterExit()
 {
 	NTSTATUS Status = STATUS_UNSUCCESSFUL;
-	gRegMonInit = false;
 	
-	if (gRegMon)
+	if (RegFilterGetInstancePtr())
 	{
 		Status = CmUnRegisterCallback(gCookie);
-
-		delete gRegMon;
-		gRegMon = nullptr;
+		RegFilterDeleteInstance();
 	}
 
 	kprint_st(TRACE_INFO, Status);
@@ -200,8 +214,19 @@ RegPostSetValueKey(
 	if (!res)
 		return STATUS_SUCCESS;
 
+	if (bDeleted)
+		kprintf(TRACE_INFO, "Deleted <ValueName=%wZ, KeyPath=%wZ", PreInfo->ValueName, KeyPath);
+	else
+		kprintf(TRACE_INFO, "Created <ValueName=%wZ, KeyPath=%wZ>", PreInfo->ValueName, KeyPath);
+
+	// notify self
 	wstring key_path(KeyPath->Buffer, KeyPath->Length / sizeof(WCHAR));
 	gRegMon->onRegKeyChange(key_path, PreInfo, bDeleted);
+
+	// notify other filters
+	PFileSystemAccessMonitor FsFilterPtr = FsFilterGetInstancePtr();
+	if (FsFilterPtr != nullptr)
+		FsFilterPtr->onRegKeyChange(key_path, PreInfo, bDeleted);
 
 	return STATUS_SUCCESS;
 }

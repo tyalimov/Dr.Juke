@@ -133,7 +133,7 @@ NTSTATUS PreferencesReadBasic(LPCWSTR AbsRegPath,
 }
 
 NTSTATUS PreferencesQueryKeyValue(const wchar_t* szAbsRegPath, 
-	const wchar_t* szValueName, function<void(PKEY_VALUE_FULL_INFORMATION)> onRecord)
+	const wchar_t* szValueName, function<NTSTATUS(PKEY_VALUE_FULL_INFORMATION)> onRecord)
 {
 	NTSTATUS Status;
 	HANDLE KeyHandle;
@@ -177,7 +177,7 @@ NTSTATUS PreferencesQueryKeyValue(const wchar_t* szAbsRegPath,
 				KeyValueFullInformation, InfoBuffer, Size, &Size);
 
 			if (NT_SUCCESS(Status))
-				onRecord(Info);
+				Status = onRecord(Info);
 
 			delete[] InfoBuffer;
 		}

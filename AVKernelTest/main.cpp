@@ -518,10 +518,10 @@ void usage()
 int wmain(int argc, wchar_t *argv[])
 {
 
-    TestExistingPid(argv[0]);
+    //TestExistingPid(argv[0]);
 
-    if (true)
-        return 1;
+    //if (true)
+    //    return 1;
 
     if (argc == 1)
     {

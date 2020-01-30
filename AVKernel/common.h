@@ -61,13 +61,13 @@
 //-------------------------------------------------------------------------------->
 // Print routines
 
-#define kprintf(level, fmt, ...)						\
-    if constexpr((bool)FlagOn(TRACE_FLAGS,(level)))		\
-        DbgPrint("[%s] %S!%s: "##fmt, #level, DRIVER_NAME, __FUNCTION__, __VA_ARGS__)
+#define kprintf(level, fmt, ...)			\
+    (FlagOn(TRACE_FLAGS,(level)) ?			\
+        DbgPrint("[%s] %S!%s: "##fmt, #level, DRIVER_NAME, __FUNCTION__, __VA_ARGS__) : ((int)0))
 
-#define kprint_st(level, status)						\
-    if constexpr((bool)FlagOn(TRACE_FLAGS,(level))) 	\
-        DbgPrint("[%s] %S!%s: Exit with status 0x%08X", #level, DRIVER_NAME, __FUNCTION__, status)
+#define kprint_st(level, status)		\
+    (FlagOn(TRACE_FLAGS,(level)) ?		\
+        DbgPrint("[%s] %S!%s: %s 0x%08X", #level, DRIVER_NAME, __FUNCTION__, "Exit with status", status) : ((int)0))
 
 //-------------------------------------------------------------------------------->
 // Class log routines
