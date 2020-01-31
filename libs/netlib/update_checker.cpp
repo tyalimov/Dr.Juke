@@ -1,4 +1,5 @@
 #include "update_checker.h"
+#include "curl_exception.h"
 
 #pragma warning(push)
 #pragma warning(disable:26451)
@@ -7,30 +8,34 @@
 
 namespace drjuke::netlib
 {
+    IMPLEMENT_CLASS_LOGGER(UpdateChecker);
+
     size_t UpdateChecker::on_http_data(void *buffer, size_t size, size_t nmemb, void *stream)
     try
     {
+        LOG_TRACE(__FUNCTIONW__)
         const auto real_size = size * nmemb;
         static_cast<Responce*>(stream)->data += std::string(static_cast<char*>(buffer), real_size);
         return real_size;
     }
-    catch (...)
+    catch (const std::exception& ex)
     {
+        LOG_ERROR(ex.what());
         return 0;
     }
 
     std::map<std::string, std::pair<std::string, std::uint32_t>> UpdateChecker::getActualHashes() const
     {
-        curl_easy_setopt(m_curl.get(), CURLOPT_URL, R"(http://127.0.0.1:9999)");
-        curl_easy_setopt(m_curl.get(), CURLOPT_HTTPGET, 1L);
+        curl_easy_setopt(m_curl.get(), CURLOPT_URL,           R"(http://127.0.0.1:9999)");
+        curl_easy_setopt(m_curl.get(), CURLOPT_HTTPGET,       1L);
         curl_easy_setopt(m_curl.get(), CURLOPT_WRITEFUNCTION, on_http_data);
-        curl_easy_setopt(m_curl.get(), CURLOPT_WRITEDATA, &m_responce);
+        curl_easy_setopt(m_curl.get(), CURLOPT_WRITEDATA,     &m_responce);
 
         auto status = curl_easy_perform(m_curl.get());
 
         if (status != CURLE_OK)
         {
-            throw std::runtime_error("curl failed");
+            throw CurlException(status);
         }
 
         Json responce = Json::parse(m_responce.data);

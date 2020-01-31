@@ -5,19 +5,19 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="updater">
-      <UniqueIdentifier>{0a864bed-59cc-4274-af75-eb965be8c433}</UniqueIdentifier>
-    </Filter>
     <Filter Include="winapi_stuff">
       <UniqueIdentifier>{cae2730b-c630-49f4-9ce4-f2e8c3b3b463}</UniqueIdentifier>
     </Filter>
     <Filter Include="windows">
       <UniqueIdentifier>{b9503582-5b70-4527-a1fd-e1c8e7e16291}</UniqueIdentifier>
     </Filter>
+    <Filter Include="application">
+      <UniqueIdentifier>{0a864bed-59cc-4274-af75-eb965be8c433}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\apps\updater\updater.h">
-      <Filter>updater</Filter>
+      <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="..\..\apps\updater\Resource.h">
       <Filter>winapi_stuff</Filter>
@@ -31,18 +31,21 @@
     <ClInclude Include="..\..\apps\updater\main_window.h">
       <Filter>windows</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\apps\updater\progress_bar.h">
+    <ClInclude Include="..\..\apps\updater\progress_bar_window.h">
       <Filter>windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\updater\loader_thread.h">
+      <Filter>application</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\apps\updater\updater.cpp">
-      <Filter>updater</Filter>
+      <Filter>application</Filter>
     </ClCompile>
     <ClCompile Include="..\..\apps\updater\main_window.cpp">
       <Filter>windows</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\apps\updater\progress_bar.cpp">
+    <ClCompile Include="..\..\apps\updater\progress_bar_window.cpp">
       <Filter>windows</Filter>
     </ClCompile>
   </ItemGroup>

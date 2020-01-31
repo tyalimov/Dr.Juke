@@ -57,3 +57,26 @@ catch (const std::exception& ex)
     std::cout << ex.what() << std::endl;
     FAIL();
 }
+
+TEST(netlib, Uploader_Regular) try
+{
+    InitialiseEnvironment();
+
+    std::vector<drjuke::Path> files
+    {
+        R"(netlib\uploader\upload_1.txt)",
+        R"(netlib\uploader\upload_2.txt)"
+    };
+
+    for (const auto& file : files)
+    {
+        Factory::getUploader(file)->upload();
+    }
+
+    SUCCEED();
+}
+catch (const std::exception& ex)
+{
+    std::cout << ex.what() << std::endl;
+    FAIL();
+}

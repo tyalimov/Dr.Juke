@@ -2,6 +2,8 @@
 
 #include "libcurl.h"
 
+#include <loglib/loghlp.h>
+
 namespace drjuke::netlib
 {
     class UpdateChecker final
@@ -18,6 +20,8 @@ namespace drjuke::netlib
         [[nodiscard]] std::map<std::string, std::pair<std::string, std::uint32_t>> getActualHashes() const override;
 
     private:
+
+        DECLARE_CLASS_LOGGER();
 
         static size_t on_http_data(void* buffer, size_t size, size_t nmemb, void* stream);
         Responce m_responce;

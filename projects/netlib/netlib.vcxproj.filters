@@ -10,6 +10,9 @@
     <Filter Include="updater">
       <UniqueIdentifier>{55bb7f42-b565-4880-b446-660358b634b1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="uploader">
+      <UniqueIdentifier>{2968b684-fc04-4eb4-876c-d2fb3b7cc05f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\netlib\update_checker.h">
@@ -33,6 +36,12 @@
     <ClInclude Include="..\..\libs\netlib\updater.h">
       <Filter>updater</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\netlib\iuploader.h">
+      <Filter>uploader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\netlib\uploader.h">
+      <Filter>uploader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\netlib\update_checker.cpp">
@@ -43,6 +52,9 @@
     </ClCompile>
     <ClCompile Include="..\..\libs\netlib\updater.cpp">
       <Filter>updater</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\netlib\uploader.cpp">
+      <Filter>uploader</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

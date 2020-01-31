@@ -11,7 +11,7 @@ namespace drjuke::netlib
     public:
         CurlGlobalInstance()
         {
-            curl_global_init(CURL_GLOBAL_DEFAULT);
+            curl_global_init(CURL_GLOBAL_ALL);
         }
 
         ~CurlGlobalInstance()

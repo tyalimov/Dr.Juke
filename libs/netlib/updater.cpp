@@ -1,7 +1,7 @@
 #include "updater.h"
+#include "curl_exception.h"
 
 #include <winlib/filesys.h>
-#include <boost/format.hpp>
 
 #include <iostream>
 
@@ -37,7 +37,12 @@ namespace drjuke::netlib
 
         *m_progress_bar = LoadingProgress(filename);
 
-        curl_easy_perform(m_curl.get());
+        auto status = curl_easy_perform(m_curl.get());
+
+        if (status != CURLE_OK)
+        {
+            throw CurlException(status);
+        }
     }
 
     size_t Updater::on_ftp_data(void *buffer, size_t size, size_t nmemb, void *stream)
@@ -50,7 +55,7 @@ namespace drjuke::netlib
 
         progress_bar->m_loaded += real_size;
 
-        LOG_TRACE(boost::wformat(L"## file = %s | income = %d | loaded = %d | total = %d")
+        LOG_TRACE(boost::wformat(L"## file=%s | income=%d | loaded=%d | total=%d")
             % progress_bar->m_filename
             % real_size
             % progress_bar->m_loaded

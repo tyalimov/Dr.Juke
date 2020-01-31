@@ -20,14 +20,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\apps\updater\framework.h" />
-    <ClInclude Include="..\..\apps\updater\progress_bar.h" />
+    <ClInclude Include="..\..\apps\updater\loader_thread.h" />
+    <ClInclude Include="..\..\apps\updater\progress_bar_window.h" />
     <ClInclude Include="..\..\apps\updater\Resource.h" />
     <ClInclude Include="..\..\apps\updater\targetver.h" />
     <ClInclude Include="..\..\apps\updater\updater.h" />
     <ClInclude Include="..\..\apps\updater\main_window.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\apps\updater\progress_bar.cpp" />
+    <ClCompile Include="..\..\apps\updater\progress_bar_window.cpp" />
     <ClCompile Include="..\..\apps\updater\updater.cpp" />
     <ClCompile Include="..\..\apps\updater\main_window.cpp" />
   </ItemGroup>
@@ -128,6 +129,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ExternalSDK)libs;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -144,6 +146,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ExternalSDK)libs;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -160,6 +163,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ExternalSDK)libs;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -180,6 +184,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ExternalSDK)libs;</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

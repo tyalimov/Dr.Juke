@@ -5,6 +5,7 @@
 
 #include "iupdate_checker.h"
 #include "iupdater.h"
+#include "iuploader.h"
 
 LINK_LIBRARY("curl\\libcurl")
 
@@ -38,6 +39,7 @@ namespace drjuke::netlib
     {
     public:
         [[nodiscard]] static UpdateCheckerPtr getUpdateChecker();
+        [[nodiscard]] static UploaderPtr      getUploader(const Path& filename);
         [[nodiscard]] static UpdaterPtr       getUpdater(const std::vector<Path>& filenames,
                                                          const Path&              destination,
                                                          LoadingProgressPtr       progress_bar);
