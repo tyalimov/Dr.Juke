@@ -4,36 +4,24 @@
 #include "ps_monitor.h"
 #include "reg_filter.h"
 #include "fs_filter.h"
+#include "ps_protect.h"
 
 BOOLEAN ProcessNotifyRoutineSet = FALSE;
 extern ZwQuerySystemInformationRoutine ZwQuerySystemInformation;
 extern ZwQueryInformationProcessRoutine ZwQueryInformationProcess;
 
 VOID CreateProcessNotifyRoutine(
-    _Inout_ PEPROCESS Process,
-    _In_ HANDLE ProcessId,
-    _Inout_opt_ PPS_CREATE_NOTIFY_INFO CreateInfo
-    )
+	_Inout_ PEPROCESS Process,
+	_In_ HANDLE ProcessId,
+	_Inout_opt_ PPS_CREATE_NOTIFY_INFO CreateInfo
+)
 {
 	UNREFERENCED_PARAMETER(Process);
 	UNREFERENCED_PARAMETER(ProcessId);
 	UNREFERENCED_PARAMETER(CreateInfo);
 
-    if (CreateInfo != NULL)
-    {
-        //DbgPrint(
-        //    "ObCallbackTest: TdCreateProcessNotifyRoutine2: process %p (ID 0x%p) created, creator %Ix:%Ix\n"
-        //    "    command line %wZ\n"
-        //    "    file name %wZ (FileOpenNameAvailable: %d)\n",
-        //    Process,
-        //    (PVOID)ProcessId,
-        //    (ULONG_PTR)CreateInfo->CreatingThreadId.UniqueProcess,
-        //    (ULONG_PTR)CreateInfo->CreatingThreadId.UniqueThread,
-        //    CreateInfo->CommandLine,
-        //    CreateInfo->ImageFileName,
-        //    CreateInfo->FileOpenNameAvailable
-        //);
-
+	if (CreateInfo != NULL)
+	{
 		wstring ImagePath = GetProcessImagePathByPid(ProcessId);
 		kprintf(TRACE_PSMON, "Created process "
 			"<Pid=%d, ImagePath=%ws", ProcessId, ImagePath.c_str());
@@ -46,10 +34,15 @@ VOID CreateProcessNotifyRoutine(
 		if (FsFilterPtr != nullptr)
 			FsFilterPtr->addProcessIfExcluded(ProcessId, ImagePath);
 
-
-    }
-    else
-    {
+		PProcessAccessMonitor PsMonPtr = PsProtectGetInstancePtr();
+		if (PsMonPtr != nullptr)
+		{
+			PsMonPtr->addProcessIfProtected(ProcessId, ImagePath);
+			PsMonPtr->addProcessIfExcluded(ProcessId, ImagePath);
+		}
+	}
+	else
+	{
 		kprintf(TRACE_PSMON, "Terminated process <Pid=%d>", ProcessId);
 
 		PRegistryAccessMonitor RegFilterPtr = RegFilterGetInstancePtr();
@@ -60,48 +53,50 @@ VOID CreateProcessNotifyRoutine(
 		if (FsFilterPtr != nullptr)
 			FsFilterPtr->removeProcessIfExcluded(ProcessId);
 
-        //DbgPrint(
-        //    "ObCallbackTest: TdCreateProcessNotifyRoutine2: process %p (ID 0x%p) destroyed\n",
-        //    Process,
-        //    (PVOID)ProcessId
-        //);
-    }
+		PProcessAccessMonitor PsMonPtr = PsProtectGetInstancePtr();
+		if (PsMonPtr != nullptr)
+		{
+			PsMonPtr->removeProcessIfProtected(ProcessId);
+			PsMonPtr->removeProcessIfExcluded(ProcessId);
+		}
+	}
 }
+
 
 NTSTATUS PsMonInit()
 {
-    NTSTATUS Status = STATUS_UNSUCCESSFUL;
-    ProcessNotifyRoutineSet = FALSE;
+	NTSTATUS Status = STATUS_UNSUCCESSFUL;
+	ProcessNotifyRoutineSet = FALSE;
 
-    kprintf(TRACE_INFO, "Callback version 0x%hx", ObGetFilterVersion());
-  
-    Status = PsSetCreateProcessNotifyRoutineEx (
-        CreateProcessNotifyRoutine,
-        FALSE
-    );
+	kprintf(TRACE_INFO, "Callback version 0x%hx", ObGetFilterVersion());
 
-    if (NT_SUCCESS(Status))
-        ProcessNotifyRoutineSet = TRUE;
+	Status = PsSetCreateProcessNotifyRoutineEx(
+		CreateProcessNotifyRoutine,
+		FALSE
+	);
 
-    kprint_st(TRACE_INFO, Status);
-    return Status;
+	if (NT_SUCCESS(Status))
+		ProcessNotifyRoutineSet = TRUE;
+
+	kprint_st(TRACE_INFO, Status);
+	return Status;
 }
 
 VOID PsMonExit()
 {
-    NTSTATUS Status = STATUS_UNSUCCESSFUL;
+	NTSTATUS Status = STATUS_UNSUCCESSFUL;
 
-    if (ProcessNotifyRoutineSet == TRUE)
-    {
-        Status = PsSetCreateProcessNotifyRoutineEx (
-            CreateProcessNotifyRoutine,
-            TRUE
-        );
+	if (ProcessNotifyRoutineSet == TRUE)
+	{
+		Status = PsSetCreateProcessNotifyRoutineEx(
+			CreateProcessNotifyRoutine,
+			TRUE
+		);
 
-        ProcessNotifyRoutineSet = FALSE;
-    }
+		ProcessNotifyRoutineSet = FALSE;
+	}
 
-    kprint_st(TRACE_INFO, Status);
+	kprint_st(TRACE_INFO, Status);
 }
 
 ProcessList::iterator& ProcessList::iterator::operator++()
@@ -139,8 +134,8 @@ NTSTATUS ProcessList::getProcessList()
 	while (status == STATUS_INFO_LENGTH_MISMATCH)
 	{
 		// We should allocate little bit more space
-		size += written; 
-		
+		size += written;
+
 		if (m_info)
 			delete[] m_info;
 
@@ -182,7 +177,7 @@ NTSTATUS QueryProcessImagePath(HANDLE Process, PUNICODE_STRING* ImagePath)
 		if (info)
 			delete[] info;
 
-		info = new CHAR[size]; 
+		info = new CHAR[size];
 		if (!info)
 			break;
 
@@ -220,16 +215,18 @@ wstring GetProcessImagePathByPid(PID ProcessId)
 	{
 		kprintf(TRACE_ERROR, "Can't open process "
 			"<pid=0x%08X, status=0x%08X>", ProcessId, status);
+
 		return res;
 	}
 
 	status = QueryProcessImagePath(hProcess, &ImagePath);
 	if (NT_SUCCESS(status) && ImagePath != nullptr)
 		res = wstring(ImagePath->Buffer, ImagePath->Length / sizeof(WCHAR));
-	
+
 	if (ImagePath)
-		delete[] (PCHAR)ImagePath;
+		delete[](PCHAR)ImagePath;
 
 	ZwClose(hProcess);
+	
 	return res;
 }

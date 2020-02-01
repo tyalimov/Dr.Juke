@@ -149,6 +149,8 @@ FLT_PREOP_CALLBACK_STATUS FltCreatePreOperation(
 		return FLT_PREOP_SUCCESS_NO_CALLBACK;
 	}
 
+	//_FLT_RELATED_OBJECTS -> Volume -> FltQueryVolumeInformation -> FileFsDeviceInformation -> DEVICE_TYPE
+
 	bool allowed = true;
 	PUNICODE_STRING usName = &fltFileInfo->Name;
 
@@ -203,10 +205,7 @@ NTSTATUS FsFilterExit(FLT_FILTER_UNLOAD_FLAGS Flags)
 	UNREFERENCED_PARAMETER(Flags);
 	NTSTATUS Status = STATUS_SUCCESS;
 
-	bool unload = !gFsMon->noUnload()
-		|| (FlagOn(FLTFL_FILTER_UNLOAD_MANDATORY, Flags));
-
-	if (unload)
+	if (FlagOn(FLTFL_FILTER_UNLOAD_MANDATORY, Flags))
 	{
 		if (gFilterHandle != nullptr)
 		{

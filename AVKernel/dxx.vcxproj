@@ -139,6 +139,7 @@
   <ItemGroup>
     <ClCompile Include="fs_filter.cpp" />
     <ClCompile Include="ps_monitor.cpp" />
+    <ClCompile Include="ps_protect.cpp" />
     <ClCompile Include="reg_filter.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="preferences.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="fs_filter.h" />
     <ClInclude Include="preferences.h" />
     <ClInclude Include="ps_monitor.h" />
+    <ClInclude Include="ps_protect.h" />
     <ClInclude Include="reg_filter.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>

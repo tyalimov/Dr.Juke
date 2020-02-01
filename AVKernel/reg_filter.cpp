@@ -1,5 +1,6 @@
 #include "reg_filter.h"
 #include "fs_filter.h"
+#include "ps_protect.h"
 #include "preferences.h"
 #include "util.h"
 
@@ -227,6 +228,10 @@ RegPostSetValueKey(
 	PFileSystemAccessMonitor FsFilterPtr = FsFilterGetInstancePtr();
 	if (FsFilterPtr != nullptr)
 		FsFilterPtr->onRegKeyChange(key_path, PreInfo, bDeleted);
+
+	PProcessAccessMonitor PsMonPtr = PsProtectGetInstancePtr();
+	if (PsMonPtr != nullptr)
+		PsMonPtr->onRegKeyChange(key_path, PreInfo, bDeleted);
 
 	return STATUS_SUCCESS;
 }

@@ -2,12 +2,12 @@
 
 #include "common.h"
 #include "util.h"
+#include "preferences.h"
 #include "ps_monitor.h"
 #include "EASTL/hash_map.h"
 #include "EASTL/hash_set.h"
-#include "preferences.h"
+#include "EASTL/map.h"
 #include "EASTL/set.h"
-#include "EASTL/list.h"
 
 template <typename TFilterLog, LogMode INFO, LogMode WARN, LogMode ERR>
 class AccessMonitor
@@ -46,7 +46,7 @@ public:
 	//-------------------------------------------------------------------------------->
 	// Protected objects manipulation routines
 
-	void addObject(const wstring& name, ACCESS_MASK access)
+	bool addObject(const wstring& name, ACCESS_MASK access)
 	{
 		mLockObj.acquire();
 
@@ -69,9 +69,11 @@ public:
 			logInfo("Modified <Object=%ws>, <Access=0x%08X>",
 				name.c_str(), access);
 		}
+
+		return inserted;
 	}
 
-	void removeObject(const wstring& name)
+	bool removeObject(const wstring& name)
 	{
 		mLockObj.acquire();
 		auto n = mObjects.erase(name);
@@ -82,12 +84,14 @@ public:
 		else
 			logError("Attempt to remove"
 				"non existent <Object=%ws>", name.c_str());
+
+		return n > 0;
 	}
 
 	//-------------------------------------------------------------------------------->
 	// Excluded processes manipulation routines
 	
-	void addProcessIfExcluded(PID pid, const wstring& image_path)
+	bool addProcessIfExcluded(PID pid, const wstring& image_path)
 	{
 		bool match = false;
 
@@ -107,9 +111,11 @@ public:
 			logInfo("Added new process <pid=%d, ImagePath=%ws>", 
 				pid, image_path.c_str());
 		}
+
+		return match;
 	}
 
-	void addProcess(const wstring& image_path, bool update_pids=false)
+	bool addProcess(const wstring& image_path, bool update_pids=false)
 	{
 		mLockProc.acquire();
 		auto result = mProcImages.emplace(image_path);
@@ -127,7 +133,7 @@ public:
 				// See explanation inside updatePidsForExcludedProcesses
 				mLockProc.acquire();
 
-				iterateProcessInstances(image_path, [this](PID pid) {
+				iterateProcessesEqual(image_path, [this](PID pid) {
 						mProcPids.emplace(pid);
 					});
 
@@ -139,9 +145,11 @@ public:
 			logError("Failed to add new process: already exists "
 				"<UpdatePids=%d, ImagePath=%ws>", update_pids, image_path.c_str());
 		}
+
+		return inserted;
 	}
 
-	void removeProcessIfExcluded(PID pid)
+	bool removeProcessIfExcluded(PID pid)
 	{
 		mLockProc.acquire();
 		auto n = mProcPids.erase(pid);
@@ -149,20 +157,23 @@ public:
 
 		if (n > 0)
 			logInfo("Process removed <pid=%d>", pid);
+
+		return n > 0;
 	}
 
-	void removeProcess(const wstring& image_path)
+	bool removeProcess(const wstring& image_path)
 	{
 		// We need to atomically iterate process list
 		// See explanation inside updatePidsForExcludedProcesses
+		
 		mLockProc.acquire();
-
-		iterateProcessInstances(image_path, [this](PID pid) {
+		
+		iterateProcessesEqual(image_path, [this](PID pid) {
 				mProcPids.erase(pid);
 			});
 
 		auto n = mProcImages.erase(image_path);
-		
+
 		mLockProc.release();
 
 		if (n > 0)
@@ -175,6 +186,8 @@ public:
 			logError("Unable to remove non-existent " 
 				"process <ImagePath=%ws>", image_path.c_str());
 		}
+
+		return n > 0;
 	}
 
 	bool isProcessExcluded(PID pid)
@@ -185,7 +198,7 @@ public:
 	}
 
 	//-------------------------------------------------------------------------------->
-	// Driver access check routines
+	// Access check routines
 
 	virtual bool isAccessAllowed(PID pid, const wstring& name, ACCESS_MASK desired_access) 
 	{
@@ -193,9 +206,10 @@ public:
 
 		if (!isProcessExcluded(pid))
 		{
-			LockGuard<GuardedMutex> guard(&mLockObj);
-
+			mLockObj.acquire();
 			auto it = mObjects.find(name);
+			mLockObj.release();
+
 			if (it != mObjects.end())
 			{
 				ACCESS_MASK actual_access = it->second;
@@ -370,21 +384,11 @@ protected:
 			logError("Do nothing. Bad format <ObjectPath=%ws>", obj_path.c_str());
 	}
 
-	void regReadProtectedObjects()
+	void regReadProtectedObjects(function<void(PWCH Name, 
+		ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type)> cbAddProtectedObject)
 	{
 		NTSTATUS status;
 		wstring proc_key = mKeyBase + mKeyProtectedObjects;
-
-		const auto cbAddProtectedObject = [this](PWCH Name, 
-			ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type)
-		{
-			modifyProtectedObject(Name, NameLen, Data, DataLen, Type,
-				[this](const wstring& obj_path, ACCESS_MASK access) {
-
-					this->addObject(obj_path, access);
-
-				});
-		};
 
 		status = PreferencesReadFull(proc_key.c_str(), cbAddProtectedObject);
 		if (!NT_SUCCESS(status))
@@ -394,11 +398,10 @@ protected:
 		}
 	}
 
-	void iterateProcessInstances(const wstring& image_path, function<void(PID)> cb)
+	void iterateProcessesEqual(const wstring& image_path, function<void(PID)> cb)
 	{
 		PID pid;
 		ProcessList processes;
-
 		for (const auto& proc : processes)
 		{
 			pid = proc->ProcessId;
@@ -412,22 +415,8 @@ protected:
 		}
 	}
 
-	void updatePidsForExcludedProcesses()
+	void iterateProcesses(function<void(PID, const wstring&)> cb)
 	{
-		//
-		// Need to prevent adding processes to mProcPids
-		// while iterating process list snaphot
-		//
-		// This is done to avoid situations when snapshot 
-		// of process list is done but new process
-		// is created/terminated during this time
-		//
-		// That issue might cause another (random) process 
-		// to have access to protected objects
-		//
-
-		mLockProc.acquire();
-
 		ProcessList processes;
 		PID pid;
 
@@ -437,14 +426,42 @@ protected:
 			if (pid == 0)
 				continue;
 
-			wstring proc_path = GetProcessImagePathByPid(pid);
-			if (proc_path.length() > 0)
-			{
-				auto it = mProcImages.find(proc_path);
-				if (it != mProcImages.end())
-					mProcPids.emplace(pid);
-			}
+			wstring path = GetProcessImagePathByPid(pid);
+			cb(pid, path);
 		}
+
+	}
+
+	void updatePidsForExcludedProcesses()
+	{
+		//
+		// Need to prevent adding processes to mProcPids
+		// while iterating process list snaphot
+		//
+		// This is done to avoid situations when snapshot 
+		// of process list is done but new process
+		// is terminated during this time
+		//
+		// mProcPids will be empty at this time
+		// but, snapshot still contains terminated process,
+		// so its pid will be added to excluded.
+		//
+		// That pid might be used by another (random) process
+		// and cause it to have access to protected objects
+		//
+
+		mLockProc.acquire();
+
+		iterateProcesses(
+			[this](PID pid, const wstring& path) 
+			{
+				if (path.length() > 0)
+				{
+					auto it = mProcImages.find(path);
+					if (it != mProcImages.end())
+						mProcPids.emplace(pid);
+				}
+			});
 
 		mLockProc.release();
 	}
@@ -455,7 +472,16 @@ public:
 	{
 		// Read names of protected objects
 		// and allowed access from registry
-		regReadProtectedObjects();
+		regReadProtectedObjects([this](PWCH Name,
+			ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type)
+			{
+				modifyProtectedObject(Name, NameLen, Data, DataLen, Type,
+					[this](const wstring& obj_path, ACCESS_MASK access) {
+
+						this->addObject(obj_path, access);
+
+					});
+			});
 
 		// Read paths of excluded processes from registry
 		// and save all pids matching those paths
@@ -532,81 +558,332 @@ public:
 };
 
 template <typename TFilterLog, LogMode INFO, LogMode WARN, LogMode ERR>
-class NoUnloadHierarchyAccessMonitor : public HierarchyAccessMonitor<TFilterLog, INFO, WARN, ERR>
+class ProcessAccessMonitorImpl : public AccessMonitor<TFilterLog, INFO, WARN, ERR>
 {
-private:
-
-	bool mNoUnload = false;
-	const wchar_t* mValueNoUnload = L"NoUnload";
-
-	void regReadNonUnload()
-	{
-		NTSTATUS Status;
-		DWORD32 NoUnload = FALSE;
-
-		Status = PreferencesQueryKeyValue(mKeyBase.c_str(), mValueNoUnload,
-			[&NoUnload](PKEY_VALUE_FULL_INFORMATION Info) {
-
-				if (Info->Type == REG_DWORD)
-				{
-					NoUnload = *(DWORD32*)((PCH)Info + Info->DataOffset);
-					return STATUS_SUCCESS;
-				}
-				else
-					return STATUS_INVALID_PARAMETER;
-
-			});
-
-		if (!NT_SUCCESS(Status))
-			logError("Failed to read NoUnload option");
-
-		mNoUnload = (bool)NoUnload;
-		logInfo("Mode <mNoUnload=%d>", NoUnload);
-	}
+	map<PID, ACCESS_MASK> mObjectPids;
 
 public:
 
-	NoUnloadHierarchyAccessMonitor(const wstring& key_path) 
-		: HierarchyAccessMonitor(key_path) {}
+	ProcessAccessMonitorImpl(const wstring& key_path)
+		: AccessMonitor(key_path) {}
 
-	bool noUnload() {
-		return mNoUnload;
+	//-------------------------------------------------------------------------------->
+	// Protected objects manipulation routines
+
+	void updatePidsForProtectedProcesses()
+	{
+		mLockObj.acquire();
+
+		iterateProcesses(
+			[this](PID pid, const wstring& path) 
+			{
+				if (path.length() > 0)
+				{
+					auto it = mObjects.find(path);
+					if (it != mObjects.end())
+						mObjectPids.emplace(pid, it->second);
+				}
+			});
+
+		mLockObj.release();
+	}
+
+	bool addProcessIfProtected(PID pid, const wstring& image_path)
+	{
+		bool match = false;
+
+		mLockObj.acquire();
+
+		auto it = mObjects.find(image_path);
+		if (it != mObjects.end())
+		{
+			match = true;
+			mObjectPids.emplace(pid, it->second);
+		}
+			
+		mLockObj.release();
+
+		if (match)
+		{
+			logInfo("Added new process object <pid=%d, ImagePath=%ws>", 
+				pid, image_path.c_str());
+		}
+
+		return match;
+	}
+
+	bool removeProcessIfProtected(PID pid)
+	{
+		mLockObj.acquire();
+		auto n = mObjectPids.erase(pid);
+		mLockObj.release();
+
+		if (n > 0)
+			logInfo("Process object removed <pid=%d>", pid);
+
+		return n > 0;
+	}
+
+ 	bool addProcessObject(const wstring& image_path, 
+		ACCESS_MASK access, bool update_pids=false)
+	{
+		mLockObj.acquire();
+		auto result = mObjects.emplace(image_path, access);
+		mLockObj.release();
+
+		bool inserted = result.second;
+		if (inserted)
+		{
+			logInfo("Added new process object <UpdatePids=%d, ImagePath=%ws, "
+				"access=0x%08X>", update_pids, image_path.c_str(), access);
+
+			if (update_pids)
+			{
+				// We need to atomically iterate process list
+				// See explanation inside updatePidsForExcludedProcesses
+				mLockObj.acquire();
+
+				iterateProcessesEqual(image_path, [&access, this](PID pid) {
+						mObjectPids.emplace(pid, access);
+					});
+
+				mLockObj.release();
+			}
+		}
+		else
+		{
+			logError("Failed to add new process object: already exists "
+				"<UpdatePids=%d, ImagePath=%ws>", update_pids, image_path.c_str());
+		}
+
+		return inserted;
 	}
 	
-	virtual void regReadConfiguration() override
+	bool removeProcessObject(const wstring& image_path)
 	{
-		HierarchyAccessMonitor::regReadConfiguration();
-		regReadNonUnload();
+		// We need to atomically iterate process list
+		// See explanation inside updatePidsForExcludedProcesses
+
+		mLockObj.acquire();
+
+		iterateProcessesEqual(image_path, [this](PID pid) {
+				mObjectPids.erase(pid);
+			});
+
+		auto n = mObjects.erase(image_path);
+		
+		mLockObj.release();
+
+		if (n > 0)
+		{
+			logInfo("Process object removed " 
+				"<ImagePath=%ws>", image_path.c_str());
+		}
+		else
+		{
+			logError("Unable to remove non-existent " 
+				"process object <ImagePath=%ws>", image_path.c_str());
+		}
+
+		return n > 0;
 	}
 
-	virtual void onRegKeyChange(const wstring& KeyPath,
-		PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted) override
-	{
-		HierarchyAccessMonitor::onRegKeyChange(KeyPath, PreInfo, bDeleted);
+	//-------------------------------------------------------------------------------->
+	// Routines for reading protected objects and excluded processes from registry
 
+	virtual void regReadConfiguration()
+	{
+		// Read names of protected objects
+		// and allowed access from registry
+		regReadProtectedObjects([this](PWCH Name,
+			ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type)
+			{
+				modifyProtectedObject(Name, NameLen, Data, DataLen, Type,
+					[this](const wstring& obj_path, ACCESS_MASK access) {
+
+						this->addProcessObject(obj_path, access);
+
+					});
+			});
+
+		updatePidsForProtectedProcesses();
+
+		// Read paths of excluded processes from registry
+		// and save all pids matching those paths
+		regReadExcludedProcesses();
+		updatePidsForExcludedProcesses();
+
+		if (mObjects.size() == 0)
+			logWarning("Configuration: No protected objects found!");
+
+		if (mProcImages.size() == 0)
+			logWarning("Configuration: No excluded processes found!");
+	}
+
+	//-------------------------------------------------------------------------------->
+	// Driver regitry config key change event handler
+
+	virtual void onRegKeyChange(const wstring& KeyPath,
+		PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted)
+	{
 		PUNICODE_STRING ValueName = PreInfo->ValueName;
-		if (KeyPath == mKeyBase)
+		if (KeyPath == mKeyBase + mKeyProtectedObjects)
 		{
 			if (bDeleted)
-				mNoUnload = false;
+			{
+				modifyProtectedObject(ValueName->Buffer, ValueName->Length,
+					PreInfo->Data, PreInfo->DataSize, PreInfo->Type,
+					[this](const wstring& obj_path, ACCESS_MASK access) {
+
+						UNREFERENCED_PARAMETER(access);
+						this->removeProcessObject(obj_path);
+
+					});
+			}
 			else
 			{
-				UNICODE_STRING NoUnload = RTL_CONSTANT_STRING(mValueNoUnload);
-				if (RtlEqualUnicodeString(&NoUnload, ValueName, FALSE))
-					regReadNonUnload();
+				modifyProtectedObject(ValueName->Buffer, ValueName->Length,
+					PreInfo->Data, PreInfo->DataSize, PreInfo->Type,
+					[this](const wstring& obj_path, ACCESS_MASK access) {
+
+						this->addProcessObject(obj_path, access, true);
+
+					});
 			}
+		}
+		else if (KeyPath == mKeyBase + mKeyExcludedProcesses)
+		{
+			if (bDeleted)
+			{
+				modifyExcludedProcess(ValueName->Buffer, ValueName->Length,
+					[this](const wstring& image_path) {
+
+						this->removeProcess(image_path);
+
+					});
+			}
+			else
+			{
+				modifyExcludedProcess(ValueName->Buffer, ValueName->Length,
+					[this](const wstring& image_path) {
+
+						this->addProcess(image_path, true);
+
+					});
+			}
+		}
+		else
+		{
+			NOTHING;
 		}
 	}
 
+	//-------------------------------------------------------------------------------->
+	// Access check routines
+
+	ACCESS_MASK accessCheck(PID pid_from, PID pid_to, ACCESS_MASK desired_access) 
+	{
+		if (!isProcessExcluded(pid_from))
+		{
+			mLockObj.acquire();
+			auto it = mObjectPids.find(pid_to);
+			mLockObj.release();
+
+			if (it != mObjectPids.end())
+			{
+				ACCESS_MASK actual_access = it->second;
+				if (desired_access & actual_access)
+				{
+					logInfo("Allow <pid=%d> to access <pid=%d>", 
+						pid_from, pid_to);
+				}
+				else
+				{
+					desired_access &= actual_access;
+					logInfo("Deny <pid=%d> to access <pid=%d>", 
+						pid_from, pid_to);
+				}
+			}
+		}
+
+		return desired_access;
+	}
 };
 
+//template <typename TFilterLog, LogMode INFO, LogMode WARN, LogMode ERR>
+//class NoUnloadHierarchyAccessMonitor : public HierarchyAccessMonitor<TFilterLog, INFO, WARN, ERR>
+//{
+//private:
+//
+//	bool mNoUnload = false;
+//	const wchar_t* mValueNoUnload = L"NoUnload";
+//
+//	void regReadNonUnload()
+//	{
+//		NTSTATUS Status;
+//		DWORD32 NoUnload = FALSE;
+//
+//		Status = PreferencesQueryKeyValue(mKeyBase.c_str(), mValueNoUnload,
+//			[&NoUnload](PKEY_VALUE_FULL_INFORMATION Info) {
+//
+//				if (Info->Type == REG_DWORD)
+//				{
+//					NoUnload = *(DWORD32*)((PCH)Info + Info->DataOffset);
+//					return STATUS_SUCCESS;
+//				}
+//				else
+//					return STATUS_INVALID_PARAMETER;
+//
+//			});
+//
+//		if (!NT_SUCCESS(Status))
+//			logError("Failed to read NoUnload option");
+//
+//		mNoUnload = (bool)NoUnload;
+//		logInfo("Mode <mNoUnload=%d>", NoUnload);
+//	}
+//
+//public:
+//
+//	NoUnloadHierarchyAccessMonitor(const wstring& key_path) 
+//		: HierarchyAccessMonitor(key_path) {}
+//
+//	bool noUnload() {
+//		return mNoUnload;
+//	}
+//	
+//	virtual void regReadConfiguration() override
+//	{
+//		HierarchyAccessMonitor::regReadConfiguration();
+//		regReadNonUnload();
+//	}
+//
+//	virtual void onRegKeyChange(const wstring& KeyPath,
+//		PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted) override
+//	{
+//		HierarchyAccessMonitor::onRegKeyChange(KeyPath, PreInfo, bDeleted);
+//
+//		PUNICODE_STRING ValueName = PreInfo->ValueName;
+//		if (KeyPath == mKeyBase)
+//		{
+//			if (bDeleted)
+//				mNoUnload = false;
+//			else
+//			{
+//				UNICODE_STRING NoUnload = RTL_CONSTANT_STRING(mValueNoUnload);
+//				if (RtlEqualUnicodeString(&NoUnload, ValueName, FALSE))
+//					regReadNonUnload();
+//			}
+//		}
+//	}
+//
+//};
 
-using ProcessAccessMonitor = AccessMonitor<FilterLog<PsMonitorPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
-using NamedPipeAccessMonitor = AccessMonitor<FilterLog<PipeFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+
+using ProcessAccessMonitor = ProcessAccessMonitorImpl<FilterLog<PsMonitorPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
 using RegistryAccessMonitor = HierarchyAccessMonitor<FilterLog<RegFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
-using FileSystemAccessMonitor = NoUnloadHierarchyAccessMonitor<FilterLog<FsFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using FileSystemAccessMonitor = HierarchyAccessMonitor<FilterLog<FsFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
 
-using PNamedPipeAccessMonitor = NamedPipeAccessMonitor*;
 using PFileSystemAccessMonitor = FileSystemAccessMonitor*;
 using PRegistryAccessMonitor = RegistryAccessMonitor*;
 using PProcessAccessMonitor = ProcessAccessMonitor*;

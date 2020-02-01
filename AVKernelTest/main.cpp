@@ -31,9 +31,6 @@ const wchar_t* keys[] = {
 #define KFF_PROTECTED_OBJECTS L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\FsFilter\\ProtectedObjects"
 #define KFF_EXCLUDED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\FsFilter\\ExcludedProcesses" 
 
-#define KPF_PROTECTED_OBJECTS L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\PipeFilter\\ProtectedObjects"
-#define KPF_EXCLUDED_PROCESSES L"SOFTWARE\\Dr.Juke\\AVSecGeneric\\PipeFilter\\ExcludedProcesses" 
-
 typedef LONG NTSTATUS;
 
 #ifndef STATUS_SUCCESS
@@ -208,13 +205,11 @@ DWORD AddRemoveExcludedProcess(wstring ps_image_path, FilterDriverType type, boo
 	switch (type)
 	{
     case FsFilter:
+	case PipeFilter:
 		lpSubkey = KFF_EXCLUDED_PROCESSES;
 		break;
 	case RegFilter:
 		lpSubkey = KRF_EXCLUDED_PROCESSES;
-		break;
-	case PipeFilter:
-		lpSubkey = KPF_EXCLUDED_PROCESSES;
 		break;
     case PsMonitor:
 		lpSubkey = KPM_EXCLUDED_PROCESSES;
@@ -271,7 +266,7 @@ DWORD ProtectPipe(wstring pipe_path, ACCESS_MASK access=0, bool deprotect=false)
     const wchar_t* lpSubkey;
     DWORD res;
 
-    lpSubkey = KPF_PROTECTED_OBJECTS;
+    lpSubkey = KFF_PROTECTED_OBJECTS;
     pipe_path = GetPipeKernelPath(pipe_path);
 
     if (pipe_path.length() == 0)

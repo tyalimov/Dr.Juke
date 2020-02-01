@@ -5,6 +5,7 @@
 #include "reg_filter.h"
 #include "fs_filter.h"
 #include "ps_monitor.h"
+#include "ps_protect.h"
 #include "util.h"
 
 ZwQuerySystemInformationRoutine ZwQuerySystemInformation = nullptr;
@@ -43,8 +44,15 @@ void DriverUnload(PDRIVER_OBJECT DriverObject)
 	// Callback is called instead
 	// FsFilterExit();
 
+	PsProtectExit();
+
 	kprintf(TRACE_LOAD, "Driver unloaded");
 }
+
+// TODO: 
+// 1) Set filter unloadable
+// 2) properly handle IRP_MJ_SHUTDOWN event (register IOREgisterShutdownEvent)
+// 3) setup tracing options via DEFINE and Cond compile DRIVER_SUPPORTS_UNLOAD
 
 NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 	UNREFERENCED_PARAMETER(RegPath);
@@ -76,6 +84,14 @@ NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 	}
 
 	Status = FsFilterInit(DriverObject);
+	if (!NT_SUCCESS(Status))
+	{
+		PsMonExit();
+		RegFilterExit();
+		goto fail;
+	}
+
+	Status = PsProtectInit();
 	if (!NT_SUCCESS(Status))
 	{
 		PsMonExit();

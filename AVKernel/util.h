@@ -24,6 +24,8 @@ namespace str_util
 
 	bool startsWith(const string* str, const char* substr);
 
+	bool endsWith(const wstring& str, const wchar_t* substr);
+
 	void makeLower(wstring* str);
 
 	void makeLower(string* str);

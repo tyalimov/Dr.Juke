@@ -123,6 +123,14 @@ namespace str_util
 			(strncmp(str->c_str(), substr, n) == 0);
 	}
 
+	bool endsWith(const wstring& str, const wchar_t* substr)
+	{
+		auto n = wcslen(substr);
+		auto len = str.length(); 
+		return (len >= n) &&
+			(wcsncmp(str.c_str() + len - n, substr, n) == 0);
+	}
+
 	void makeLower(wstring* str)
 	{
 		auto n = str->size();
