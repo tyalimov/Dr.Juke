@@ -268,7 +268,7 @@ namespace drjuke::loglib
         coninfo.dwSize.Y    = height;
 
         const HANDLE h_out  = ::GetStdHandle(STD_OUTPUT_HANDLE);
-        assert(hOut);
+        assert(h_out);
 
         ::SetConsoleScreenBufferSize(h_out, coninfo.dwSize);
         ::SetConsoleWindowInfo(h_out, FALSE, &win_info);
@@ -304,9 +304,9 @@ namespace drjuke::loglib
         std::ios::sync_with_stdio();
 
         const HWND h_wnd   = ::GetConsoleWindow();
-        assert(hWnd);
+        assert(h_wnd);
         const HMENU h_menu = ::GetSystemMenu(h_wnd, FALSE);
-        assert(hMenu);
+        assert(h_menu);
 
         ::DeleteMenu
         (

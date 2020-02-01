@@ -34,7 +34,7 @@ TEST(netlib, UpdateChecker_Regular) try
 
     SUCCEED();
 }
-catch (const std::exception& ex)
+catch (const std::exception& /*ex*/)
 {
     FAIL();
 }

@@ -33,7 +33,7 @@ void DrawCompletion()
 
         std::cout << 
             boost::format("%-30s|total= %-10d|loaded= %-9d%%\n") 
-                % value->m_filename 
+                % value->m_filename.filename() 
                 % value->m_total
                 % percentage;
     }
@@ -45,15 +45,14 @@ void DrawFinalCompletion()
     {
         std::cout << 
            boost::format("%-30s|total= %-10d|loaded= %-9d%%\n") 
-                % value->m_filename 
+                % value->m_filename.filename() 
                 % value->m_total
                 % 100.0000;
     }
 }
 
 void DownloaderThread(const std::map<std::string, std::pair<std::string, uint32_t>>& filenames, 
-                      const Path& destination, 
-                      netlib::LoadingProgressPtr /*progress_bar*/)
+                      const Path& destination)
 {
     {
         std::lock_guard<std::mutex> lock(g_CompletionMutex);
@@ -83,7 +82,7 @@ void DownloaderThread(const std::map<std::string, std::pair<std::string, uint32_
     }
 }
 
-void ProgressBarThread(netlib::LoadingProgressPtr progress_bar)
+void ProgressBarThread()
 {
     auto console_handle       = ::GetStdHandle(STD_OUTPUT_HANDLE);
     auto console_start_coords = GetConsoleCursorPosition(console_handle);

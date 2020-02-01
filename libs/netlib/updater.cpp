@@ -21,16 +21,19 @@ namespace drjuke::netlib
     {
         LOG_TRACE(__FUNCTIONW__)
 
-        auto url = R"(ftp://127.0.0.1:21/resources/)" + m_filename.generic_string();
+        auto local_path = m_destination / m_filename;
+        auto url        = R"(ftp://127.0.0.1:21/resources/)" + m_filename.generic_string();
 
         curl_easy_setopt(m_curl.get(), CURLOPT_URL, url.c_str());
 
         LOG_TRACE(L"Started URL: " + std::wstring(url.begin(), url.end()));
 
-        if (fs::exists(m_filename))
+        if (fs::exists(local_path))
         {
-            winlib::filesys::deleteFile(m_filename);
+            winlib::filesys::deleteFile(local_path);
         }
+
+        m_progress_bar->m_filename = local_path;
 
         auto status = curl_easy_perform(m_curl.get());
 
@@ -46,7 +49,15 @@ namespace drjuke::netlib
         auto       progress_bar  = static_cast<LoadingProgress*>(stream);
         const auto real_size = size * nmemb;
 
-        winlib::filesys::appendFile(progress_bar->m_filename, std::string(static_cast<char*>(buffer), real_size));
+        winlib::filesys::appendFile
+        (
+            progress_bar->m_filename, 
+            std::string
+            (
+                static_cast<char*>(buffer), 
+                real_size
+            )
+        );
 
         progress_bar->m_loaded += real_size;
 

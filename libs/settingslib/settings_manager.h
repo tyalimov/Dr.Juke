@@ -1,23 +1,56 @@
 #pragma once
 
-#include "isettingsmanager.h"
-#include "winreg.h"
-
-#include <map>
 #include <string>
-#include <common/utils.h>
+
+#include "winreg.h"
 
 namespace drjuke::settingslib
 {
-    class SettingsManager final
-        : public ISettingsManager
+    enum class KeyId;
+
+    class SettingsManager 
     {
     private:
-        static winreg::RegKey getKey(SettingId id);
+        [[nodiscard]] winreg::RegKey getKey(KeyId id) const;
+        void createAllKeys();
 
     public:
-        Json get(SettingId id)             override final;
-        void set(SettingId id, Json value) override final;
-        void setDefaultSettings()          override final;
+        void setDefaultSettings();
+
+        // setters
+        void setRootDirectory      (const std::wstring& directory);
+        void setResourcesDirectory (const std::wstring& directory);
+        void setBinariesDirectory  (const std::wstring& directory);
+       
+        // rule adders
+        void addRegistryFilterRule   (const std::wstring& path, uint32_t access_mask);
+        void addFilesystemFilterRule (const std::wstring& path, uint32_t access_mask);
+        void addProcessFilterRule    (const std::wstring& path, bool access_mask);
+        void addFirewallRule         (const std::wstring& name, const std::wstring& content);
+
+        // special for firewall
+        void enableFirewall(bool enable);
+        
+        // rule removers
+        void removeRegistryFilterRule   (const std::wstring& name);
+        void removeFilesystemFilterRule (const std::wstring& name);
+        void removeProcessFilterRule    (const std::wstring& name);
+        void removeFirewallRule         (const std::wstring& name);
+
+        // exclusions for rules
+        void excludeFromRegistryFilter   (const std::wstring& name, const std::wstring& path);
+        void excludeFromFilesystemFilter (const std::wstring& name, const std::wstring& path);
+        void excludeFromProcessFilter    (const std::wstring& name, const std::wstring& path);
+
+        // getters
+        [[nodiscard]] std::wstring getRootDirectory()      const;
+        [[nodiscard]] std::wstring getResourcesDirectory() const;
+        [[nodiscard]] std::wstring getBinariesDirectory()  const;
+
+        // cleaners
+        void clearFilesystemFilterRules();
+        void clearFirewallRulest();
+        void clearRegistryFilterRules();
+        void clearProcessFilterRules();
     };
 }

@@ -76,6 +76,21 @@ namespace drjuke::winlib::filesys
             throw WindowsException("Can't append file");
     }
 
+    void createDirectory(const Path& path)
+    {
+        if (fs::exists(path))
+            return;
+
+        auto status = CreateDirectoryW
+        (
+            path.generic_wstring().c_str(),
+            nullptr
+        );
+
+        if (!status)
+            throw WindowsException("Can't create directory");
+    }
+
     Path getDesktopDirectory()
     {
         static wchar_t path[ MAX_PATH + 1 ]{0};

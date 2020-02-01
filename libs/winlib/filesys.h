@@ -10,6 +10,7 @@ namespace drjuke::winlib::filesys
     void createFile(const Path& file);
     void deleteFile(const Path& file);
     void appendFile(const Path& file, const std::string& data);
+    void createDirectory(const Path& path);
     Path getDesktopDirectory();
 
     // ReSharper restore CppInconsistentNaming
