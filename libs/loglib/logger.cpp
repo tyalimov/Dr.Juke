@@ -44,6 +44,21 @@ namespace drjuke::loglib
         m_log_thread_ptr.reset(new std::thread{ &Logger::runLog, this });
     }
 
+    Logger::~Logger()
+    {
+        switch (m_direction)
+        {
+            case LogOutput::kFile:           /*do nothing*/                    break;
+            case LogOutput::kRemoteConsole:
+            {
+                FreeConsole();                    
+                    break;
+            }
+            case LogOutput::kDefaultConsole: /*do nothing*/                     break;
+            default:                         /*do nothing*/                     break;
+        }
+    }
+
     void Logger::write(const LogLevel &type, const std::wstring &text)
     {
         auto now = winlib::utils::GetCurrentSystemTime();

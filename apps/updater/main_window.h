@@ -23,7 +23,7 @@ namespace drjuke::updater
 
     private:
 
-        // ProgressBar
+        // ProgressBarWindow
         // CurrentLoad
 
         wchar_t   m_title[kMaxLoadString]     { 0 };
@@ -36,6 +36,7 @@ namespace drjuke::updater
 
     public:
         MainWindow(HINSTANCE instance, int cmd_show);
+        ~MainWindow();
         void runMainLoop();
     };
 }

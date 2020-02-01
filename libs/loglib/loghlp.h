@@ -6,6 +6,7 @@
 #include <sstream>
 #include <tchar.h>
 #include <memory>
+#include <boost/format.hpp>
 
 #define CLASS_LOGGER_DECLARATION() \
     static const std::shared_ptr<drjuke::loglib::LogWriter> m_logger_ins;

@@ -11,5 +11,5 @@ int APIENTRY wWinMain(_In_     HINSTANCE     h_hinstance,
 {
     START_REMOTE_CONSOLE_LOG()
 
-    drjuke::updater::MainWindow(h_hinstance, n_cmd_show).runMainLoop();
+    /*auto main_wnd =*/ drjuke::updater::MainWindow(h_hinstance, n_cmd_show).runMainLoop();
 }

@@ -31,6 +31,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "updater", "projects\updater
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "loglib", "projects\loglib\loglib.vcxproj", "{EDA10196-8CC8-4164-8F7A-AA36D718506D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "installer", "projects\installer\installer.vcxproj", "{DAA27474-15B8-4CF5-A683-10BAA4344610}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -127,6 +129,14 @@ Global
 		{EDA10196-8CC8-4164-8F7A-AA36D718506D}.Release|x64.Build.0 = Release|x64
 		{EDA10196-8CC8-4164-8F7A-AA36D718506D}.Release|x86.ActiveCfg = Release|Win32
 		{EDA10196-8CC8-4164-8F7A-AA36D718506D}.Release|x86.Build.0 = Release|Win32
+		{DAA27474-15B8-4CF5-A683-10BAA4344610}.Debug|x64.ActiveCfg = Debug|x64
+		{DAA27474-15B8-4CF5-A683-10BAA4344610}.Debug|x64.Build.0 = Debug|x64
+		{DAA27474-15B8-4CF5-A683-10BAA4344610}.Debug|x86.ActiveCfg = Debug|Win32
+		{DAA27474-15B8-4CF5-A683-10BAA4344610}.Debug|x86.Build.0 = Debug|Win32
+		{DAA27474-15B8-4CF5-A683-10BAA4344610}.Release|x64.ActiveCfg = Release|x64
+		{DAA27474-15B8-4CF5-A683-10BAA4344610}.Release|x64.Build.0 = Release|x64
+		{DAA27474-15B8-4CF5-A683-10BAA4344610}.Release|x86.ActiveCfg = Release|Win32
+		{DAA27474-15B8-4CF5-A683-10BAA4344610}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -143,6 +153,7 @@ Global
 		{5DA2A62C-5C81-4D1C-925E-FDA5842A91ED} = {AF006283-E199-4E60-A798-430192F91443}
 		{C6355B51-0859-4E0F-A017-CB8878E213AB} = {2EFB2373-65B0-4121-9B9B-9A442A847B8C}
 		{EDA10196-8CC8-4164-8F7A-AA36D718506D} = {AF006283-E199-4E60-A798-430192F91443}
+		{DAA27474-15B8-4CF5-A683-10BAA4344610} = {2EFB2373-65B0-4121-9B9B-9A442A847B8C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BEFB16B9-0EC6-41D4-B63D-D3E8837A862C}

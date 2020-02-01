@@ -123,6 +123,11 @@ namespace drjuke::updater
         LOG_FATAL(std::string("Errror creating application - ") + ex.what())
     }
 
+    MainWindow::~MainWindow()
+    {
+        LOG_TRACE(__FUNCTIONW__);
+    }
+
     void MainWindow::runMainLoop() try
     {
         LOG_INFO(__FUNCTIONW__);

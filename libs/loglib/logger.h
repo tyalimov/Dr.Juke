@@ -41,7 +41,8 @@ namespace drjuke::loglib
     public:
 
         Logger(LogOutput direction);
-        
+        ~Logger();
+
         void write(const LogLevel& type, const std::wstring& text);		
         
     protected:

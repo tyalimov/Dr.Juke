@@ -3,19 +3,24 @@
 #include <loglib/loglib.h>
 #include <windows.h>
 
+#include <netlib/netlib.h>
+
 namespace drjuke::updater
 {
-    class ProgressBar
+    class ProgressBarWindow
     {
     private:
         DECLARE_CLASS_LOGGER();
         
         HWND      m_handle_window;
         HWND      m_handle_parent;
-        DWORD     m_file_size;
         RECT      m_parent_rectangle;
         HINSTANCE m_instance;
         int       m_vscroll;
+        
+        DWORD     m_file_size;
+
+        netlib::LoadingProgressPtr m_loading_progress;
     
     private:
         void initScroll();
@@ -27,6 +32,6 @@ namespace drjuke::updater
         void setRange(DWORD from, DWORD to);
         void setPos(DWORD pos);
         
-        ProgressBar(DWORD file_size, HWND parent_window);
+        ProgressBarWindow(HWND parent_window, netlib::LoadingProgressPtr progress);
     };
 }

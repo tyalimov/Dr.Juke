@@ -1,4 +1,4 @@
-﻿#include "progress_bar.h"
+﻿#include "progress_bar_window.h"
 
 #include <commctrl.h>
 #include <winlib/windows_exception.h>
@@ -6,9 +6,9 @@
 
 namespace drjuke::updater
 {
-    IMPLEMENT_CLASS_LOGGER(ProgressBar);
+    IMPLEMENT_CLASS_LOGGER(ProgressBarWindow);
 
-    void ProgressBar::initWindow()
+    void ProgressBarWindow::initWindow()
     {
         LOG_INFO(__FUNCTIONW__);
 
@@ -29,7 +29,7 @@ namespace drjuke::updater
         );
     }
 
-    void ProgressBar::setRange(DWORD from, DWORD to)
+    void ProgressBarWindow::setRange(DWORD from, DWORD to)
     {
         SendMessageW
         (
@@ -40,7 +40,7 @@ namespace drjuke::updater
         );
     }
 
-    void ProgressBar::setPos(DWORD pos)
+    void ProgressBarWindow::setPos(DWORD pos)
     {
         SendMessageW
         (
@@ -51,7 +51,7 @@ namespace drjuke::updater
         );
     }
 
-    void ProgressBar::initScroll()
+    void ProgressBarWindow::initScroll()
     {
         LOG_INFO(__FUNCTIONW__);
 
@@ -61,7 +61,7 @@ namespace drjuke::updater
             throw winlib::WindowsException("Can't get scroll");
     }
 
-    void ProgressBar::initClientRectangle()
+    void ProgressBarWindow::initClientRectangle()
     {
         LOG_INFO(__FUNCTIONW__);
 
@@ -71,16 +71,16 @@ namespace drjuke::updater
             throw winlib::WindowsException("Can't get parent rectangle");
     }
 
-    ProgressBar::ProgressBar(DWORD file_size, HWND parent_window) try
+    ProgressBarWindow::ProgressBarWindow(HWND parent_window, netlib::LoadingProgressPtr progress) try
         : m_handle_parent(parent_window)
-        , m_file_size(file_size)
+        , m_loading_progress(progress)
     {
         LOG_INFO(__FUNCTIONW__);
 
         initScroll();
         initClientRectangle();
         initWindow();
-        setRange(0, file_size);
+        //setRange(0, file_size);
     }
     catch (const std::exception& ex)
     {
