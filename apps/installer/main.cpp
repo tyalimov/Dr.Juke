@@ -42,9 +42,19 @@ int main() try
     system("pause");
     // TODO: Дописать в settings_manager отдельные функции
     // TODO: IsuserAdmin
-    // TODO: Перезагрузка после успешной установки
 
-    // Запускаем перезагрузку 
+#if 0
+    // Запускаем перезагрузку
+    std::wstring shutdown_reason{ L"AVshutdown" };
+    ::InitiateShutdownW
+    (
+        nullptr,
+        shutdown_reason.data(),
+        0,
+        SHUTDOWN_RESTART,
+        0
+    );
+#endif
 }
 catch (const std::exception & ex)
 {
