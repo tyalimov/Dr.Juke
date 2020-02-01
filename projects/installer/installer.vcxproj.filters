@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="srс">
+      <UniqueIdentifier>{e9fc8231-491a-45ba-ae54-43cf2fe86e9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="worker_threads">
+      <UniqueIdentifier>{60781b43-bed1-4002-8b89-572976ee9c3d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\apps\installer\main.cpp">
+      <Filter>srс</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\installer\worker_threads.cpp">
+      <Filter>worker_threads</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\apps\installer\worker_threads.h">
+      <Filter>worker_threads</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

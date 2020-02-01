@@ -7,14 +7,17 @@ namespace drjuke::settingslib
 {
     enum class SettingId
     {
-        kProtectedFiles = 0
+        kProtectedFiles     = 0,
+        kResourcesDirectory = 1,
+        kInstallDirectory   = 2
     };
 
     class ISettingsManager
     {
     public:
-        virtual ~ISettingsManager()                       = default;
+        virtual ~ISettingsManager()                = default;
         virtual Json get(SettingId id)             = 0;
         virtual void set(SettingId id, Json value) = 0;
+        virtual void setDefaultSettings()          = 0; 
     };
 }

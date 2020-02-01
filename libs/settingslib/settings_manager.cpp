@@ -48,4 +48,8 @@ namespace drjuke::settingslib
         key.DeleteValue(L"value");
         key.SetBinaryValue(L"value", serialized_data);
     }
+
+    void SettingsManager::setDefaultSettings()
+    {
+    }
 }

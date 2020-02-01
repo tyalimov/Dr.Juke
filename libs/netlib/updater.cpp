@@ -9,14 +9,6 @@ namespace drjuke::netlib
 {
     IMPLEMENT_CLASS_LOGGER(Updater);
 
-    void Updater::downloadFiles()
-    {
-        for (const auto& file : m_filenames)
-        {
-            downloadFile(file.generic_string());
-        }
-    }
-
     void Updater::initialize()
     {
         curl_easy_setopt(m_curl.get(), CURLOPT_WRITEFUNCTION, on_ftp_data);
@@ -25,17 +17,20 @@ namespace drjuke::netlib
         curl_easy_setopt(m_curl.get(), CURLOPT_PASSWORD,      "test");
     }
 
-    void Updater::downloadFile(const std::string &filename)
+    void Updater::downloadFile()
     {
         LOG_TRACE(__FUNCTIONW__)
 
-        auto url = R"(ftp://127.0.0.1:21/)" + filename;
+        auto url = R"(ftp://127.0.0.1:21/resources/)" + m_filename.generic_string();
 
         curl_easy_setopt(m_curl.get(), CURLOPT_URL, url.c_str());
 
         LOG_TRACE(L"Started URL: " + std::wstring(url.begin(), url.end()));
 
-        *m_progress_bar = LoadingProgress(filename);
+        if (fs::exists(m_filename))
+        {
+            winlib::filesys::deleteFile(m_filename);
+        }
 
         auto status = curl_easy_perform(m_curl.get());
 

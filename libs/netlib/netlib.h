@@ -26,10 +26,10 @@ namespace drjuke::netlib
             , m_total(0)
         {}
 
-        explicit LoadingProgress(const Path& filename)
+        LoadingProgress(const Path& filename, size_t file_size)
             : m_filename(filename)
             , m_loaded(0)
-            , m_total(fs::file_size(filename))
+            , m_total(file_size)
         {}
     };
 
@@ -40,9 +40,9 @@ namespace drjuke::netlib
     public:
         [[nodiscard]] static UpdateCheckerPtr getUpdateChecker();
         [[nodiscard]] static UploaderPtr      getUploader(const Path& filename);
-        [[nodiscard]] static UpdaterPtr       getUpdater(const std::vector<Path>& filenames,
-                                                         const Path&              destination,
-                                                         LoadingProgressPtr       progress_bar);
+        [[nodiscard]] static UpdaterPtr       getUpdater(const Path&        filename,
+                                                         const Path&        destination,
+                                                         LoadingProgressPtr progress_bar);
     };
 
 

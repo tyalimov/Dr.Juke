@@ -16,10 +16,10 @@ namespace drjuke::netlib
     {
     public:
 
-        Updater(const std::vector<Path>& filenames,
-                const Path&              destination,
-                LoadingProgressPtr       progress_bar)
-            : m_filenames(filenames)
+        Updater(const Path&         filename,
+                const Path&         destination,
+                LoadingProgressPtr  progress_bar)
+            : m_filename(filename)
             , m_destination(destination)
             , m_progress_bar(progress_bar)
         {
@@ -27,23 +27,22 @@ namespace drjuke::netlib
         }
 
         Updater()
-            : m_filenames()
+            : m_filename()
             , m_destination()
             , m_progress_bar()
         {}
 
-        void downloadFiles() override;
+        void downloadFile() override;
 
     private:
 
         void initialize();
-        void downloadFile(const std::string& filename);
         static size_t on_ftp_data(void* buffer, size_t size, size_t nmemb, void* stream);
     
     private:
         DECLARE_CLASS_LOGGER();
 
-        std::vector<Path>  m_filenames;
+        Path               m_filename;
         Path               m_destination;
         LoadingProgressPtr m_progress_bar;
     };

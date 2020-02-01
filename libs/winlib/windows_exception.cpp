@@ -13,7 +13,6 @@ namespace drjuke::winlib
     WindowsException::WindowsException(const char *message)
         : m_error_message(message)
         , m_error_code(GetLastError())
-
     {
     }
 

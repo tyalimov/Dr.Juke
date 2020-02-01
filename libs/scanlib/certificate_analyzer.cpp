@@ -1,5 +1,4 @@
 ﻿#include "certificate_analyzer.h"
-#include "certificate_info_builder.h"
 
 #pragma comment( lib, "wintrust.lib" )
 #pragma comment( lib, "crypt32.lib"  )
@@ -72,29 +71,8 @@ namespace drjuke::scanlib
         m_file_info.pgKnownSubject = nullptr;
     }
 
-    // TODO: unique_ptr
     void DigitalSignatureAnalyzer::constructWinTrustData()
     {
-        // TODO: перевести
-        /*
-        WVTPolicyGUID определяет политике для применения к файлу
-        WINTRUST_ACTION_GENERIC_VERIFY_V2 policy checks:
-
-        1) The certificate used to sign the file chains up to a root 
-        certificate located in the trusted root certificate store. This 
-        implies that the identity of the publisher has been verified by 
-        a certification authority.
-
-        2) In cases where user interface is displayed (which this example
-        does not do), WinVerifyTrust will check for whether the  
-        end entity certificate is stored in the trusted publisher store,  
-        implying that the user trusts content from this publisher.
-
-        3) The end entity certificate has sufficient permission to sign 
-        code, as indicated by the presence of a code signing EKU or no 
-        EKU.
-        */
-
         memset(&m_win_trust_data, 0, sizeof(m_win_trust_data)); // Инициализировать все в 0.
 
         m_win_trust_data.cbStruct             = sizeof(m_win_trust_data); // Размер структуры
@@ -143,30 +121,17 @@ namespace drjuke::scanlib
 
         destroyWinTrustData();
 
-        // TODO: Собственные исключения
-        // TODO: Заменить shared на unique
-
         try
         {
             auto str_status = g_FormattedStatuses[status];
-
-            if (str_status != kFileNotSigned)
-            {
-                auto details = CertificateInfoBuilder(filename_ptr).get();
-                return std::make_shared<SignatureReport>(str_status.data(), details);
-            }
-
-            // TODO: Залогировать
             return std::make_shared<SignatureReport>(str_status.data());
         }
-        catch (const std::system_error&)
+        catch (const std::exception& /*ex*/)
         {
-            return std::make_shared<SignatureReport>(g_FormattedStatuses[status].data());
+
         }
-        catch (const std::out_of_range&)
-        {
-            return std::make_shared<SignatureReport>("Unknown");
-        }
+
+        return std::make_shared<SignatureReport>("suck"); // TODO: fix
 
     }
 
@@ -202,21 +167,5 @@ namespace drjuke::scanlib
     void SignatureReport::fillJsonWithStatus()
     {
         m_report["resolution"] = m_status;
-    }
-
-    void SignatureReport::fillJsonWithDetails()
-    {
-        m_report["signer"]                  = m_details.m_publisher_link;
-        m_report["application"]             = m_details.m_program_name;
-        m_report["url"]                     = m_details.m_publisher_link;
-        m_report["more_info"]               = m_details.m_more_info_link;
-        m_report["datetime"]["year"]        = m_details.m_timestamp.wYear;
-        m_report["datetime"]["month"]       = m_details.m_timestamp.wMonth;
-        m_report["datetime"]["day"]         = m_details.m_timestamp.wDay;
-        m_report["datetime"]["day of week"] = m_details.m_timestamp.wDayOfWeek;
-        m_report["datetime"]["hour"]        = m_details.m_timestamp.wHour;
-        m_report["datetime"]["minute"]      = m_details.m_timestamp.wMinute;
-        m_report["datetime"]["second"]      = m_details.m_timestamp.wSecond;
-        m_report["datetime"]["millisecond"] = m_details.m_timestamp.wMilliseconds;
     }
 }

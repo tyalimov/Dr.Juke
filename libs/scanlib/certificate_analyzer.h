@@ -7,27 +7,12 @@
 #include <filesystem>
 
 #include "base_analyzer.h"
-#include "certificate_info_builder.h"
 
 /*
     Анализатор файлов, проверяющий ЭЦП исполняемых файлов.
     Формат отчета от анализатора:
     {
-        "status"          : (non-signed|signed|non-trusted|disallowded|error) ----- Результат проверки
-        "signer"          : <строка> -- Подписывающий, при non-signed или error - "undefined"
-        "application"     : <строка> -- Название приложения, при non-signed или error - "undefined"
-        "url"             : <строка>
-        "datetime"        : Дата подписания, структура ниже.
-        {
-            "year"        : <число> - год подписания          ( от 1601 до 30827                )
-            "month"       : <число> - месяц подписания        ( от 1<январь> до 12<декабрь>     )
-            "day"         : <число> - день подписания         ( от 1 до 31                      )
-            "day of week" : <число> - день недели             ( от 0<воскресенье> до 6<суббота> )
-            "hour"        : <число> - час подписания          ( от 0 до 23                      )
-            "minute"      : <число> - минута подписания       ( от 0 до 59                      )
-            "second"      : <число> - секунда подписания      ( от 0 до 59                      )
-            "millisecond" : <число> - миллисекунда подписания ( от 0 до 999                     )
-        }
+        "status" : (non-signed|signed|non-trusted|disallowded|error) ----- Результат проверки
     }
 */
 
@@ -36,28 +21,17 @@ namespace drjuke::scanlib
     class SignatureReport final
         : public BaseReport
     {
-        CertificateInfo m_details;
-        std::string     m_status;
+        std::string m_status;
 
     private:
 
         void initializeJson();
         void fillJsonWithStatus();
-        void fillJsonWithDetails();
 
     public:
-        SignatureReport(const std::string &status, const CertificateInfo &details)
-            : m_details(details)
-            , m_status(status)
-        {
-            initializeJson();
-            fillJsonWithStatus();
-            fillJsonWithDetails();
-        }
 
-         explicit SignatureReport(const std::string &status)
-            : m_details()
-            , m_status(status)
+        explicit SignatureReport(const std::string &status)
+            : m_status(status)
         {
             initializeJson();
             fillJsonWithStatus();
@@ -86,14 +60,6 @@ namespace drjuke::scanlib
         void constructWinTrustFileInfo(const wchar_t *filename);
         void constructWinTrustData();
         void destroyWinTrustData();
-
-        void processSigned(const wchar_t      *filename);
-        void processNotSigned(const wchar_t   *filename);
-        void processDisallowded(const wchar_t *filename);
-        void processNonTrusted(const wchar_t  *filename);
-        void processError(LONG status);
-
-        void getSertificateDetails(const wchar_t *filename);
 
     public:
 

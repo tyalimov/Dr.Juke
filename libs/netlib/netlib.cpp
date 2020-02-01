@@ -15,10 +15,10 @@ namespace drjuke::netlib
         return std::make_unique<Uploader>(filename);
     }
 
-    UpdaterPtr Factory::getUpdater(const std::vector<Path>& filenames, 
-                                         const Path&              destination,
-                                         LoadingProgressPtr           progress_bar)
+    UpdaterPtr Factory::getUpdater(const Path&        filename, 
+                                   const Path&        destination,
+                                   LoadingProgressPtr progress_bar)
     {
-        return std::make_unique<Updater>(filenames, destination, progress_bar);
+        return std::make_unique<Updater>(filename, destination, progress_bar);
     }
 }

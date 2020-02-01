@@ -18,6 +18,11 @@ TEST(netlib, UpdateChecker_Regular) try
     auto update_checker = Factory::getUpdateChecker();
     auto hashes         = update_checker->getActualHashes();
 
+    if (hashes.empty())
+    {
+        std::cout << "Empty data" << std::endl;
+    }
+
     for (const auto& [key, value] : hashes)
     {
         std::cout
@@ -31,7 +36,6 @@ TEST(netlib, UpdateChecker_Regular) try
 }
 catch (const std::exception& ex)
 {
-    std::cout << ex.what() << std::endl;
     FAIL();
 }
 
@@ -45,10 +49,12 @@ TEST(netlib, Updater_Regular) try
         "test_2.txt"
     };
 
-    auto progress_bar = std::make_shared<LoadingProgress>();
-    auto updater = Factory::getUpdater(files, "loaded", progress_bar);
-
-    updater->downloadFiles();
+    for (const auto &file : files)
+    {
+        auto progress_bar = std::make_shared<LoadingProgress>(file, 100);
+        auto updater = Factory::getUpdater(file, "loaded", progress_bar);
+        updater->downloadFile();
+    }
 
     SUCCEED();
 }

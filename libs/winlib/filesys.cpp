@@ -42,19 +42,19 @@ namespace drjuke::winlib::filesys
 
     void appendFile(const Path &file, const std::string &data)
     {
-        if (!fs::exists(file))
-        {
-            createFile(file);
-        }
+        //if (!fs::exists(file))
+        //{
+        //    createFile(file);
+        //}
 
         UniqueHandle file_handle(CreateFileW
         (
-            file.generic_wstring().c_str(),
-            FILE_APPEND_DATA | GENERIC_WRITE,
-            0,
-            nullptr,
-            TRUNCATE_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
+            file.generic_wstring().c_str(), // filename
+            FILE_APPEND_DATA,               // open for writing
+            FILE_SHARE_READ,                // allow multiple readers
+            nullptr,                        // no security
+            OPEN_ALWAYS,                    // open or create
+            FILE_ATTRIBUTE_NORMAL,          // no attr. template
             nullptr
         ));
 

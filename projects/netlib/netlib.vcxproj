@@ -208,6 +208,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\netlib\curl_raii.h" />
+    <ClInclude Include="..\..\libs\netlib\curl_exception.h" />
     <ClInclude Include="..\..\libs\netlib\iupdater.h" />
     <ClInclude Include="..\..\libs\netlib\iupdate_checker.h" />
     <ClInclude Include="..\..\libs\netlib\iuploader.h" />
@@ -218,6 +219,7 @@
     <ClInclude Include="..\..\libs\netlib\uploader.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\libs\netlib\curl_exception.cpp" />
     <ClCompile Include="..\..\libs\netlib\netlib.cpp" />
     <ClCompile Include="..\..\libs\netlib\updater.cpp" />
     <ClCompile Include="..\..\libs\netlib\update_checker.cpp" />

@@ -18,5 +18,6 @@ namespace drjuke::settingslib
     public:
         Json get(SettingId id)             override final;
         void set(SettingId id, Json value) override final;
+        void setDefaultSettings()          override final;
     };
 }
