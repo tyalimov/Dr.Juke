@@ -83,7 +83,7 @@ NTSTATUS PsProtectInit()
         Status = STATUS_INSUFFICIENT_RESOURCES;
 
 
-	kprint_st(TRACE_INFO, Status);
+	kprint_st(TRACE_PSPROTECT, Status);
 	return Status;
 }
 
@@ -95,7 +95,7 @@ VOID PsProtectExit()
 		PsProtectDeleteInstance();
 	}
 
-	kprint_st(TRACE_INFO, STATUS_SUCCESS);
+	kprint_st(TRACE_PSPROTECT, STATUS_SUCCESS);
 }
 
 OB_PREOP_CALLBACK_STATUS

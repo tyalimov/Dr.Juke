@@ -84,22 +84,7 @@ wstring GetKeyNameByHandle(HANDLE KeyHandle)
 
 namespace str_util
 {
-	bool startsWith(const wstring& str, const wstring& substr) 
-	{
-		auto n = substr.length();
-		return (str.length() >= n) &&
-			(wcsncmp(str.c_str(), substr.c_str(), n) == 0);
-	}
-
-	bool startsWith(const string& str, const string& substr) 
-	{
-		auto n = substr.length();
-		return (str.length() >= n) && 
-			(strncmp(str.c_str(), substr.c_str(), n) == 0);
-	}
-
-	bool startsWith(const wstring& str, const wchar_t* substr) 
-	{
+	bool startsWith(const wstring& str, const wchar_t* substr) {
 		auto n = wcslen(substr);
 		return (str.length() >= n) &&
 			(wcsncmp(str.c_str(), substr, n) == 0);
@@ -111,24 +96,20 @@ namespace str_util
 			(strncmp(str.c_str(), substr, n) == 0);
 	}
 
-	bool startsWith(const wstring* str, const wchar_t* substr) {
-		auto n = wcslen(substr);
-		return (str->length() >= n) &&
-			(wcsncmp(str->c_str(), substr, n) == 0);
-	}
-
-	bool startsWith(const string* str, const char* substr) {
-		auto n = strlen(substr);
-		return (str->length() >= n) &&
-			(strncmp(str->c_str(), substr, n) == 0);
-	}
-
 	bool endsWith(const wstring& str, const wchar_t* substr)
 	{
 		auto n = wcslen(substr);
 		auto len = str.length(); 
 		return (len >= n) &&
 			(wcsncmp(str.c_str() + len - n, substr, n) == 0);
+	}
+
+	bool endsWith(const string& str, const char* substr)
+	{
+		auto n = strlen(substr);
+		auto len = str.length(); 
+		return (len >= n) &&
+			(strncmp(str.c_str() + len - n, substr, n) == 0);
 	}
 
 	void makeLower(wstring* str)

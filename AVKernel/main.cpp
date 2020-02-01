@@ -11,7 +11,7 @@
 ZwQuerySystemInformationRoutine ZwQuerySystemInformation = nullptr;
 ZwQueryInformationProcessRoutine ZwQueryInformationProcess = nullptr;
 
-BOOLEAN DynamicLoadRoutines()
+bool DynamicLoadRoutines()
 {
 	UNICODE_STRING routine;
 
@@ -46,7 +46,7 @@ void DriverUnload(PDRIVER_OBJECT DriverObject)
 
 	PsProtectExit();
 
-	kprintf(TRACE_LOAD, "Driver unloaded");
+	kprintf(TRACE_INFO, "Driver unloaded");
 }
 
 // TODO: 
@@ -100,10 +100,10 @@ NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 	}
 
 
-	kprintf(TRACE_LOAD, "Driver initialization successfull");
+	kprintf(TRACE_INFO, "Driver initialization successfull");
 	return STATUS_SUCCESS;
 
 fail:
-	kprintf(TRACE_LOAD, "Driver initialization failed");
+	kprintf(TRACE_INFO, "Driver initialization failed");
 	return STATUS_SUCCESS;
 }

@@ -70,7 +70,7 @@ NTSTATUS PsMonInit()
 	NTSTATUS Status = STATUS_UNSUCCESSFUL;
 	ProcessNotifyRoutineSet = FALSE;
 
-	kprintf(TRACE_INFO, "Callback version 0x%hx", ObGetFilterVersion());
+	kprintf(TRACE_PSMON, "Callback version 0x%hx", ObGetFilterVersion());
 
 	Status = PsSetCreateProcessNotifyRoutineEx(
 		CreateProcessNotifyRoutine,
@@ -80,7 +80,7 @@ NTSTATUS PsMonInit()
 	if (NT_SUCCESS(Status))
 		ProcessNotifyRoutineSet = TRUE;
 
-	kprint_st(TRACE_INFO, Status);
+	kprint_st(TRACE_PSMON, Status);
 	return Status;
 }
 
@@ -98,7 +98,7 @@ VOID PsMonExit()
 		ProcessNotifyRoutineSet = FALSE;
 	}
 
-	kprint_st(TRACE_INFO, Status);
+	kprint_st(TRACE_PSMON, Status);
 }
 
 ProcessList::iterator& ProcessList::iterator::operator++()

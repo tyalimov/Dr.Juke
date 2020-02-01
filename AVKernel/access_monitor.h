@@ -12,6 +12,14 @@
 template <typename TFilterLog, LogMode INFO, LogMode WARN, LogMode ERR>
 class AccessMonitor
 {
+private:
+	
+	struct unused_parameter 
+	{
+		template<typename ...Args> 
+		unused_parameter(Args const & ... ) {} 
+	};
+
 protected:
 
 	wstring mKeyBase;
@@ -297,8 +305,10 @@ public:
 	template<typename ...T>
 	inline void logInfo(const char* fmt, T... args)
 	{
-		if constexpr(INFO == LogMode::ON)
+		if constexpr (INFO == LogMode::ON)
 			TFilterLog::logInfo(fmt, args...);
+		else
+			unused_parameter{ fmt, args... };
 	}
 
 	template<typename ...T>
@@ -306,6 +316,8 @@ public:
 	{
 		if constexpr(WARN == LogMode::ON)
 			TFilterLog::logWarning(fmt, args...);
+		else
+			unused_parameter{ fmt, args... };
 	}
 
 	template<typename ...T>
@@ -313,6 +325,8 @@ public:
 	{
 		if constexpr(ERR == LogMode::ON)
 			TFilterLog::logError(fmt, args...);
+		else
+			unused_parameter{ fmt, args... };
 	}
 
 protected:
@@ -1021,9 +1035,9 @@ public:
 //};
 
 
-using ProcessAccessMonitor = ProcessAccessMonitorImpl<FilterLog<PsMonitorPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
-using RegistryAccessMonitor = HierarchyAccessMonitor<FilterLog<RegFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
-using FileSystemAccessMonitor = HierarchyAccessMonitor<FilterLog<FsFilterPrefix>, LogMode::ON, LogMode::ON, LogMode::ON>;
+using ProcessAccessMonitor = ProcessAccessMonitorImpl<FilterLog<PsMonitorPrefix>, LOG_MODE_PSPROTECT>;
+using RegistryAccessMonitor = HierarchyAccessMonitor<FilterLog<RegFilterPrefix>, LOG_MODE_REGFILTER>;
+using FileSystemAccessMonitor = HierarchyAccessMonitor<FilterLog<FsFilterPrefix>, LOG_MODE_FSFILTER>;
 
 using PFileSystemAccessMonitor = FileSystemAccessMonitor*;
 using PRegistryAccessMonitor = RegistryAccessMonitor*;

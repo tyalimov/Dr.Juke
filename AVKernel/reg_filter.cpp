@@ -59,7 +59,7 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 	UNICODE_STRING Altitude = RTL_CONSTANT_STRING(REGFILTER_ALTITUDE);
 
     CmGetCallbackVersion(&MajorVersion, &MinorVersion);
-    kprintf(TRACE_INFO, "Callback version %u.%u", MajorVersion, MinorVersion);
+    kprintf(TRACE_REGFILTER, "Callback version %u.%u", MajorVersion, MinorVersion);
 
 	bool ok = RegFilterNewInstance();
 	if (!ok)
@@ -78,7 +78,7 @@ NTSTATUS RegFilterInit(PDRIVER_OBJECT DriverObject)
 			RegFilterDeleteInstance();
 	}
 
-	kprint_st(TRACE_INFO, Status);
+	kprint_st(TRACE_REGFILTER, Status);
 	return Status;
 }
 
@@ -92,7 +92,7 @@ void RegFilterExit()
 		RegFilterDeleteInstance();
 	}
 
-	kprint_st(TRACE_INFO, Status);
+	kprint_st(TRACE_REGFILTER, Status);
 }
 
 static NTSTATUS
@@ -208,7 +208,7 @@ RegPostSetValueKey(
 	
 	UNICODE_STRING JukeKey = RTL_CONSTANT_STRING(DR_JUKE_BASE_KEY);
 	BOOLEAN res = RtlPrefixUnicodeString(&JukeKey, KeyPath, FALSE);
-	//kprintf(TRACE_INFO, "RtlPrefixUnicodeString res=%d %wZ, %wZ", res, JukeKey, KeyPath);
+	//kprintf(TRACE_REGFILTER, "RtlPrefixUnicodeString res=%d %wZ, %wZ", res, JukeKey, KeyPath);
 
 	// Not interested in modified keys 
 	// other than Dr.Juke ones
@@ -216,9 +216,9 @@ RegPostSetValueKey(
 		return STATUS_SUCCESS;
 
 	if (bDeleted)
-		kprintf(TRACE_INFO, "Deleted <ValueName=%wZ, KeyPath=%wZ", PreInfo->ValueName, KeyPath);
+		kprintf(TRACE_REGFILTER, "Deleted <ValueName=%wZ, KeyPath=%wZ", PreInfo->ValueName, KeyPath);
 	else
-		kprintf(TRACE_INFO, "Created <ValueName=%wZ, KeyPath=%wZ>", PreInfo->ValueName, KeyPath);
+		kprintf(TRACE_REGFILTER, "Created <ValueName=%wZ, KeyPath=%wZ>", PreInfo->ValueName, KeyPath);
 
 	// notify self
 	wstring key_path(KeyPath->Buffer, KeyPath->Length / sizeof(WCHAR));

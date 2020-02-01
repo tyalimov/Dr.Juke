@@ -109,7 +109,7 @@ NTSTATUS FsFilterInstanceSetup(
 	if (VolumeDeviceType == FILE_DEVICE_DISK_FILE_SYSTEM
 		|| VolumeDeviceType == FILE_DEVICE_NAMED_PIPE)
 	{
-		kprintf(TRACE_INFO, "Attached to new volume <flags:0x%08x, device:0x%08x, fs:0x%08x>",
+		kprintf(TRACE_FSFILTER, "Attached to new volume <flags:0x%08x, device:0x%08x, fs:0x%08x>",
 			(ULONG)Flags, (ULONG)VolumeDeviceType, (ULONG)VolumeFilesystemType);
 
 		return STATUS_SUCCESS;
@@ -196,7 +196,7 @@ NTSTATUS FsFilterInit(PDRIVER_OBJECT DriverObject)
 		}
 	}
 
-	kprint_st(TRACE_INFO, Status);
+	kprint_st(TRACE_FSFILTER, Status);
 	return Status;
 }
 
@@ -218,7 +218,7 @@ NTSTATUS FsFilterExit(FLT_FILTER_UNLOAD_FLAGS Flags)
 	else
 		Status = STATUS_FLT_DO_NOT_DETACH;
 
-	kprint_st(TRACE_INFO, Status);
+	kprint_st(TRACE_FSFILTER, Status);
 	return Status;
 }
       

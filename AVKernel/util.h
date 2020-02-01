@@ -12,19 +12,13 @@ bool IsWin8OrGreater();
 
 namespace str_util
 {
-	bool startsWith(const wstring& str, const wstring& substr);
-
-	bool startsWith(const string& str, const string& substr);
-
 	bool startsWith(const wstring& str, const wchar_t* substr);
 
 	bool startsWith(const string& str, const char* substr);
 
-	bool startsWith(const wstring* str, const wchar_t* substr);
-
-	bool startsWith(const string* str, const char* substr);
-
 	bool endsWith(const wstring& str, const wchar_t* substr);
+
+	bool endsWith(const string& str, const char* substr);
 
 	void makeLower(wstring* str);
 

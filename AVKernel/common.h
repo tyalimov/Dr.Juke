@@ -13,13 +13,19 @@
 
 #define DR_JUKE_BASE_KEY L"\\REGISTRY\\MACHINE\\SOFTWARE\\Dr.Juke"
 
-#define PIPEFILTER L"PIPE_FILTER"
 #define REGFILTER L"REG_FILTER"
 #define FSFILTER L"FS_FILTER"
 #define PSMONITOR L"PS_MONITOR"
 
 //-------------------------------------------------------------------------------->
 // Tracing options
+
+//#define TRACING_STANDARD
+//#define TRACING_CUSTOM
+//#define TRACING_FSFILTER_ONLY
+#define TRACING_REGFILTER_ONLY
+//#define TRACING_PSPROTECT_ONLY
+
 
 #define TRACE_NONE				0x00000000
 #define TRACE_INFO				0x00000001
@@ -28,35 +34,66 @@
 #define TRACE_PSMON				0x00000008
 #define TRACE_PREF				0x00000010
 #define TRACE_PSLIST			0x00000020
-#define TRACE_LOAD				0x00000040
-
-#define TRACE_ALL (	TRACE_NONE \
-	| TRACE_INFO \
-	| TRACE_WARN \
-	| TRACE_ERROR \
-	| TRACE_PREF \
-	| TRACE_PSLIST \
-	| TRACE_LOAD)
+//#define TRACE_LOAD				0x00000040
+#define TRACE_FSFILTER			0x00000080
+#define TRACE_REGFILTER			0x00000100
+#define TRACE_PSPROTECT			0x00000200
 
 #define TRACE_STANDARD ( TRACE_NONE \
 	| TRACE_INFO \
 	| TRACE_WARN \
-	| TRACE_ERROR \
-	| TRACE_LOAD)
+	| TRACE_ERROR)
 
-#define TRACE_MINIMAL ( TRACE_NONE \
-	| TRACE_WARN \
-	| TRACE_ERROR \
-	| TRACE_LOAD)
+#define TRACE_REGFILTER_ONLY ( TRACE_NONE \
+	| TRACE_REGFILTER \
+	| TRACE_STANDARD)
+
+#define TRACE_FSFILTER_ONLY ( TRACE_NONE \
+	| TRACE_FSFILTER \
+	| TRACE_STANDARD)
+
+#define TRACE_PSPROTECT_ONLY ( TRACE_NONE \
+	| TRACE_PSPROTECT \
+	| TRACE_STANDARD)
 
 #define TRACE_CUSTOM ( TRACE_NONE \
 	| TRACE_INFO \
 	| TRACE_WARN \
 	| TRACE_ERROR \
-	| TRACE_PSMON \
-	| TRACE_LOAD)
+	| TRACE_PSMON)
 
-#define TRACE_FLAGS TRACE_STANDARD
+#define LOG_MODE_REGFILTER_CUSTOM LogMode::OFF, LogMode::ON, LogMode::ON
+#define LOG_MODE_PSPROTECT_CUSTOM LogMode::OFF, LogMode::ON, LogMode::ON
+#define LOG_MODE_FSFILTER_CUSTOM LogMode::OFF, LogMode::ON, LogMode::ON
+
+#ifdef TRACING_STANDARD
+#	define LOG_MODE_REGFILTER LogMode::OFF, LogMode::ON, LogMode::ON
+#	define LOG_MODE_PSPROTECT LogMode::OFF, LogMode::ON, LogMode::ON
+#	define LOG_MODE_FSFILTER LogMode::OFF, LogMode::ON, LogMode::ON
+#	define TRACE_FLAGS TRACE_STANDARD
+#elif defined(TRACING_CUSTOM)
+#	define LOG_MODE_REGFILTER LOG_MODE_REGFILTER_CUSTOM
+#	define LOG_MODE_PSPROTECT LOG_MODE_PSPROTECT_CUSTOM 
+#	define LOG_MODE_FSFILTER LOG_MODE_FSFILTER_CUSTOM
+#	define TRACE_FLAGS TRACE_CUSTOM
+#elif defined(TRACING_FSFILTER_ONLY)
+#	define LOG_MODE_REGFILTER LogMode::OFF, LogMode::OFF, LogMode::OFF
+#	define LOG_MODE_PSPROTECT LogMode::OFF, LogMode::OFF, LogMode::OFF 
+#	define LOG_MODE_FSFILTER LogMode::ON, LogMode::ON, LogMode::ON
+#	define TRACE_FLAGS TRACE_FSFILTER_ONLY
+#elif defined(TRACING_REGFILTER_ONLY)
+#	define LOG_MODE_REGFILTER LogMode::ON, LogMode::ON, LogMode::ON
+#	define LOG_MODE_PSPROTECT LogMode::OFF, LogMode::OFF, LogMode::OFF 
+#	define LOG_MODE_FSFILTER LogMode::OFF, LogMode::OFF, LogMode::OFF
+#	define TRACE_FLAGS TRACE_REGFILTER_ONLY
+#elif defined(TRACING_PSPROTECT_ONLY)
+#	define LOG_MODE_REGFILTER LogMode::OFF, LogMode::OFF, LogMode::OFF
+#	define LOG_MODE_PSPROTECT LogMode::ON, LogMode::ON, LogMode::ON 
+#	define LOG_MODE_FSFILTER LogMode::OFF, LogMode::OFF, LogMode::OFF
+#	define TRACE_FLAGS TRACE_PSPROTECT_ONLY
+#else
+#	error "Need to specify tracing mode"
+#endif
 
 //-------------------------------------------------------------------------------->
 // Print routines
@@ -97,14 +134,6 @@ class RegFilterPrefix : public FilterPrefixBase
 public:
 	virtual const wchar_t* filter_name() override {
 		return REGFILTER;
-	}
-};
-
-class PipeFilterPrefix : public FilterPrefixBase 
-{
-public:
-	virtual const wchar_t* filter_name() override {
-		return PIPEFILTER;
 	}
 };
 
