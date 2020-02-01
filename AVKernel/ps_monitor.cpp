@@ -37,6 +37,7 @@ VOID CreateProcessNotifyRoutine(
 		PProcessAccessMonitor PsMonPtr = PsProtectGetInstancePtr();
 		if (PsMonPtr != nullptr)
 		{
+			PsMonPtr->addProcessIfSystem(ProcessId, ImagePath);
 			PsMonPtr->addProcessIfProtected(ProcessId, ImagePath);
 			PsMonPtr->addProcessIfExcluded(ProcessId, ImagePath);
 		}
@@ -56,6 +57,7 @@ VOID CreateProcessNotifyRoutine(
 		PProcessAccessMonitor PsMonPtr = PsProtectGetInstancePtr();
 		if (PsMonPtr != nullptr)
 		{
+			PsMonPtr->removeProcessIfSystem(ProcessId);
 			PsMonPtr->removeProcessIfProtected(ProcessId);
 			PsMonPtr->removeProcessIfExcluded(ProcessId);
 		}

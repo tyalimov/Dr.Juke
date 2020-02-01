@@ -1,5 +1,8 @@
 #include "ps_protect.h"
 
+#define PROCESS_QUERY_LIMITED_INFORMATION 0x1000
+
+
 //  The following are for setting up callbacks for Process and Thread filtering
 PVOID pCBRegistrationHandle = NULL;
 
@@ -104,6 +107,7 @@ PsProtectPreOperationCallback (
     UNREFERENCED_PARAMETER(RegistrationContext);
 
     PACCESS_MASK pDesiredAccess;
+    ACCESS_MASK RestrictedAccess;
     PID ProcessId = 0;
 	PID CurrentProcessId = PsGetCurrentProcessId();
 
@@ -113,6 +117,7 @@ PsProtectPreOperationCallback (
     if (PreInfo->ObjectType == *PsProcessType)  
 	{
         ProcessId = PsGetProcessId((PEPROCESS)PreInfo->Object);
+        RestrictedAccess = (SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION);
 
 		// Ignore process open/duplicate from the protected process itself
         if (PreInfo->Object == PsGetCurrentProcess())
@@ -121,6 +126,7 @@ PsProtectPreOperationCallback (
     else if (PreInfo->ObjectType == *PsThreadType)  
 	{
         ProcessId = PsGetThreadProcessId((PETHREAD)PreInfo->Object);
+        RestrictedAccess = (SYNCHRONIZE | THREAD_QUERY_LIMITED_INFORMATION);
 
         // Ignore requests for threads belonging to the current processes.
         if (ProcessId == CurrentProcessId) 
@@ -149,10 +155,10 @@ PsProtectPreOperationCallback (
 
     if (gPsMon != nullptr)
     {
-            ACCESS_MASK RestrictedAccess = gPsMon->accessCheck(
-                CurrentProcessId, ProcessId, *pDesiredAccess);
+        bool allowed = gPsMon->accessCheck(CurrentProcessId, ProcessId);
 
-            *pDesiredAccess = RestrictedAccess;
+		 if (!allowed)
+			*pDesiredAccess = RestrictedAccess;
     }
 
 Exit:

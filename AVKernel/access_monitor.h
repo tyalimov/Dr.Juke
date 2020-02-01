@@ -560,6 +560,10 @@ public:
 template <typename TFilterLog, LogMode INFO, LogMode WARN, LogMode ERR>
 class ProcessAccessMonitorImpl : public AccessMonitor<TFilterLog, INFO, WARN, ERR>
 {
+	const wstring mCsrss = L"Windows\\System32\\csrss.exe";
+
+	set<PID> mProcSystem;
+	set<PID> mProcInit;
 	map<PID, ACCESS_MASK> mObjectPids;
 
 public:
@@ -568,9 +572,9 @@ public:
 		: AccessMonitor(key_path) {}
 
 	//-------------------------------------------------------------------------------->
-	// Protected objects manipulation routines
+	// Get running processes pids depending on condition
 
-	void updatePidsForProtectedProcesses()
+	void updatePidsForRequiredProcesses()
 	{
 		mLockObj.acquire();
 
@@ -579,14 +583,27 @@ public:
 			{
 				if (path.length() > 0)
 				{
+					// Protected processes
 					auto it = mObjects.find(path);
 					if (it != mObjects.end())
 						mObjectPids.emplace(pid, it->second);
+
+					// System processes
+					if (isSystemProcess(path))
+						mProcSystem.emplace(pid);
+
+					// Excluded processes
+					auto it_ = mProcImages.find(path);
+					if (it_ != mProcImages.end())
+						mProcPids.emplace(pid);
 				}
 			});
 
 		mLockObj.release();
 	}
+
+	//-------------------------------------------------------------------------------->
+	// Protected objects manipulation routines
 
 	bool addProcessIfProtected(PID pid, const wstring& image_path)
 	{
@@ -605,6 +622,10 @@ public:
 
 		if (match)
 		{
+			// Mark it not initialized 
+			// and allow csrss.exe to access protected process
+			addProcessNotInitialized(pid, image_path);
+
 			logInfo("Added new process object <pid=%d, ImagePath=%ws>", 
 				pid, image_path.c_str());
 		}
@@ -628,32 +649,38 @@ public:
 		ACCESS_MASK access, bool update_pids=false)
 	{
 		mLockObj.acquire();
-		auto result = mObjects.emplace(image_path, access);
+
+		auto result = mObjects.try_emplace(image_path, access);
+		bool inserted = result.second;
+		auto it = result.first;
+
+		if (!inserted)
+			it->second = access;
+		
 		mLockObj.release();
 
-		bool inserted = result.second;
+		if (update_pids)
+		{
+			// We need to atomically iterate process list
+			// See explanation inside updatePidsForExcludedProcesses
+			mLockObj.acquire();
+
+			iterateProcessesEqual(image_path, [&access, this](PID pid) {
+					mObjectPids.emplace(pid, access);
+				});
+
+			mLockObj.release();
+		}
+
 		if (inserted)
 		{
-			logInfo("Added new process object <UpdatePids=%d, ImagePath=%ws, "
+			logInfo("Added process object <UpdatePids=%d, ImagePath=%ws, "
 				"access=0x%08X>", update_pids, image_path.c_str(), access);
-
-			if (update_pids)
-			{
-				// We need to atomically iterate process list
-				// See explanation inside updatePidsForExcludedProcesses
-				mLockObj.acquire();
-
-				iterateProcessesEqual(image_path, [&access, this](PID pid) {
-						mObjectPids.emplace(pid, access);
-					});
-
-				mLockObj.release();
-			}
 		}
 		else
 		{
-			logError("Failed to add new process object: already exists "
-				"<UpdatePids=%d, ImagePath=%ws>", update_pids, image_path.c_str());
+			logInfo("Modified process object <UpdatePids=%d, ImagePath=%ws, "
+				"access=0x%08X>", update_pids, image_path.c_str(), access);
 		}
 
 		return inserted;
@@ -689,6 +716,104 @@ public:
 	}
 
 	//-------------------------------------------------------------------------------->
+	// System processes manipulation routines
+
+	bool isSystemProcess(const wstring& image_path) {
+		return str_util::endsWith(image_path, mCsrss.c_str());
+	}
+
+	bool isSystemProcess(PID pid)
+	{
+		LockGuard<GuardedMutex> guard(&mLockObj);
+
+		auto it = mProcSystem.find(pid);
+		return it != mProcSystem.end();
+	}
+
+	bool addProcessIfSystem(PID pid, const wstring& image_path)
+	{
+		mLockObj.acquire();
+
+		bool match = isSystemProcess(image_path);
+
+		if (match)
+			mProcSystem.emplace(pid);
+			
+		mLockObj.release();
+
+		if (match)
+		{
+			logInfo("Added new system process <pid=%d, ImagePath=%ws>", 
+				pid, image_path.c_str());
+		}
+
+		return match;
+	}
+
+	bool removeProcessIfSystem(PID pid)
+	{
+		mLockObj.acquire();
+		auto n = mProcSystem.erase(pid);
+		mLockObj.release();
+
+		if (n > 0)
+			logInfo("System process removed <pid=%d>", pid);
+
+		return n > 0;
+	}
+
+	//-------------------------------------------------------------------------------->
+	// Initialized/non-initialized processes manipulation routines
+
+	bool addProcessNotInitialized(PID pid, const wstring& image_path)
+	{
+		// all processes here are non-initialized
+		mLockObj.acquire();
+		auto res = mProcInit.emplace(pid);	
+		bool inserted = res.second;
+		mLockObj.release();
+
+		if (inserted)
+		{
+			logInfo("Added new not initialized process "
+				"<pid=%d, ImagePath=%ws>", pid, image_path.c_str());
+		}
+		else
+		{
+			logError("Failed to add not initialized process. "
+				"Already exists <pid=%d, ImagePath=%ws>", pid, image_path.c_str());
+		}
+
+		return inserted;
+	}
+
+	bool removeProcessInitialized(PID pid)
+	{
+		// remove processes when they become initialized
+		mLockObj.acquire();
+		auto n = mProcInit.erase(pid);	
+		mLockObj.release();
+
+		if (n > 0)
+			logInfo("Process is initialized <pid=%d>", pid);
+		else
+		{
+			logError("Failed to remove non-existent "
+				"not initialized process <pid=%d>", pid);
+		}
+
+		return n > 0;
+	}
+
+	bool isProcessInitialized(PID pid)
+	{
+		LockGuard<GuardedMutex> guard(&mLockObj);
+
+		auto it = mProcInit.find(pid);
+		return it == mProcInit.end();
+	}
+
+	//-------------------------------------------------------------------------------->
 	// Routines for reading protected objects and excluded processes from registry
 
 	virtual void regReadConfiguration()
@@ -706,18 +831,19 @@ public:
 					});
 			});
 
-		updatePidsForProtectedProcesses();
-
 		// Read paths of excluded processes from registry
-		// and save all pids matching those paths
+		// Save all pids matching protected/system/excluded processes
 		regReadExcludedProcesses();
-		updatePidsForExcludedProcesses();
+		updatePidsForRequiredProcesses();
 
 		if (mObjects.size() == 0)
 			logWarning("Configuration: No protected objects found!");
 
 		if (mProcImages.size() == 0)
 			logWarning("Configuration: No excluded processes found!");
+
+		if (mProcSystem.size() == 0)
+			logWarning("Configuration: No system processes found!");
 	}
 
 	//-------------------------------------------------------------------------------->
@@ -781,32 +907,47 @@ public:
 	//-------------------------------------------------------------------------------->
 	// Access check routines
 
-	ACCESS_MASK accessCheck(PID pid_from, PID pid_to, ACCESS_MASK desired_access) 
+	bool accessCheck(PID pid_from, PID pid_to) 
 	{
-		if (!isProcessExcluded(pid_from))
-		{
-			mLockObj.acquire();
-			auto it = mObjectPids.find(pid_to);
-			mLockObj.release();
+		bool res = true;
 
-			if (it != mObjectPids.end())
+		if (isProcessInitialized(pid_to))
+		{
+			if (!isSystemProcess(pid_from))
 			{
-				ACCESS_MASK actual_access = it->second;
-				if (desired_access & actual_access)
+				if (!isProcessExcluded(pid_from))
 				{
-					logInfo("Allow <pid=%d> to access <pid=%d>", 
-						pid_from, pid_to);
-				}
-				else
-				{
-					desired_access &= actual_access;
-					logInfo("Deny <pid=%d> to access <pid=%d>", 
-						pid_from, pid_to);
+					LockGuard<GuardedMutex> guard(&mLockObj);
+
+					auto it = mObjectPids.find(pid_to);
+					if (it != mObjectPids.end())
+					{
+						ACCESS_MASK actual_access = it->second;
+						if (actual_access != 0)
+						{
+							logInfo("Allow <pid=%d> to access <pid=%d>",
+								pid_from, pid_to);
+						}
+						else
+						{
+							res = false;
+							logInfo("Deny <pid=%d> to access <pid=%d>",
+								pid_from, pid_to);
+						}
+					}
 				}
 			}
 		}
+		else
+		{
+			// allow access to not initialized process
+			// once csrss.exe process accessed 
+			// not initialized process, it will become initialized
+			if (isSystemProcess(pid_from))
+				removeProcessInitialized(pid_to);
+		}
 
-		return desired_access;
+		return res;
 	}
 };
 
