@@ -61,7 +61,7 @@ namespace drjuke::loglib
 
     void Logger::write(const LogLevel &type, const std::wstring &text)
     {
-        auto now = winlib::utils::GetCurrentSystemTime();
+        auto now = winlib::utils::getCurrentSystemTime();
 
         std::wstringstream stream;
         
@@ -108,7 +108,7 @@ namespace drjuke::loglib
 
     std::wstring Logger::createLogName() const
     {
-        auto time = winlib::utils::GetCurrentSystemTime();
+        auto time = winlib::utils::getCurrentSystemTime();
        
         std::wstringstream stream;
         stream << boost::wformat(L"drjuke_log_%d.%02d.%02d.%s") 

@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="misc">
+      <UniqueIdentifier>{aa5562ff-19e9-4611-b4c1-cc87e4279254}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="communicator">
+      <UniqueIdentifier>{97d9fac2-21f7-4116-8ad7-eb8a0926c3c0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\libs\ipclib\ipclib.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\ipclib\icommunicator.h">
+      <Filter>communicator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\ipclib\communicator.h">
+      <Filter>communicator</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\libs\ipclib\communicator.cpp">
+      <Filter>communicator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\ipclib\ipclib.cpp">
+      <Filter>misc</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
