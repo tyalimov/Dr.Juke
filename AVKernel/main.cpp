@@ -6,6 +6,7 @@
 #include "fs_filter.h"
 #include "ps_monitor.h"
 #include "ps_protect.h"
+#include "net_filter.h"
 #include "util.h"
 
 ZwQuerySystemInformationRoutine ZwQuerySystemInformation = nullptr;
@@ -37,14 +38,16 @@ void DriverUnload(PDRIVER_OBJECT DriverObject)
 	// there's may be a null-deref during driver unload
 	//
 
-	PsMonExit();
+	//PsMonExit();
 
-	RegFilterExit();
+	//RegFilterExit();
 
 	// Callback is called instead
 	// FsFilterExit();
 
-	PsProtectExit();
+	//PsProtectExit();
+
+	NetFilterExit();
 
 	kprintf(TRACE_INFO, "Driver unloaded");
 }
@@ -72,33 +75,36 @@ NTSTATUS SysMain(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegPath) {
 		goto fail;
 	}
 
-	Status = PsMonInit();
+	//Status = PsMonInit();
+	//if (!NT_SUCCESS(Status))
+	//	goto fail;
+
+	//Status = RegFilterInit(DriverObject);
+	//if (!NT_SUCCESS(Status))
+	//{
+	//	PsMonExit();
+	//	goto fail;
+	//}
+
+	//Status = FsFilterInit(DriverObject);
+	//if (!NT_SUCCESS(Status))
+	//{
+	//	PsMonExit();
+	//	RegFilterExit();
+	//	goto fail;
+	//}
+
+	//Status = PsProtectInit();
+	//if (!NT_SUCCESS(Status))
+	//{
+	//	PsMonExit();
+	//	RegFilterExit();
+	//	goto fail;
+	//}
+
+	Status = NetFilterInit(DriverObject);
 	if (!NT_SUCCESS(Status))
 		goto fail;
-
-	Status = RegFilterInit(DriverObject);
-	if (!NT_SUCCESS(Status))
-	{
-		PsMonExit();
-		goto fail;
-	}
-
-	Status = FsFilterInit(DriverObject);
-	if (!NT_SUCCESS(Status))
-	{
-		PsMonExit();
-		RegFilterExit();
-		goto fail;
-	}
-
-	Status = PsProtectInit();
-	if (!NT_SUCCESS(Status))
-	{
-		PsMonExit();
-		RegFilterExit();
-		goto fail;
-	}
-
 
 	kprintf(TRACE_INFO, "Driver initialization successfull");
 	return STATUS_SUCCESS;
