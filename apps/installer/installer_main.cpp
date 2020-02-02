@@ -9,7 +9,7 @@
 #include <windows.h>
 #include <conio.h>
 
-#include "worker_threads.h"
+#include "installer_workers.h"
 
 #pragma warning (disable:4996)
 

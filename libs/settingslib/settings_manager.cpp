@@ -243,13 +243,13 @@ namespace drjuke::settingslib
         auto key_disabled_rules = key_disabled.EnumValues();
 
         auto iter_enabled = std::find_if(key_enabled_rules.begin(), key_enabled_rules.end(),
-            [&name](std::pair<std::wstring, DWORD> val)
+            [&name](const std::pair<std::wstring, DWORD>& val)
         {
             return val.first == name;
         });
 
         auto iter_disabled = std::find_if(key_disabled_rules.begin(), key_disabled_rules.end(),
-            [&name](std::pair<std::wstring, DWORD> val)
+            [&name](const std::pair<std::wstring, DWORD>& val)
         {
             return val.first == name;
         });

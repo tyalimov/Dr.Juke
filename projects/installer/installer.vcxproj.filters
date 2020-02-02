@@ -9,11 +9,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\apps\installer\main.cpp">
-      <Filter>srс</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\apps\installer\worker_threads.cpp">
       <Filter>worker_threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\installer\installer_main.cpp">
+      <Filter>srс</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
