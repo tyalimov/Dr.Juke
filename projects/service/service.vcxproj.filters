@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{6209ce44-8791-4a13-a3c3-ea4d2b4ea0ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="service">
+      <UniqueIdentifier>{47d68896-cced-403b-bdb2-9680080ffac4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="workers">
+      <UniqueIdentifier>{aec2b419-51a6-4041-8d73-2db595def9c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tasks">
+      <UniqueIdentifier>{ed5cd619-83ce-4a54-8269-2fbcfc77976d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\apps\service\service_main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\service\service.cpp">
+      <Filter>service</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\service\queue_executor.cpp">
+      <Filter>workers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\service\ipc_listener.cpp">
+      <Filter>workers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\service\task_builder.cpp">
+      <Filter>tasks</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\apps\service\service.h">
+      <Filter>service</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\service\queue_executor.h">
+      <Filter>workers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\service\ipc_listener.h">
+      <Filter>workers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\service\task_builder.h">
+      <Filter>tasks</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\service\queue_consumer.h">
+      <Filter>workers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\service\tasks_impl.h">
+      <Filter>tasks</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

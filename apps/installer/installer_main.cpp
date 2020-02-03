@@ -2,16 +2,17 @@
 #include <settingslib/settingslib.h>
 #include <loglib/loglib.h>
 #include <winlib/filesys.h>
+#include <common/winreg.h>
 
 #include <thread>
-#include <filesystem>
 #include <iostream>
-#include <windows.h>
 #include <conio.h>
 
 #include "installer_workers.h"
 
 #pragma warning (disable:4996)
+
+#define LAUNCHER_APP_NAME L"launcher.exe"
 
 using namespace drjuke;
 
@@ -54,6 +55,14 @@ int main() try
     thread_downloader.join();
 
     std::cout << "[SUCCESS] Downloading actual files\n";
+
+    // Устанавливаем launcher в автозагрузку
+    std::wstring launcher_path = 
+        (Path(settings_manager->getBinariesDirectory()) / LAUNCHER_APP_NAME).generic_wstring();
+
+    winreg::RegKey key{ HKEY_LOCAL_MACHINE, LR"(SOFTWARE\Microsoft\Windows\CurrentVersion\Run)" };
+    key.SetStringValue(LAUNCHER_APP_NAME, launcher_path);
+    std::cout << "[SUCCESS] Adding launcher to auto run\n";
     std::cout << "[-------] Press any key to restart PC" << std::endl;
     _getch();
 

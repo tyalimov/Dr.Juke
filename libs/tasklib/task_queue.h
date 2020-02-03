@@ -1,6 +1,6 @@
 #pragma once
 
-#include "i_task.h"
+#include "base_task.h"
 
 #include <queue>
 #include <mutex>
@@ -14,7 +14,7 @@ namespace drjuke::tasklib
         std::queue<BaseTaskPtr>  m_queue;
         std::condition_variable  m_cv;
         std::mutex               m_mutex;
-        bool                     m_finalized;
+        bool                     m_stop;
       
     public:
 
@@ -22,17 +22,14 @@ namespace drjuke::tasklib
             : m_queue()
             , m_cv()
             , m_mutex()
-            , m_finalized(false)
+            , m_stop(false)
         {}
-
-        TaskQueue(const TaskQueue&) = delete;
-        TaskQueue(TaskQueue &&rhs) = delete;
 
         BaseTaskPtr popTask();
         void pushTask(BaseTaskPtr task);
-        void finalize();
-        bool isFinalized();
+        void stop();
+        bool isStopped();
     };
 
-    using TaskQueuePtr = std::unique_ptr<TaskQueue>;
+    using TaskQueuePtr = std::shared_ptr<TaskQueue>;
 }

@@ -18,29 +18,36 @@ using namespace drjuke;
 
 int main() try 
 {
+    //START_DEFAULT_CONSOLE_LOG();
+
     auto update_checker   = netlib::Factory::getUpdateChecker();
     auto settings_manager = settingslib::Factory::getSettingsManager();
 
-    auto binaries_directory = settings_manager->getBinariesDirectory();
+    auto root_directory = settings_manager->getRootDirectory();
+    std::cout << "[SUCCESS] Getting metadata\n";
 
     // Посчитать свои хеши
-    auto local_hashmap  = GetFilesHashMap(binaries_directory);
-    
+    auto local_hashmap  = GetFilesHashMap(root_directory);
+    std::cout << "[SUCCESS] Getting current state\n";
+
     // Запросить серверные хеши
     auto remote_hashmap = update_checker->getActualHashes();
+    std::cout << "[SUCCESS] Getting remote state\n";
      
     // Составить список на скачивание
     auto files_to_download = GetFilesToDownload(local_hashmap, remote_hashmap);
 
     // Скачать список
     std::thread thread_progress_bar { ProgressBarThread };
-    std::thread thread_downloader   { DownloaderThread, files_to_download, binaries_directory };
+    std::thread thread_downloader   { DownloaderThread, files_to_download, root_directory };
 
     // Ожидаем завершения скачивания
     thread_progress_bar.join();
     thread_downloader.join();
 
     std::cout << "[SUCCESS] Downloading actual files\n";
+    std::cout << "Press any key to exit" << std::endl;
+    _getch();
 }
 catch (const std::exception& ex)
 {

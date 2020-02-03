@@ -4,13 +4,30 @@
     <Filter Include="src">
       <UniqueIdentifier>{dea35162-1b21-4062-94e9-32ba0edfbbb6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="worker_threads">
+    <Filter Include="workers">
       <UniqueIdentifier>{a36eea01-4ae3-45d3-b044-9971d9bba258}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="utils">
+      <UniqueIdentifier>{ff0d04ec-6a5b-41d9-8052-0d6d42ef36b0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\apps\updater\updater_main.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\apps\updater\updater_utils.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\apps\updater\updater_workers.cpp">
+      <Filter>workers</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\apps\updater\updater_workers.h">
+      <Filter>workers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\apps\updater\updater_utils.h">
+      <Filter>utils</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

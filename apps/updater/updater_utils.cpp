@@ -2,6 +2,7 @@
 
 #include <cryptolib/cryptolib.h>
 #include <boost/algorithm/string.hpp>
+#include <loglib/loglib.h>
 
 [[nodiscard]] std::map<std::string, std::string> GetFilesHashMap(const Path& directory)
 {
@@ -13,13 +14,14 @@
     {
         if (!file.is_directory())
         {
-            result[file.path().filename().generic_string()]
-                = cryptor->sha512(file.path());
+            auto path = fs::relative(file, directory);
+            result[path.generic_string()] = cryptor->sha512(file.path());
         }
     }
 
     return result;
 }
+
 
 [[nodiscard]] std::map<std::string, std::pair<std::string, uint32_t>> GetFilesToDownload
 (
@@ -33,11 +35,17 @@
     
     for (const auto& [key, value] : local_hashmap)
     {
-        if (result.find(key) != result.end())
+        std::string processed_key { key };
+        std::string to_replace    { R"(/)" };
+        std::string replace_with  { R"(\)" };
+
+        boost::replace_all(processed_key, to_replace, replace_with);
+
+        if (result.find(processed_key) != result.end())
         {
-            if (boost::iequals(value, result.at(key).first))
+            if (boost::iequals(value, result.at(processed_key).first))
             {
-                result.erase(key);
+                result.erase(processed_key);
             }
         }
     }

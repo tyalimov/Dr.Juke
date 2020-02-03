@@ -9,7 +9,7 @@ namespace drjuke::ipclib
     {
         "GuiToService",      
         "ServiceToGui",   
-        "ReatimeToService",  
+        "RealtimeToService",  
         "ServiceToRealtime", 
     };
 

@@ -1,6 +1,5 @@
 ﻿#include "task_queue.h"
 
-#include <common/constants.h>
 
 namespace drjuke::tasklib
 {
@@ -12,12 +11,12 @@ namespace drjuke::tasklib
         // поэтому устанавливаем предикат окончания ожидание.
         m_cv.wait(lock, [&]()
             {
-                return m_finalized || !this->m_queue.empty();
+                return m_stop || !this->m_queue.empty();
             });
 
-        if (m_finalized)
+        if (m_stop)
         {
-            return std::make_shared<StubTask>();
+            return std::make_shared<EndTask>();
         }
 
         auto task = m_queue.front();
@@ -30,29 +29,25 @@ namespace drjuke::tasklib
     {
         std::unique_lock<std::mutex> lock(m_mutex);
 
-        if (!m_finalized)
+        if (!m_stop)
         {
-            if (m_queue.size() <= constants::tasklib::kMaxTaskQueueSize)
-            {
-                m_queue.push(task);
-                m_cv.notify_one();
-            }
+            m_queue.push(task);
+            m_cv.notify_one();
         }
-        return;
     }
 
-    void TaskQueue::finalize()
+    void TaskQueue::stop()
     {
         std::unique_lock<std::mutex> lock(m_mutex);
 
-        m_finalized = true;
+        m_stop = true;
         m_cv.notify_all();
     }
 
-    bool TaskQueue::isFinalized() 
+    bool TaskQueue::isStopped() 
     {
         std::unique_lock<std::mutex> lock(m_mutex);
 
-        return m_finalized;
+        return m_stop;
     }
 }

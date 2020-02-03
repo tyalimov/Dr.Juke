@@ -107,6 +107,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ExternalSDK)libs;</AdditionalLibraryDirectories>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -123,6 +124,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ExternalSDK)libs;</AdditionalLibraryDirectories>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -139,6 +141,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ExternalSDK)libs;</AdditionalLibraryDirectories>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -159,10 +162,31 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ExternalSDK)libs;</AdditionalLibraryDirectories>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\apps\updater\updater_main.cpp" />
+    <ClCompile Include="..\..\apps\updater\updater_utils.cpp" />
+    <ClCompile Include="..\..\apps\updater\updater_workers.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\apps\updater\updater_utils.h" />
+    <ClInclude Include="..\..\apps\updater\updater_workers.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\cryptolib\cryptolib.vcxproj">
+      <Project>{5da2a62c-5c81-4d1c-925e-fda5842a91ed}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\netlib\netlib.vcxproj">
+      <Project>{564e8b5c-dba3-4aaf-85df-71d313189c71}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\settingslib\settingslib.vcxproj">
+      <Project>{c86b3e2d-d655-45e3-a261-6fd52dcf1fe6}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\winlib\winlib.vcxproj">
+      <Project>{5955b0db-6c7a-44f3-99e0-910bdc453406}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

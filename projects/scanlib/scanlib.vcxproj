@@ -33,6 +33,11 @@
     <ClInclude Include="..\..\libs\scanlib\certificate_analyzer.h" />
     <ClInclude Include="..\..\libs\scanlib\yara_analyzer.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\settingslib\settingslib.vcxproj">
+      <Project>{c86b3e2d-d655-45e3-a261-6fd52dcf1fe6}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{AEC604CC-446D-472E-8306-77FA3C5323E4}</ProjectGuid>

@@ -4,21 +4,21 @@
     <Filter Include="srс">
       <UniqueIdentifier>{e9fc8231-491a-45ba-ae54-43cf2fe86e9b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="worker_threads">
+    <Filter Include="workers">
       <UniqueIdentifier>{60781b43-bed1-4002-8b89-572976ee9c3d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\apps\installer\worker_threads.cpp">
-      <Filter>worker_threads</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\apps\installer\installer_main.cpp">
       <Filter>srс</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\apps\installer\installer_workers.cpp">
+      <Filter>workers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\apps\installer\worker_threads.h">
-      <Filter>worker_threads</Filter>
+    <ClInclude Include="..\..\apps\installer\installer_workers.h">
+      <Filter>workers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

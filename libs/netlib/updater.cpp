@@ -13,8 +13,8 @@ namespace drjuke::netlib
     {
         curl_easy_setopt(m_curl.get(), CURLOPT_WRITEFUNCTION, on_ftp_data);
         curl_easy_setopt(m_curl.get(), CURLOPT_WRITEDATA,     m_progress_bar.get());
-        curl_easy_setopt(m_curl.get(), CURLOPT_USERNAME,      "test");
-        curl_easy_setopt(m_curl.get(), CURLOPT_PASSWORD,      "test");
+        curl_easy_setopt(m_curl.get(), CURLOPT_USERNAME,      "updater");
+        curl_easy_setopt(m_curl.get(), CURLOPT_PASSWORD,      "updater");
     }
 
     void Updater::downloadFile()
@@ -22,7 +22,7 @@ namespace drjuke::netlib
         LOG_TRACE(__FUNCTIONW__)
 
         auto local_path = m_destination / m_filename;
-        auto url        = R"(ftp://127.0.0.1:21/resources/)" + m_filename.generic_string();
+        auto url        = R"(ftp://127.0.0.1:21/)" + m_filename.generic_string();
 
         curl_easy_setopt(m_curl.get(), CURLOPT_URL, url.c_str());
 
@@ -30,6 +30,7 @@ namespace drjuke::netlib
 
         if (fs::exists(local_path))
         {
+            LOG_DEBUG(boost::wformat(L"Deleting = [%s]") % local_path.generic_wstring());
             winlib::filesys::deleteFile(local_path);
         }
 
@@ -48,6 +49,13 @@ namespace drjuke::netlib
     {
         auto       progress_bar  = static_cast<LoadingProgress*>(stream);
         const auto real_size = size * nmemb;
+
+        LOG_DEBUG(boost::wformat(L"## writing data to [%s]") % progress_bar->m_filename.generic_wstring());
+
+        auto directory_to_create = progress_bar->m_filename;
+        directory_to_create = directory_to_create.remove_filename();
+
+        fs::create_directories(directory_to_create);
 
         winlib::filesys::appendFile
         (

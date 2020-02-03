@@ -1,8 +1,7 @@
 ﻿#include "yara_analyzer.h"
 
-#include <common/constants.h>
+#include "settingslib/settingslib.h"
 
-using drjuke::constants::scanlib::kYaraRulesLocation;
 
 namespace drjuke::scanlib
 {
@@ -20,8 +19,11 @@ namespace drjuke::scanlib
 
     void YaraAnalyzer::loadResources()
     {
+        Path rules_location = settingslib::Factory::getSettingsManager()->getResourcesDirectory();
+        rules_location /= "yara";
+
         // Загружаем все файлы из заданной директории в детектор
-        for (const auto& dir_entry : DirIterator(kYaraRulesLocation))
+        for (const auto& dir_entry : DirIterator(rules_location))
         {
             if (!dir_entry.is_directory() && dir_entry.path().extension() == ".yar")
             {

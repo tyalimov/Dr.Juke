@@ -168,10 +168,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\apps\installer\installer_main.cpp" />
-    <ClCompile Include="..\..\apps\installer\worker_threads.cpp" />
+    <ClCompile Include="..\..\apps\installer\installer_workers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\apps\installer\worker_threads.h" />
+    <ClInclude Include="..\..\apps\installer\installer_workers.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cryptolib\cryptolib.vcxproj">

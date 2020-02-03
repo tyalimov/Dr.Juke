@@ -119,6 +119,30 @@ namespace drjuke::settingslib
         return winreg::RegKey(HKEY_LOCAL_MACHINE, kPaths.at(id));
     }
 
+    bool SettingsManager::isValueExists(const std::wstring& name, KeyId id) const
+    {
+        auto values  = getKey(id).EnumValues();
+
+        auto it = std::find_if(values.begin(), values.end(),
+            [&name](const std::pair<std::wstring, DWORD>& val)
+        {
+            return val.first == name;
+        });
+
+        return it != values.end();
+    }
+
+    void SettingsManager::deleteAllValues(KeyId id)
+    {
+        auto key = getKey(id);
+        auto values = key.EnumValues();
+
+        for (const auto& [first, second] : values)
+        {
+            key.DeleteValue(first);
+        }
+    }
+
     void SettingsManager::createAllKeys()
     {
         for (const auto& key : kRequiredKeys)
@@ -218,6 +242,26 @@ namespace drjuke::settingslib
         getKey(KeyId::kFirewall).SetDwordValue(L"EnableFirewall", enable ? FIREWALL_ENABLE : FIREWALL_DISABLE);
     }
 
+    void SettingsManager::enableFirewallRule(const std::wstring &name)
+    {        
+        if (isValueExists(name, KeyId::kFirewallDisabledRules))
+        {
+            auto val = getKey(KeyId::kFirewallDisabledRules).GetStringValue(name);
+            getKey(KeyId::kFirewallDisabledRules).DeleteValue(name);
+            getKey(KeyId::kFirewallEnabledRules).SetStringValue(name, val);
+        }
+    }
+
+    void SettingsManager::disableFirewallRule(const std::wstring &name)
+    {
+        if (isValueExists(name, KeyId::kFirewallEnabledRules))
+        {
+            auto val = getKey(KeyId::kFirewallEnabledRules).GetStringValue(name);
+            getKey(KeyId::kFirewallEnabledRules).DeleteValue(name);
+            getKey(KeyId::kFirewallDisabledRules).SetStringValue(name, val);
+        }
+    }
+
     void SettingsManager::removeRegistryFilterRule(const std::wstring& name)
     {
         getKey(KeyId::kRegistryObjects).DeleteValue(name);
@@ -236,32 +280,14 @@ namespace drjuke::settingslib
     void SettingsManager::removeFirewallRule(const std::wstring& name)
     {
         // Необходимо искать значение в обоих ключах.
-        
-        auto key_enabled        = getKey(KeyId::kFirewallEnabledRules);
-        auto key_disabled       = getKey(KeyId::kFirewallDisabledRules);
-        auto key_enabled_rules  = key_enabled.EnumValues();
-        auto key_disabled_rules = key_disabled.EnumValues();
-
-        auto iter_enabled = std::find_if(key_enabled_rules.begin(), key_enabled_rules.end(),
-            [&name](const std::pair<std::wstring, DWORD>& val)
+        if (isValueExists(name, KeyId::kFirewallEnabledRules))
         {
-            return val.first == name;
-        });
-
-        auto iter_disabled = std::find_if(key_disabled_rules.begin(), key_disabled_rules.end(),
-            [&name](const std::pair<std::wstring, DWORD>& val)
-        {
-            return val.first == name;
-        });
-
-        if (iter_enabled != key_enabled_rules.end())
-        {
-            key_enabled.DeleteValue(name);
+            getKey(KeyId::kFirewallEnabledRules).DeleteValue(name);
         }
                 
-        if (iter_disabled != key_disabled_rules.end())
+        if (isValueExists(name, KeyId::kFirewallDisabledRules))
         {
-            key_disabled.DeleteValue(name);
+            getKey(KeyId::kFirewallDisabledRules).DeleteValue(name);
         }
     }
 
@@ -297,45 +323,22 @@ namespace drjuke::settingslib
 
     void SettingsManager::clearFilesystemFilterRules()
     {
-        auto key    = getKey(KeyId::kFilesystemObjects);
-        auto values = key.EnumValues();
-
-        for (const auto& [first, second] : values)
-        {
-            key.DeleteValue(first);
-        }
+        deleteAllValues(KeyId::kFilesystemObjects);
     }
 
     void SettingsManager::clearFirewallRulest()
     {
-        auto key    = getKey(KeyId::kFilesystemObjects);
-        auto values = key.EnumValues();
-
-        for (const auto& [first, second] : values)
-        {
-            key.DeleteValue(first);
-        }
+        deleteAllValues(KeyId::kFirewallEnabledRules);
+        deleteAllValues(KeyId::kFirewallDisabledRules);
     }
 
     void SettingsManager::clearRegistryFilterRules()
     {
-        auto key    = getKey(KeyId::kRegistryObjects);
-        auto values = key.EnumValues();
-
-        for (const auto& [first, second] : values)
-        {
-            key.DeleteValue(first);
-        }
+        deleteAllValues(KeyId::kRegistryObjects);
     }
 
     void SettingsManager::clearProcessFilterRules()
     {
-        auto key = getKey(KeyId::kProcessObjects);
-        auto values = key.EnumValues();
-
-        for (const auto& [first, second] : values)
-        {
-            key.DeleteValue(first);
-        }
+        deleteAllValues(KeyId::kProcessObjects);
     }
 }

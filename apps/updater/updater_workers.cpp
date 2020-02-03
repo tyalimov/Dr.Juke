@@ -8,6 +8,7 @@
 std::mutex g_ProgressBarMutex;
 std::mutex g_ExitMutex;
 std::mutex g_CompletionMutex;
+std::mutex g_ConsoleMutex;
 
 bool g_Exit{ false };
 
@@ -32,9 +33,8 @@ void DrawCompletion()
         double percentage = (double(value->m_loaded) / double(value->m_total)) * 100.0;
 
         std::cout << 
-            boost::format("%-30s|total= %-10d|loaded= %-9d%%\n") 
+            boost::format("----%-40s|loaded= %d%%\n") 
                 % value->m_filename.filename() 
-                % value->m_total
                 % percentage;
     }
 }
@@ -44,15 +44,15 @@ void DrawFinalCompletion()
     for (const auto& [key, value] : g_Completion)
     {
         std::cout << 
-           boost::format("%-30s|total= %-10d|loaded= %-9d%%\n") 
+           boost::format("----%-40s|loaded= %d%%\n") 
                 % value->m_filename.filename() 
-                % value->m_total
                 % 100.0000;
     }
 }
 
 void DownloaderThread(const std::map<std::string, std::pair<std::string, uint32_t>>& filenames, 
                       const Path& destination)
+try
 {
     {
         std::lock_guard<std::mutex> lock(g_CompletionMutex);
@@ -71,9 +71,9 @@ void DownloaderThread(const std::map<std::string, std::pair<std::string, uint32_
             g_Completion[key]->m_total    = value.second;
             g_Completion[key]->m_loaded   = 0;
         }
+
         auto updater  = netlib::Factory::getUpdater(key, destination, g_Completion[key]);
         updater->downloadFile();
-
     }
 
     {
@@ -81,15 +81,30 @@ void DownloaderThread(const std::map<std::string, std::pair<std::string, uint32_
         g_Exit = true;
     }
 }
+catch (const std::exception& ex)
+{
+    {
+        std::lock_guard<std::mutex> lock(g_ExitMutex);
+        g_Exit = true;
+    }
+    {
+        std::lock_guard<std::mutex> lock(g_ConsoleMutex);
+        std::cout << ex.what() << std::endl;
+    }
+    return;
+}
 
-void ProgressBarThread()
+void ProgressBarThread() try
 {
     auto console_handle       = ::GetStdHandle(STD_OUTPUT_HANDLE);
     auto console_start_coords = GetConsoleCursorPosition(console_handle);
 
     while (true)
     {
-        SetConsoleCursorPosition(console_handle, console_start_coords);
+        {
+            std::lock_guard<std::mutex> lock(g_ConsoleMutex);
+            SetConsoleCursorPosition(console_handle, console_start_coords);
+        }
 
         {
             std::lock_guard<std::mutex> lock(g_ExitMutex);
@@ -107,4 +122,10 @@ void ProgressBarThread()
 
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
+}
+catch (const std::exception& ex)
+{
+    std::lock_guard<std::mutex> lock(g_ConsoleMutex);
+    std::cout << ex.what() << std::endl;
+    return;
 }

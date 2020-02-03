@@ -1,8 +1,7 @@
-﻿#include <common/constants.h>
+﻿#include <settingslib/settingslib.h>
 
 #include "clam_av_analyzer.h"
 
-using drjuke::constants::scanlib::kClamAvRulesLocation;
 
 namespace drjuke::scanlib
 {
@@ -20,8 +19,11 @@ namespace drjuke::scanlib
 
     void ClamAvAnalyzer::loadResources()
     {
+        Path rules_location = settingslib::Factory::getSettingsManager()->getResourcesDirectory();
+        rules_location /= "clam_av";
+
         // Загружаем все файлы из заданной директории в детектор
-        for (const auto& dir_entry : DirIterator(kClamAvRulesLocation))
+        for (const auto& dir_entry : DirIterator(rules_location))
         {
             if (!dir_entry.is_directory() && dir_entry.path().extension() == ".yar")
             {

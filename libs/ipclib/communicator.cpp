@@ -32,8 +32,8 @@ namespace drjuke::ipclib
         std::vector<char> buffer;
         buffer.reserve(ToUnderlying(Constants::kMaxMessageSize));
 
-        size_t       received_size{ 0 };
-        unsigned int priority{ 0 };
+        size_t   received_size{ 0 };
+        unsigned priority{ 0 };
 
         m_queue.receive
         (

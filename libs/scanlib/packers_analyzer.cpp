@@ -1,8 +1,6 @@
-﻿#include <common/constants.h>
+﻿#include "packers_analyzer.h"
+#include "settingslib/settingslib.h"
 
-#include "packers_analyzer.h"
-
-using drjuke::constants::scanlib::kPeidRulesLocation;
 
 namespace drjuke::scanlib
 {
@@ -20,8 +18,11 @@ namespace drjuke::scanlib
 
     void PackersAnalyzer::loadResources()
     {
+        Path rules_location = settingslib::Factory::getSettingsManager()->getResourcesDirectory();
+        rules_location /= "packers";
+
         // Загружаем все файлы из заданной директории в детектор
-        for (const auto& dir_entry : DirIterator(kPeidRulesLocation))
+        for (const auto& dir_entry : DirIterator(rules_location))
         {
             if (!dir_entry.is_directory() && dir_entry.path().extension() == ".yar")
             {

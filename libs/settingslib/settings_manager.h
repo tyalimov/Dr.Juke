@@ -1,8 +1,7 @@
 #pragma once
 
 #include <string>
-
-#include "winreg.h"
+#include <common/winreg.h>
 
 namespace drjuke::settingslib
 {
@@ -12,6 +11,9 @@ namespace drjuke::settingslib
     {
     private:
         [[nodiscard]] winreg::RegKey getKey(KeyId id) const;
+        [[nodiscard]] bool isValueExists(const std::wstring& name, KeyId id) const;
+
+        void deleteAllValues(KeyId id);
         void createAllKeys();
 
     public:
@@ -29,8 +31,10 @@ namespace drjuke::settingslib
         void addFirewallRule         (const std::wstring& name, const std::wstring& content);
 
         // special for firewall
-        void enableFirewall(bool enable);
-        
+        void enableFirewall      (bool enable);
+        void enableFirewallRule  (const std::wstring& name);
+        void disableFirewallRule (const std::wstring& name);
+
         // rule removers
         void removeRegistryFilterRule   (const std::wstring& name);
         void removeFilesystemFilterRule (const std::wstring& name);

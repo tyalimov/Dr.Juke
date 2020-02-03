@@ -42,10 +42,6 @@ namespace drjuke::winlib::filesys
 
     void appendFile(const Path &file, const std::string &data)
     {
-        //if (!fs::exists(file))
-        //{
-        //    createFile(file);
-        //}
 
         UniqueHandle file_handle(CreateFileW
         (

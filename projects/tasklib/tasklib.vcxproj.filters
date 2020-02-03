@@ -1,42 +1,36 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="queue">
+      <UniqueIdentifier>{2ca20edf-7769-41f0-b310-3fd8d809cdaa}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="misc">
+      <UniqueIdentifier>{7acd49d8-5047-4696-aef0-8a829d41fdce}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="task">
+      <UniqueIdentifier>{7c1974a8-65dd-44cb-81a7-668e23e43c00}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\libs\tasklib\task_queue.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\libs\tasklib\tasklib.h">
-      <Filter>Header Files</Filter>
+      <Filter>misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\tasklib\workers.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\libs\tasklib\task_queue.h">
+      <Filter>queue</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\libs\tasklib\i_task.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\..\libs\tasklib\base_task.h">
+      <Filter>task</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\libs\tasklib\workers.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\libs\tasklib\tasklib.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>misc</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libs\tasklib\task_queue.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>queue</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\tasklib\base_task.cpp">
+      <Filter>task</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
