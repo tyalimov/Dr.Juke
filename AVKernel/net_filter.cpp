@@ -1,7 +1,8 @@
+//#include <ntddk.h>
 #include "net_filter.h"
+#include "net_headers.h"
 
-#include <ntddk.h>
-#include <fwpmk.h>
+#include <stdlib.h>
 
 #pragma warning(push)
 #pragma warning(disable:4201)       // unnamed struct/union
@@ -70,7 +71,112 @@ struct CalloutDescription
 
 CalloutContext gCalloutCtx[FLT_CNT];
 
+class NetPacketBuffer
+{
+    PCHAR mContiguousData = nullptr;
+    PCHAR mBuffer = nullptr;
+    ULONG mLength = 0;
 
+public:
+
+    NetPacketBuffer(PNET_BUFFER pNetBuffer, ULONG bytesNeeded)
+    {
+        mBuffer = new CHAR[bytesNeeded];
+        if (mBuffer != nullptr)
+        {
+            mContiguousData = (PCHAR)NdisGetDataBuffer(pNetBuffer,
+                bytesNeeded, mBuffer, 1, 0);
+
+            if (mBuffer != mContiguousData)
+            {
+				// Data is contiguous, no allocation needed
+                // Or API call failed and buffer no longer required
+				delete[] mBuffer;
+				mBuffer = nullptr;
+
+                if (!mContiguousData)
+                    kprintf(TRACE_ERROR, "NdisGetDataBuffer failed");
+                else
+                    mLength = bytesNeeded;
+            }
+        }
+        else
+			kprintf(TRACE_ERROR, "Memory allocation failed");
+    }
+
+    ~NetPacketBuffer()
+    {
+        mLength = 0;
+
+        if (mBuffer)
+        {
+            delete[] mBuffer;
+            mBuffer = nullptr;
+        }
+    }
+
+	// forbid copy/move
+    // No need to implement it now
+	NetPacketBuffer(const NetPacketBuffer&) = delete;
+	NetPacketBuffer(NetPacketBuffer&&) = delete;
+
+
+    PVOID getData()
+    {
+        return mBuffer != nullptr
+            ? mBuffer
+            : mContiguousData;
+    }
+
+    ULONG getLength() {
+        return mLength;
+    }
+};
+
+class NetBufferShifter
+{
+    PNET_BUFFER mNetBuffer = nullptr;
+    ULONG mRetreatedCnt = 0;
+
+public:
+
+    NetBufferShifter(PNET_BUFFER pNetBuffer) 
+        : mNetBuffer(pNetBuffer) {}
+
+    ~NetBufferShifter()
+    {
+        restoreDataStart();
+        mNetBuffer = nullptr;
+        // mRetreatedCnt must be 0
+    }
+
+    NTSTATUS retreatDataStart(ULONG nBytesToRetreat)
+    {
+        NTSTATUS status;
+
+        status = NdisRetreatNetBufferDataStart(
+            mNetBuffer, nBytesToRetreat, 0, 0);
+
+        if (NT_SUCCESS(status))
+            mRetreatedCnt += nBytesToRetreat;
+
+        return status;
+    }
+
+    void advanceDataStart(ULONG nBytesToAdvance)
+    {
+        mRetreatedCnt -= nBytesToAdvance;
+
+        NdisAdvanceNetBufferDataStart(
+            mNetBuffer, nBytesToAdvance, FALSE, 0);
+    }
+
+    void restoreDataStart() 
+    {
+        advanceDataStart(mRetreatedCnt);
+        NT_ASSERT(mRetreatedCnt == 0);
+    }
+};
 
 NTSTATUS NotifyCallback(
    _In_  FWPS_CALLOUT_NOTIFY_TYPE notifyType,
@@ -89,9 +195,9 @@ NTSTATUS NotifyCallback(
 
 void
 FilterCallback(
-   _In_ const FWPS_INCOMING_VALUES* inFixedValues,
-   _In_ const FWPS_INCOMING_METADATA_VALUES* inMetaValues,
-   _Inout_opt_ void* layerData,
+   _In_ const FWPS_INCOMING_VALUES* pClassifyValues,
+   _In_ const FWPS_INCOMING_METADATA_VALUES* pMetadata,
+   _Inout_opt_ void* pLayerData,
    _In_opt_ const void* classifyContext,
    _In_ const FWPS_FILTER* filter,
    _In_ UINT64 flowContext,
@@ -111,17 +217,93 @@ FilterCallback(
 )
 
 #endif /// (NTDDI_VERSION >= NTDDI_WIN7)
+
 {
-    UNREFERENCED_PARAMETER(inFixedValues);
-    UNREFERENCED_PARAMETER(inMetaValues);
     UNREFERENCED_PARAMETER(flowContext);
     UNREFERENCED_PARAMETER(classifyContext);
-    UNREFERENCED_PARAMETER(layerData);
+
+    NT_ASSERT(pLayerData);
+
+    PNET_BUFFER pNetBuffer = NET_BUFFER_LIST_FIRST_NB(
+        (NET_BUFFER_LIST*)pLayerData);
+
+	NTSTATUS status = STATUS_SUCCESS;
+	FWP_VALUE* pSrcAddrValue = nullptr;
+	FWP_VALUE* pDstAddrValue = nullptr;
+    FWP_VALUE* pSrcPortValue = nullptr;
+	FWP_VALUE* pDstPortValue = nullptr;
+	UINT8 protocol = IPPROTO_RAW;
+	ULONG ipHeaderSize = 0;
 
 
-    // We don't have the necessary right to alter the classify, exit.
+    if (pClassifyValues->layerId != FWPS_LAYER_INBOUND_TRANSPORT_V4)
+        return;
+
+    // No right to alter the classify, exit.
     if ((classifyOut->rights & FWPS_RIGHT_ACTION_WRITE) == 0)
         return;
+
+    pSrcAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_IPPACKET_V4_IP_REMOTE_ADDRESS].value);
+    pDstAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_IPPACKET_V4_IP_LOCAL_ADDRESS].value);
+
+    if (!pSrcAddrValue)
+    {
+        kprintf(TRACE_ERROR, "pSrcAddrValue is NULL");
+        return;
+    }
+
+    if (!pDstAddrValue)
+    {
+        kprintf(TRACE_ERROR, "pDstAddrValue is NULL");
+        return;
+    }
+
+    if (FWPS_IS_METADATA_FIELD_PRESENT(pMetadata, FWPS_METADATA_FIELD_IP_HEADER_SIZE))
+        ipHeaderSize = pMetadata->ipHeaderSize;
+    else
+    {
+        kprintf(TRACE_ERROR, "No header size in metadata");
+        //return;
+    }
+
+    NetBufferShifter shifter(pNetBuffer);
+    status = shifter.retreatDataStart(ipHeaderSize);
+    if (!NT_SUCCESS(status))
+    {
+        kprintf(TRACE_ERROR, "NetBufferShifter reatreat failed");
+        return;
+    }
+
+    if (true)
+    {
+        kprintf(TRACE_INFO, "Return here");
+        return;
+    }
+
+
+    ipHeaderSize = NET_BUFFER_DATA_LENGTH(pNetBuffer);
+    NetPacketBuffer ipHeader(pNetBuffer, ipHeaderSize);
+    if (!ipHeader.getData())
+    {
+        kprintf(TRACE_ERROR, "NetPacketBuffer create failed");
+        return;
+    }
+
+    IP_HEADER_V4* pIPv4Header = (IP_HEADER_V4*)ipHeader.getData();
+    if (pIPv4Header->version == IPV4)
+    {
+        kprintf(TRACE_ERROR, "Bad version");
+        return;
+    }
+
+
+    NT_ASSERT(((UINT32)(pIPv4Header->headerLength * 4)) == ipHeaderSize);
+    NT_ASSERT(ntohl(*((UINT32*)pIPv4Header->pSourceAddress)) == pSrcAddrValue->uint32);
+    NT_ASSERT(ntohl(*((UINT32*)pIPv4Header->pDestinationAddress)) == pDstAddrValue->uint32);
+
+    //LogIPv4Header(pIPv4Header);
+
+    protocol = pIPv4Header->protocol;
 
     kprintf(TRACE_INFO, "Here");
     RtlZeroMemory(classifyOut, sizeof(FWPS_CLASSIFY_OUT));
@@ -204,6 +386,8 @@ NTSTATUS WpfRegisterInboundCallback(PDEVICE_OBJECT DeviceObject, CalloutContext*
     CalloutDescription desc;
     desc.name = DRIVER_NAME L" IPv4 inbound transport callout";
     desc.description = L"Drops IPv4 incoming packets not matching firewall rules";
+
+    //FWPS_LAYER_INBOUND_TRANSPORT_V4
 
     return WpfRegisterFilterCallback(DeviceObject, NETFILTER_CALLOUT_INBOUND_TRANSPORT,
         FWPM_LAYER_INBOUND_TRANSPORT_V4, desc, context);

@@ -120,7 +120,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libcntpr.lib;netio.lib;fltMgr.lib;fwpkclnt.lib;uuid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcntpr.lib;netio.lib;fltMgr.lib;fwpkclnt.lib;uuid.lib;ndis.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/INTEGRITYCHECK %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -159,6 +159,7 @@
     <ClInclude Include="access_monitor.h" />
     <ClInclude Include="fs_filter.h" />
     <ClInclude Include="net_filter.h" />
+    <ClInclude Include="net_headers.h" />
     <ClInclude Include="preferences.h" />
     <ClInclude Include="ps_monitor.h" />
     <ClInclude Include="ps_protect.h" />
