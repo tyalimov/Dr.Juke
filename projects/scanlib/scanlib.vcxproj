@@ -23,6 +23,7 @@
     <ClCompile Include="..\..\libs\scanlib\packers_analyzer.cpp" />
     <ClCompile Include="..\..\libs\scanlib\scanlib.cpp" />
     <ClCompile Include="..\..\libs\scanlib\certificate_analyzer.cpp" />
+    <ClCompile Include="..\..\libs\scanlib\web_analyzer.cpp" />
     <ClCompile Include="..\..\libs\scanlib\yara_analyzer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -31,6 +32,7 @@
     <ClInclude Include="..\..\libs\scanlib\packers_analyzer.h" />
     <ClInclude Include="..\..\libs\scanlib\scanlib.h" />
     <ClInclude Include="..\..\libs\scanlib\certificate_analyzer.h" />
+    <ClInclude Include="..\..\libs\scanlib\web_analyzer.h" />
     <ClInclude Include="..\..\libs\scanlib\yara_analyzer.h" />
   </ItemGroup>
   <ItemGroup>

@@ -16,6 +16,9 @@
     <Filter Include="clam_av">
       <UniqueIdentifier>{096ba487-58b3-4b44-a683-10803dcd53b5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="webscanner">
+      <UniqueIdentifier>{bdd88c0c-0d99-46df-b76b-2dba19ded3c1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\scanlib\certificate_analyzer.cpp">
@@ -32,6 +35,9 @@
     </ClCompile>
     <ClCompile Include="..\..\libs\scanlib\clam_av_analyzer.cpp">
       <Filter>clam_av</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\scanlib\web_analyzer.cpp">
+      <Filter>webscanner</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -52,6 +58,9 @@
     </ClInclude>
     <ClInclude Include="..\..\libs\scanlib\clam_av_analyzer.h">
       <Filter>clam_av</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\scanlib\web_analyzer.h">
+      <Filter>webscanner</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
