@@ -10,6 +10,9 @@
 #pragma warning(pop)
 
 #include <initguid.h>
+#include <ntstrsafe.h>
+#include <EASTL/string.h>
+using namespace eastl;
 
 //
 // Capture inbound and outbound traffic (cnt=2)
@@ -94,7 +97,7 @@ public:
 				delete[] mBuffer;
 				mBuffer = nullptr;
 
-                if (!mContiguousData)
+                if (mContiguousData == nullptr)
                     kprintf(TRACE_ERROR, "NdisGetDataBuffer failed");
                 else
                     mLength = bytesNeeded;
@@ -121,7 +124,7 @@ public:
 	NetPacketBuffer(NetPacketBuffer&&) = delete;
 
 
-    PVOID getData()
+    PCHAR getData()
     {
         return mBuffer != nullptr
             ? mBuffer
@@ -178,6 +181,50 @@ public:
     }
 };
 
+class NetBufferPretty
+{
+	using u8 = unsigned char;
+    char* mBuffer = nullptr;
+
+    inline char substitute(u8 i) {
+        return (i <= 9 ? '0' + i : 'A' - 10 + i);
+    }
+
+    void int2hex(u8 in, char* out)
+    {
+		out[0] = substitute((in & 0xF0) >> 4);   
+		out[1] = substitute(in & 0x0F);
+    }
+
+public:
+
+    NetBufferPretty(const char* buffer, ULONG length)
+    {
+		mBuffer = new char[length * 2 + 1];
+		if (mBuffer)
+		{
+			for (ULONG i = 0, j = 0; i < length; i++, j += 2)
+				int2hex(buffer[i], &mBuffer[j]);
+
+			mBuffer[length * 2] = '\0';
+		}
+    }
+
+    ~NetBufferPretty()
+    {
+        if (mBuffer)
+        {
+            delete[] mBuffer;
+            mBuffer = nullptr;
+        }
+    }
+
+    PCHAR getHexText() {
+        return mBuffer;
+    }
+};
+
+
 NTSTATUS NotifyCallback(
    _In_  FWPS_CALLOUT_NOTIFY_TYPE notifyType,
    _In_ const GUID* filterKey,
@@ -189,6 +236,116 @@ NTSTATUS NotifyCallback(
    UNREFERENCED_PARAMETER(filter);
 
    return STATUS_SUCCESS;
+}
+
+
+#define NETFILTER_ERROR_RETURN(fmt, ...)     \
+    return (kprintf(TRACE_ERROR, fmt, __VA_ARGS__)  \
+        ? STATUS_UNSUCCESSFUL : STATUS_UNSUCCESSFUL)
+
+
+#if(NTDDI_VERSION >= NTDDI_WIN7)
+
+NTSTATUS
+FilterCallbackImpl(
+   _In_ const FWPS_INCOMING_VALUES* pClassifyValues,
+   _In_ const FWPS_INCOMING_METADATA_VALUES* pMetadata,
+   _Inout_opt_ void* pLayerData
+   )
+
+#else
+
+NTSTATUS
+FilterCallbackImpl(
+    _In_ const FWPS_INCOMING_VALUES* pClassifyValues,
+    _In_ const FWPS_INCOMING_METADATA_VALUES* pMetaData,
+    _Inout_opt_ void* pLayerData
+)
+
+#endif /// (NTDDI_VERSION >= NTDDI_WIN7)
+
+{
+    UNREFERENCED_PARAMETER(pMetadata);
+    NT_ASSERT(pLayerData);
+
+    PNET_BUFFER pNetBuffer = NET_BUFFER_LIST_FIRST_NB(
+        (NET_BUFFER_LIST*)pLayerData);
+
+	NTSTATUS status = STATUS_SUCCESS;
+	FWP_VALUE* pSrcAddrValue = nullptr;
+	FWP_VALUE* pDstAddrValue = nullptr;
+    FWP_VALUE* pSrcPortValue = nullptr;
+	FWP_VALUE* pDstPortValue = nullptr;
+	FWP_VALUE* pProtocolValue = nullptr;
+	UINT8 protocol = IPPROTO_RAW;
+
+    if (pClassifyValues->layerId != FWPS_LAYER_INBOUND_TRANSPORT_V4)
+        return STATUS_SUCCESS;
+
+    pDstAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_IPPACKET_V4_IP_LOCAL_ADDRESS].value);
+    pSrcAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_IPPACKET_V4_IP_REMOTE_ADDRESS].value);
+    pDstPortValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_LOCAL_PORT].value);
+    pSrcPortValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_REMOTE_PORT].value);
+    pProtocolValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_PROTOCOL].value);
+
+    if (!pProtocolValue)
+        NETFILTER_ERROR_RETURN("pProtocolValue is NULL");
+    else
+        protocol = pProtocolValue->uint8;
+    
+    if (!pSrcAddrValue)
+        NETFILTER_ERROR_RETURN("pSrcAddrValue is NULL");
+
+    if (!pDstAddrValue)
+        NETFILTER_ERROR_RETURN("pDstAddrValue is NULL");
+
+    if (!pSrcPortValue)
+        NETFILTER_ERROR_RETURN("pSrcPortValue is NULL");
+
+    if (!pDstPortValue)
+        NETFILTER_ERROR_RETURN("pDstPortValue is NULL");
+
+    if (protocol == TCP)
+    {
+        ULONG DataLength = NET_BUFFER_DATA_LENGTH(pNetBuffer);
+        if (DataLength > 0 && DataLength < (UINT16)-1)
+        {
+            NetPacketBuffer buffer(pNetBuffer, DataLength);
+            if (buffer.getData() == nullptr)
+                NETFILTER_ERROR_RETURN("NetPacketBuffer construct failed");
+
+            if (buffer.getLength() != DataLength)
+                NETFILTER_ERROR_RETURN("ssss construct failed");
+
+            NetBufferPretty pretty(buffer.getData(), buffer.getLength());
+            if (pretty.getHexText() == nullptr)
+                NETFILTER_ERROR_RETURN("Pretty failed");
+
+            kprintf(TRACE_INFO, "buf=%s", pretty.getHexText());
+
+            //if (DataLength < 200)
+            //{
+            //    //kprintf(TRACE_INFO, "%p", buffer.getData());
+            //    //for (ULONG i =0; i < buffer.getLength(); i++)
+            //    //    if (isalnum(buffer.getData()[i] & 0xFF))
+            //    //        kprintf(TRACE_INFO, "%c", buffer.getData()[i] & 0xFF);
+
+            //    //string s((char*)buffer.getData(), buffer.getLength());
+            //    //kprintf(TRACE_INFO, "buf=%s", s.c_str());
+
+            //    //wstring ws((wchar_t*)buffer.getData(), buffer.getLength() / sizeof(wchar_t));
+            //    //
+            //    //if (ws.length() < 10)
+            //    //    ws[10] = 0;
+
+            //    //kprintf(TRACE_INFO, "buf=%ws", ws.c_str());
+            //    //kprintf(TRACE_INFO, "len=%d buf=%ws", DataLength, s.c_str());
+            //    //kprintf(TRACE_INFO, "Here");
+            //}
+        }
+    }
+
+    return status;
 }
 
 #if(NTDDI_VERSION >= NTDDI_WIN7)
@@ -207,10 +364,10 @@ FilterCallback(
 #else
 
 void
-FilterCallback(
-    _In_ const FWPS_INCOMING_VALUES* inFixedValues,
-    _In_ const FWPS_INCOMING_METADATA_VALUES* inMetaValues,
-    _Inout_opt_ void* layerData,
+FilterCallbackImpl(
+    _In_ const FWPS_INCOMING_VALUES* pClassifyValues,
+    _In_ const FWPS_INCOMING_METADATA_VALUES* pMetaData,
+    _Inout_opt_ void* pLayerData,
     _In_ const FWPS_FILTER* filter,
     _In_ UINT64 flowContext,
     _Inout_ FWPS_CLASSIFY_OUT* classifyOut
@@ -219,96 +376,24 @@ FilterCallback(
 #endif /// (NTDDI_VERSION >= NTDDI_WIN7)
 
 {
+    NTSTATUS Status = STATUS_SUCCESS;
     UNREFERENCED_PARAMETER(flowContext);
     UNREFERENCED_PARAMETER(classifyContext);
-
-    NT_ASSERT(pLayerData);
-
-    PNET_BUFFER pNetBuffer = NET_BUFFER_LIST_FIRST_NB(
-        (NET_BUFFER_LIST*)pLayerData);
-
-	NTSTATUS status = STATUS_SUCCESS;
-	FWP_VALUE* pSrcAddrValue = nullptr;
-	FWP_VALUE* pDstAddrValue = nullptr;
-    FWP_VALUE* pSrcPortValue = nullptr;
-	FWP_VALUE* pDstPortValue = nullptr;
-	UINT8 protocol = IPPROTO_RAW;
-	ULONG ipHeaderSize = 0;
-
-
-    if (pClassifyValues->layerId != FWPS_LAYER_INBOUND_TRANSPORT_V4)
-        return;
-
-    // No right to alter the classify, exit.
-    if ((classifyOut->rights & FWPS_RIGHT_ACTION_WRITE) == 0)
-        return;
-
-    pSrcAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_IPPACKET_V4_IP_REMOTE_ADDRESS].value);
-    pDstAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_IPPACKET_V4_IP_LOCAL_ADDRESS].value);
-
-    if (!pSrcAddrValue)
-    {
-        kprintf(TRACE_ERROR, "pSrcAddrValue is NULL");
-        return;
-    }
-
-    if (!pDstAddrValue)
-    {
-        kprintf(TRACE_ERROR, "pDstAddrValue is NULL");
-        return;
-    }
-
-    if (FWPS_IS_METADATA_FIELD_PRESENT(pMetadata, FWPS_METADATA_FIELD_IP_HEADER_SIZE))
-        ipHeaderSize = pMetadata->ipHeaderSize;
-    else
-    {
-        kprintf(TRACE_ERROR, "No header size in metadata");
-        //return;
-    }
-
-    NetBufferShifter shifter(pNetBuffer);
-    status = shifter.retreatDataStart(ipHeaderSize);
-    if (!NT_SUCCESS(status))
-    {
-        kprintf(TRACE_ERROR, "NetBufferShifter reatreat failed");
-        return;
-    }
-
-    if (true)
-    {
-        kprintf(TRACE_INFO, "Return here");
-        return;
-    }
-
-
-    ipHeaderSize = NET_BUFFER_DATA_LENGTH(pNetBuffer);
-    NetPacketBuffer ipHeader(pNetBuffer, ipHeaderSize);
-    if (!ipHeader.getData())
-    {
-        kprintf(TRACE_ERROR, "NetPacketBuffer create failed");
-        return;
-    }
-
-    IP_HEADER_V4* pIPv4Header = (IP_HEADER_V4*)ipHeader.getData();
-    if (pIPv4Header->version == IPV4)
-    {
-        kprintf(TRACE_ERROR, "Bad version");
-        return;
-    }
-
-
-    NT_ASSERT(((UINT32)(pIPv4Header->headerLength * 4)) == ipHeaderSize);
-    NT_ASSERT(ntohl(*((UINT32*)pIPv4Header->pSourceAddress)) == pSrcAddrValue->uint32);
-    NT_ASSERT(ntohl(*((UINT32*)pIPv4Header->pDestinationAddress)) == pDstAddrValue->uint32);
-
-    //LogIPv4Header(pIPv4Header);
-
-    protocol = pIPv4Header->protocol;
-
-    kprintf(TRACE_INFO, "Here");
-    RtlZeroMemory(classifyOut, sizeof(FWPS_CLASSIFY_OUT));
+    UNREFERENCED_PARAMETER(filter);
 
     classifyOut->actionType = FWP_ACTION_PERMIT;
+    
+    // No right to alter the classify, exit.
+    if ((classifyOut->rights & FWPS_RIGHT_ACTION_WRITE) != 0)
+    {
+        Status = FilterCallbackImpl(
+            pClassifyValues, pMetadata, pLayerData);
+    }
+
+    if (Status == STATUS_ACCESS_DENIED)
+        classifyOut->actionType = FWP_ACTION_BLOCK;
+    else    
+        classifyOut->actionType = FWP_ACTION_PERMIT;
 
     if (filter->flags & FWPS_FILTER_FLAG_CLEAR_ACTION_RIGHT)
         classifyOut->rights &= ~FWPS_RIGHT_ACTION_WRITE;
@@ -483,4 +568,6 @@ VOID NetFilterExit()
 
     if (gDeviceObject != NULL)
         IoDeleteDevice(gDeviceObject); 
+
+    kprint_st(TRACE_INFO, STATUS_SUCCESS);
 }
