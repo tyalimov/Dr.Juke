@@ -45,6 +45,6 @@ namespace drjuke::ipclib
 
         std::string serialized_data{ buffer.data(), received_size };
 
-        return Json{ serialized_data };
+        return Json::parse(serialized_data);
     }
 }
