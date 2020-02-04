@@ -13,7 +13,8 @@ namespace drjuke::service
         kAddFirewallRule,     // ++
         kRemoveFirewallRule,  // ++
         kEnableFirewallRule,  // ++
-        kDisableFirewallRule  // ++
+        kDisableFirewallRule, // ++
+        kAddToQuarantine      // --
     };
 
     std::map<std::string, TaskId> TaskBuilder::m_ids
@@ -47,6 +48,7 @@ namespace drjuke::service
             case TaskId::kEnableFirewallRule  : return std::make_shared<tasks::EnableFirewallRule>(message);  break;
             case TaskId::kDisableFirewallRule : return std::make_shared<tasks::DisableFirewallRule>(message); break;
         }
+
         return std::make_shared<tasklib::EndTask>();
     }
 }

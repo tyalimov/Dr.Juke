@@ -297,4 +297,28 @@ namespace drjuke::service::tasks
         }
     };
 
+    class AddToQuarantine final
+        : public BaseTask
+    {
+    public:
+
+        DECLARE_TASK(AddToQuarantine)
+        
+
+        /*
+            {
+                "task"        : "add_to_quarantine",
+                "parameters"  : 
+                {
+                    "path"    : путь к файлу
+                }
+            }    
+        */
+
+        void execute() override
+        {
+            // Скопировать в папку карантина (дописать в сеттингслиб getQuarantineDirectory)
+            // Удалить оттуда, откуда взял
+        }
+    };
 }
