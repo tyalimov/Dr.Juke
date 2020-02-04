@@ -33,6 +33,7 @@ int main() try
     winlib::filesys::createDirectory(settings_manager->getRootDirectory());
     winlib::filesys::createDirectory(settings_manager->getResourcesDirectory());
     winlib::filesys::createDirectory(settings_manager->getBinariesDirectory());
+    winlib::filesys::createDirectory(settings_manager->getQuarantineDirectory());
    
     std::cout << "[SUCCESS] Creating necessary directories" << std::endl;
 
