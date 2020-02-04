@@ -1,7 +1,5 @@
 ﻿#include "ipc_listener.h"
 
-
-
 namespace drjuke::service
 {
     void IpcListenerThread::run()
@@ -22,5 +20,10 @@ namespace drjuke::service
         {
             // TODO: Залогировать ошибку
         }
+    }
+
+    void RunIpcListener(tasklib::TaskQueuePtr queue, ipclib::CommunicatorPtr communicator)
+    {
+        IpcListenerThread{ queue, communicator }.run();
     }
 }

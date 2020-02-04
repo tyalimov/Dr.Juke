@@ -1,8 +1,13 @@
 #pragma once
 
-#include "i_task.h"
+#include "base_task.h"
+#include "task_queue.h"
 
 namespace drjuke::tasklib
 {
-
+    class Factory
+    {
+    public:
+        static TaskQueuePtr getTaskQueue();
+    };
 }

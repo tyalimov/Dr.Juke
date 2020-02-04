@@ -24,4 +24,6 @@ namespace drjuke::service
 
         void run() override;
     };
+
+    void RunIpcListener(tasklib::TaskQueuePtr queue, ipclib::CommunicatorPtr communicator);
 }
