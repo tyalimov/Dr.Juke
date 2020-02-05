@@ -139,6 +139,7 @@
   <ItemGroup>
     <ClCompile Include="fs_filter.cpp" />
     <ClCompile Include="net_filter.cpp" />
+    <ClCompile Include="net_helper.cpp" />
     <ClCompile Include="ps_monitor.cpp" />
     <ClCompile Include="ps_protect.cpp" />
     <ClCompile Include="reg_filter.cpp" />
@@ -159,7 +160,7 @@
     <ClInclude Include="access_monitor.h" />
     <ClInclude Include="fs_filter.h" />
     <ClInclude Include="net_filter.h" />
-    <ClInclude Include="net_headers.h" />
+    <ClInclude Include="net_helper.h" />
     <ClInclude Include="preferences.h" />
     <ClInclude Include="ps_monitor.h" />
     <ClInclude Include="ps_protect.h" />

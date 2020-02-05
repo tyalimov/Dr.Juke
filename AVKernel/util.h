@@ -28,6 +28,10 @@ namespace str_util
 
 	bool compareIns(wstring str1, wstring str2);
 
+	wstring ToWString(string& str);
+
+	string ToString(wstring& wstr);
+
 }
 
 class GuardedMutex

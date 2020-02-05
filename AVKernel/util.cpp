@@ -139,5 +139,96 @@ namespace str_util
 		makeLower(&str2);
 		return str1 == str2;
 	}
+
+
+	ANSI_STRING ToAnsiString(string& str)
+	{
+		ANSI_STRING ansi_str;
+		ansi_str.Buffer = (PCHAR)str.c_str();
+		ansi_str.Length = (USHORT)str.length();
+		ansi_str.MaximumLength = ansi_str.Length + 1;
+		return ansi_str;
+	}
+
+	string FromAnsiString(const ANSI_STRING& ansi_str)
+	{
+		return string(ansi_str.Buffer, ansi_str.Length);
+	}
+
+	string FromAnsiString(const ANSI_STRING* ansi_str)
+	{
+		return string(ansi_str->Buffer, ansi_str->Length);
+	}
+
+	//
+	// Warning!
+	// Notice, that when wstring object is freed, the UNICODE_STRING buffer is freed too
+	// Use created UNICODE_STRING object only when wstring object is present!
+	//
+	// Don't use it like this: UNICODE_STRING us = mstl::WStringToUnicodeString(L"aaaa");
+	//
+	// Usage:
+	//		string ws = L"12345";
+	//		UNICODE_STRING us = WStringToUnicodeString(ws);
+	//		...
+	//
+	UNICODE_STRING ToUnicodeString(wstring& wstr)
+	{
+		UNICODE_STRING uni_str;
+		uni_str.Buffer = (PWCHAR)wstr.c_str();
+		uni_str.Length = (USHORT)wstr.length() * sizeof(wchar_t);
+		uni_str.MaximumLength = uni_str.Length + 1 * sizeof(wchar_t);
+		return uni_str;
+	}
+
+	// Usage:
+	//
+	//  C_UNICODE_STRING(us, L"12345");
+	//	wstring ws = UnicodeStringToWString(us);
+	//	...
+	//
+	wstring FromUnicodeString(const UNICODE_STRING& uni_str)
+	{
+		return wstring(uni_str.Buffer, uni_str.Length / sizeof(wchar_t));
+	}
+
+	wstring FromUnicodeString(const UNICODE_STRING* uni_str)
+	{
+		return wstring(uni_str->Buffer, uni_str->Length / sizeof(wchar_t));
+	}
+
+	// Usage:
+	//
+	//	string s = "12345";
+	//	wstring ws = StringToWString(ws);
+	//	...
+	//
+	wstring ToWString(string& str)
+	{
+		UNICODE_STRING uni_str = { 0 };
+		ANSI_STRING ansi_str = ToAnsiString(str);
+		RtlAnsiStringToUnicodeString(&uni_str, &ansi_str, TRUE);
+
+		wstring wstr = FromUnicodeString(uni_str);
+		RtlFreeUnicodeString(&uni_str);
+		return wstr;
+	}
+
+	// Usage:
+	//
+	//	wstring ws = L"12345";
+	//	string s = WStringToString(ws);
+	//	...
+	//
+	string ToString(wstring& wstr)
+	{
+		ANSI_STRING ansi_str = { 0 };
+		UNICODE_STRING uni_str = ToUnicodeString(wstr);
+		RtlUnicodeStringToAnsiString(&ansi_str, &uni_str, TRUE);
+
+		string str = FromAnsiString(ansi_str);
+		RtlFreeAnsiString(&ansi_str);
+		return str;
+	}
 }
 

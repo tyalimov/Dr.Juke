@@ -1,8 +1,8 @@
 //#include <ntddk.h>
 #include "net_filter.h"
-#include "net_headers.h"
+#include "net_helper.h"
 
-#include <stdlib.h>
+#include <fwpmk.h>
 
 #pragma warning(push)
 #pragma warning(disable:4201)       // unnamed struct/union
@@ -136,51 +136,6 @@ public:
     }
 };
 
-class NetBufferShifter
-{
-    PNET_BUFFER mNetBuffer = nullptr;
-    ULONG mRetreatedCnt = 0;
-
-public:
-
-    NetBufferShifter(PNET_BUFFER pNetBuffer) 
-        : mNetBuffer(pNetBuffer) {}
-
-    ~NetBufferShifter()
-    {
-        restoreDataStart();
-        mNetBuffer = nullptr;
-        // mRetreatedCnt must be 0
-    }
-
-    NTSTATUS retreatDataStart(ULONG nBytesToRetreat)
-    {
-        NTSTATUS status;
-
-        status = NdisRetreatNetBufferDataStart(
-            mNetBuffer, nBytesToRetreat, 0, 0);
-
-        if (NT_SUCCESS(status))
-            mRetreatedCnt += nBytesToRetreat;
-
-        return status;
-    }
-
-    void advanceDataStart(ULONG nBytesToAdvance)
-    {
-        mRetreatedCnt -= nBytesToAdvance;
-
-        NdisAdvanceNetBufferDataStart(
-            mNetBuffer, nBytesToAdvance, FALSE, 0);
-    }
-
-    void restoreDataStart() 
-    {
-        advanceDataStart(mRetreatedCnt);
-        NT_ASSERT(mRetreatedCnt == 0);
-    }
-};
-
 class NetBufferPretty
 {
 	using u8 = unsigned char;
@@ -305,6 +260,8 @@ FilterCallbackImpl(
     if (!pDstPortValue)
         NETFILTER_ERROR_RETURN("pDstPortValue is NULL");
 
+    //kprintf(TRACE_INFO, "prot=%d, %08X:%d -> %08X:%d", protocol, pSrcAddrValue->int32, pSrcPortValue->uint16, pDstAddrValue->uint32, pDstPortValue->uint16);
+
     if (protocol == TCP)
     {
         ULONG DataLength = NET_BUFFER_DATA_LENGTH(pNetBuffer);
@@ -321,7 +278,12 @@ FilterCallbackImpl(
             if (pretty.getHexText() == nullptr)
                 NETFILTER_ERROR_RETURN("Pretty failed");
 
-            kprintf(TRACE_INFO, "buf=%s", pretty.getHexText());
+            const wchar_t* r = L"deny tcp 255.255.255.250:65535 123.11.1.0:13 priority=7800 offset=65535 |0123456789ABCDEFabcdef|";
+            NetFilterRule ruleObj;
+
+            parse_rule(r, &ruleObj);
+
+            //kprintf(TRACE_INFO, "buf=%s", pretty.getHexText());
 
             //if (DataLength < 200)
             //{
