@@ -22,6 +22,16 @@ namespace drjuke::winlib
             }
         };
 
+        struct RegHandleDeleter
+        {
+            using pointer = HKEY;
+
+            void operator ()(HKEY h) const
+            {
+                ::RegCloseKey(h);
+            }
+        };
+
         struct SymHandleDeleter
         {
             using pointer = HANDLE;
@@ -67,6 +77,7 @@ namespace drjuke::winlib
 
     }
     using UniqueHandle    = std::unique_ptr< std::remove_pointer<HANDLE>::type,     HandleDeleter    >;
+    using UniqueRegHandle = std::unique_ptr< std::remove_pointer<HKEY>::type,       RegHandleDeleter >;
     using UniqueSymHandle = std::unique_ptr< std::remove_pointer<HANDLE>::type,     SymHandleDeleter >;
     using UniqueCertStore = std::unique_ptr< std::remove_pointer<HCERTSTORE>::type, CertStoreDeleter >;
     using UniqueBlob      = std::unique_ptr< std::remove_pointer<void*>::type,      BlobDeleter      >;

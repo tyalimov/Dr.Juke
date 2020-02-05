@@ -42,3 +42,67 @@ catch (const std::exception& ex)
     std::cout << ex.what() << std::endl;
     FAIL();
 }
+
+TEST(winlib, kernelFilePathExists) try
+{
+    std::wstring path = L"c:\\Windows\\System32\\calc.exe";
+    path = winlib::utils::getFileKernelPath(path);
+    std::wcout << "Calculator path: " << path << std::endl;
+    SUCCEED();
+}
+catch (const std::exception& ex)
+{
+    std::cout << ex.what() << std::endl;
+    FAIL();
+}
+
+TEST(winlib, kernelFilePathNotExist) try
+{
+    std::wstring path = L"c:\\Windows\\System32\\calc1.exe";
+    path = winlib::utils::getFileKernelPath(path);
+    FAIL();
+}
+catch (const std::exception& ex)
+{
+    std::cout << ex.what() << std::endl;
+    SUCCEED();
+}
+
+TEST(winlib, kernelFilePathDirectory) try
+{
+    std::wstring path = L"c:\\Windows\\System32";
+    path = winlib::utils::getFileKernelPath(path);
+    std::wcout << "System32 path: " << path << std::endl;
+    SUCCEED();
+}
+catch (const std::exception& ex)
+{
+    std::cout << ex.what() << std::endl;
+    FAIL();
+}
+
+
+TEST(winlib, kernelKeyPathExists) try
+{
+    std::wstring path = L"Control Panel\\Desktop\\Colors";
+    path = winlib::utils::getKeyKernelPath(HKEY_CURRENT_USER, path);
+    std::wcout << "Desktop colors path: " << path << std::endl;
+    SUCCEED();
+}
+catch (const std::exception& ex)
+{
+    std::cout << ex.what() << std::endl;
+    FAIL();
+}
+
+TEST(winlib, kernelKeyPathNotExist) try
+{
+    std::wstring path = L"Control Panel\\Desktop\\Colors12345";
+    path = winlib::utils::getKeyKernelPath(HKEY_CURRENT_USER, path);
+    FAIL();
+}
+catch (const std::exception& ex)
+{
+    std::cout << ex.what() << std::endl;
+    SUCCEED();
+}

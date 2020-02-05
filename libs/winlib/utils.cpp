@@ -1,11 +1,50 @@
 ﻿#include "utils.h"
 #include "windows_exception.h"
+#include "raii.h"
 
 #include <windows.h>
 #include <lmcons.h>
 
+
 namespace drjuke::winlib::utils
 {
+	typedef LONG NTSTATUS;
+
+	#ifndef STATUS_SUCCESS
+	#define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
+	#endif
+
+	#ifndef STATUS_BUFFER_TOO_SMALL
+	#define STATUS_BUFFER_TOO_SMALL ((NTSTATUS)0xC0000023L)
+	#endif
+
+	typedef enum _KEY_INFORMATION_CLASS {
+	  KeyBasicInformation,
+	  KeyNodeInformation,
+	  KeyFullInformation,
+	  KeyNameInformation,
+	  KeyCachedInformation,
+	  KeyFlagsInformation,
+	  KeyVirtualizationInformation,
+	  KeyHandleTagsInformation,
+	  KeyTrustInformation,
+	  KeyLayerInformation,
+	  MaxKeyInfoClass
+	} KEY_INFORMATION_CLASS;
+
+	typedef struct _KEY_NAME_INFORMATION {
+	  ULONG NameLength;
+	  WCHAR Name[1];
+	} KEY_NAME_INFORMATION, *PKEY_NAME_INFORMATION;
+
+	typedef DWORD (__stdcall *NtQueryKeyFunc)(
+		HANDLE  KeyHandle,
+		int KeyInformationClass,
+		PVOID  KeyInformation,
+		ULONG  Length,
+		PULONG  ResultLength);
+
+
     [[nodiscard]] std::wstring getCurrentUserName()
     {
         wchar_t user_name[UNLEN + 1]{0};
@@ -70,4 +109,86 @@ namespace drjuke::winlib::utils
     {
 
     }
+
+	std::wstring getFileKernelPath(const std::wstring& file_path)
+	{
+		DWORD length;
+		TCHAR path[MAX_PATH];
+		std::wstring result;
+
+		HANDLE hFile = CreateFileW(file_path.c_str(),
+			0,
+			0,  
+			0,
+			OPEN_EXISTING,
+			FILE_FLAG_BACKUP_SEMANTICS,
+			0);
+		
+		if (INVALID_HANDLE_VALUE != hFile)
+		{
+			length = GetFinalPathNameByHandle(
+				hFile, path, MAX_PATH, VOLUME_NAME_NT);
+
+			CloseHandle(hFile);
+
+			// length indicates returned path length
+			// or error status on failure
+			if (length > 0)
+				result = std::wstring(path, path + length);
+			else
+				throw WindowsException("GetFinalPathNameByHandle failed", length);
+
+		}
+		else
+			throw WindowsException("CreateFileW failed");
+
+		return result;
+	}
+
+	std::wstring getKeyKernelPath(HKEY hBaseKey, const std::wstring& subKey)
+	{
+		DWORD size = 0;
+		DWORD result = 0;
+		HKEY hKey = NULL;
+		std::wstring keyPath;
+
+		result = RegOpenKey(hBaseKey, subKey.c_str(), &hKey);
+		if (result == ERROR_SUCCESS && hKey != NULL)
+		{
+			UniqueRegHandle cleaner(hKey);
+
+			HMODULE ntdll = LoadLibrary(L"ntdll.dll");
+			if (ntdll != NULL) 
+			{
+				NtQueryKeyFunc NtQueryKey = (NtQueryKeyFunc)GetProcAddress(ntdll, "NtQueryKey");
+
+				if (NtQueryKey != NULL) 
+				{
+					result = NtQueryKey(hKey, KeyNameInformation, 0, 0, &size);
+					if (result == STATUS_BUFFER_TOO_SMALL)
+					{
+						size = size + 2;
+						auto buffer = std::make_unique<wchar_t[]>(size / sizeof(wchar_t));
+						KEY_NAME_INFORMATION* info = (KEY_NAME_INFORMATION*)buffer.get();
+
+						result = NtQueryKey(hKey, KeyNameInformation, buffer.get(), size, &size);
+						if (result == STATUS_SUCCESS)
+							keyPath = std::wstring(info->Name, info->NameLength / sizeof(wchar_t));
+						else
+							throw WindowsException("NtQueryKey failed", result);
+					}
+					else
+						throw WindowsException("Unexpected NtQueryKey return status", result);
+				}
+				else
+					throw WindowsException("Get NtQueryKey address failed");
+			}
+			else
+				throw WindowsException("Load ntdll failed");
+		}
+		else
+			throw WindowsException("RegOpenKey failed", result);
+
+		return keyPath;
+	}
 }
