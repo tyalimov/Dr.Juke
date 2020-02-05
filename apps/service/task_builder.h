@@ -7,10 +7,7 @@
 
 namespace drjuke::service
 {
-    enum class TaskId
-    {
-        
-    };
+    enum class TaskId;
 
     class TaskBuilder
     {

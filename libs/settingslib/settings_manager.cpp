@@ -31,6 +31,7 @@ namespace drjuke::settingslib
         kRoot,
         kResources,
         kBinaries,
+        kQuarantine,
         kFilesystemObjects,
         kFilesystemExcluded,
         kRegistryObjects,
@@ -47,6 +48,7 @@ namespace drjuke::settingslib
         { KeyId::kRoot,                    LR"(SOFTWARE\Dr.Juke\Paths\RootDirectory)"                      },
         { KeyId::kResources,               LR"(SOFTWARE\Dr.Juke\Paths\ResourcesDirectory)"                 },
         { KeyId::kBinaries,                LR"(SOFTWARE\Dr.Juke\Paths\BinariesDirectory)"                  },
+        { KeyId::kQuarantine,              LR"(SOFTWARE\Dr.Juke\Paths\QuarantineDirectory)"                },
         { KeyId::kFilesystemObjects,       LR"(SOFTWARE\Dr.Juke\FilesystemFilterRules\ProtectedObjects)"   },
         { KeyId::kFilesystemExcluded,      LR"(SOFTWARE\Dr.Juke\FilesystemFilterRules\ExcludedProcesses)"  },
         { KeyId::kRegistryObjects,         LR"(SOFTWARE\Dr.Juke\RegistryFilterRules\ProtectedObjects)"     },
@@ -60,9 +62,10 @@ namespace drjuke::settingslib
 
     namespace default_values
     {
-        const std::wstring kRootDirectory      { LR"(C:\Program Files\Dr.juke)"     };
-        const std::wstring kResourcesDirectory { LR"(C:\Program Files\Dr.juke\res)" };
-        const std::wstring kBinariesDirectory  { LR"(C:\Program Files\Dr.juke\bin)" };
+        const std::wstring kRootDirectory        { LR"(C:\Program Files\Dr.Juke)"            };
+        const std::wstring kResourcesDirectory   { LR"(C:\Program Files\Dr.Juke\res)"        };
+        const std::wstring kBinariesDirectory    { LR"(C:\Program Files\Dr.Juke\bin)"        };
+        const std::wstring kQuarantineDirectory  { LR"(C:\Program Files\Dr.Juke\quarantine)" };
     }
 
     // HKEY_LOCAL_MACHINE
@@ -77,6 +80,7 @@ namespace drjuke::settingslib
         LR"(SOFTWARE\Dr.Juke\Paths\RootDirectory)",
         LR"(SOFTWARE\Dr.Juke\Paths\ResourcesDirectory)",
         LR"(SOFTWARE\Dr.Juke\Paths\BinariesDirectory)",
+        LR"(SOFTWARE\Dr.Juke\Paths\QuarantineDirectory)",
         LR"(SOFTWARE\Dr.Juke\FilesystemFilterRules\ProtectedObjects)",
         LR"(SOFTWARE\Dr.Juke\FilesystemFilterRules\ExcludedProcesses)",
         LR"(SOFTWARE\Dr.Juke\RegistryFilterRules\ProtectedObjects)",
@@ -86,33 +90,6 @@ namespace drjuke::settingslib
         LR"(SOFTWARE\Dr.Juke\FirewallRules\EnabledRules)",
         LR"(SOFTWARE\Dr.Juke\FirewallRules\DisabledRules)",
     };
-
-    //winreg::RegKey SettingsManager::getKey(SettingId id) 
-    //{
-    //    auto key = kKeys.at(id);
-
-    //    return winreg::RegKey{ HKEY_LOCAL_MACHINE, key.second };
-    //}
-
-    //Json SettingsManager::get(SettingId id)
-    //{
-    //    auto key             = getKey(id);
-    //    auto value           = key.GetBinaryValue(L"value");
-    //    auto serialized_data = std::string(value.begin(), value.end());
-
-    //    return Json(serialized_data);
-    //}
-
-    //void SettingsManager::set(SettingId id, Json value)
-    //{
-    //    std::string dump = value.dump();
-    //    std::vector<BYTE> serialized_data{dump.begin(), dump.end()};
-
-    //    // TODO: exceptions
-    //    auto key = getKey(id);
-    //    key.DeleteValue(L"value");
-    //    key.SetBinaryValue(L"value", serialized_data);
-    //}
 
     winreg::RegKey SettingsManager::getKey(KeyId id) const
     {
@@ -157,6 +134,7 @@ namespace drjuke::settingslib
         setRootDirectory(default_values::kRootDirectory);
         setResourcesDirectory(default_values::kResourcesDirectory);
         setBinariesDirectory(default_values::kBinariesDirectory);
+        setQuarantineDirectory(default_values::kQuarantineDirectory);
         enableFirewall(true);
     }
 
@@ -173,6 +151,11 @@ namespace drjuke::settingslib
     void SettingsManager::setBinariesDirectory(const std::wstring &directory)
     {
         getKey(KeyId::kBinaries).SetStringValue(L"value", directory);
+    }
+
+    void SettingsManager::setQuarantineDirectory(const std::wstring &directory)
+    {
+        getKey(KeyId::kQuarantine).SetStringValue(L"value", directory);
     }
 
     //{
@@ -319,6 +302,11 @@ namespace drjuke::settingslib
     std::wstring SettingsManager::getBinariesDirectory() const
     {
         return getKey(KeyId::kBinaries).GetStringValue(L"value");
+    }
+
+    std::wstring SettingsManager::getQuarantineDirectory() const
+    {
+        getKey(KeyId::kQuarantine).GetStringValue(L"value");
     }
 
     void SettingsManager::clearFilesystemFilterRules()

@@ -16,4 +16,6 @@ namespace drjuke::service
 
         void run() override;
     };
+
+    void RunQueueExecutor(tasklib::TaskQueuePtr queue);
 }

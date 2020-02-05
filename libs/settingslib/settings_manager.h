@@ -20,9 +20,10 @@ namespace drjuke::settingslib
         void setDefaultSettings();
 
         // setters
-        void setRootDirectory      (const std::wstring& directory);
-        void setResourcesDirectory (const std::wstring& directory);
-        void setBinariesDirectory  (const std::wstring& directory);
+        void setRootDirectory        (const std::wstring& directory);
+        void setResourcesDirectory   (const std::wstring& directory);
+        void setBinariesDirectory    (const std::wstring& directory);
+        void setQuarantineDirectory  (const std::wstring& directory);
        
         // rule adders
         void addRegistryFilterRule   (const std::wstring& path, uint32_t access_mask);
@@ -47,9 +48,10 @@ namespace drjuke::settingslib
         void excludeFromProcessFilter    (const std::wstring& name, const std::wstring& path);
 
         // getters
-        [[nodiscard]] std::wstring getRootDirectory()      const;
-        [[nodiscard]] std::wstring getResourcesDirectory() const;
-        [[nodiscard]] std::wstring getBinariesDirectory()  const;
+        [[nodiscard]] std::wstring getRootDirectory()        const;
+        [[nodiscard]] std::wstring getResourcesDirectory()   const;
+        [[nodiscard]] std::wstring getBinariesDirectory()    const;
+        [[nodiscard]] std::wstring getQuarantineDirectory()  const;
 
         // cleaners
         void clearFilesystemFilterRules();

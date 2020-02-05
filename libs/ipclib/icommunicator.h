@@ -18,5 +18,5 @@ namespace drjuke::ipclib
     };
 
     //constexpr 
-    using CommunicatorPtr = std::unique_ptr<ICommunicator>;
+    using CommunicatorPtr = std::shared_ptr<ICommunicator>;
 }

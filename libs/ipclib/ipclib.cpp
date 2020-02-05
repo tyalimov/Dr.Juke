@@ -15,6 +15,6 @@ namespace drjuke::ipclib
 
     CommunicatorPtr Factory::getCommunicator(QueueId id)
     {
-        return std::make_unique<Communicator>(m_queues_names[ToUnderlying(id)]);
+        return std::make_shared<Communicator>(m_queues_names[ToUnderlying(id)]);
     }
 }

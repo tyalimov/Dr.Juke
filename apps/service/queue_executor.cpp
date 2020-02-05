@@ -20,4 +20,9 @@ namespace drjuke::service
             // TODO: Залогировать ошибку
         }
     }
+
+    void RunQueueExecutor(tasklib::TaskQueuePtr queue)
+    {
+        QueueExecutorThread{ queue }.run();
+    }
 }
