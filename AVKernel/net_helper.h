@@ -174,12 +174,15 @@ public:
     {
         size_t content_length = m_content.length();
 
+        if (content_length == 0)
+            return true;
+
         if (length > m_offset)
         {
             if (length - m_offset > content_length)
             {
-                return !m_content.compare(m_offset,
-                    content_length, buffer);
+                return !strncmp(&buffer[m_offset], 
+                    m_content.c_str(), m_content.length());
             }
         }
 
@@ -307,8 +310,8 @@ public:
             if (!rule.isPortToMatch(port_to))
                 continue;
 
-            found = (length == 0)
-                || rule.isContentMatch(content, length);
+            // isContentMatch returns true if m_content is empty
+            found = rule.isContentMatch(content, length);
 
             if (found)
             {

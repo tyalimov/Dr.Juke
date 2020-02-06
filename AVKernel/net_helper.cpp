@@ -294,7 +294,6 @@ using u8 = unsigned char;
         {
             // 6 offset
             u16 offset;
-            wstring ws_content;
             string content;
 
             chunks.pop_front();
@@ -307,22 +306,24 @@ using u8 = unsigned char;
             chunks.pop_front();
             value = chunks.front();
 
-            if (value.length() >= 4)
+            // skip terminating char
+            value.pop_back();
+            
+            auto length = value.length();
+            if ((length >= 4) && (length % 2 == 0))
             {
                 if (value.front() == L'|' && value.back() == L'|')
-                    ws_content = wstring(value.begin() + 1, value.end() - 1);
-
-                content = str_util::ToString(ws_content);
-
-                if (content.length() % 2 != 0)
+                    value = wstring(value.begin() + 1, value.end() - 1);
+                else
                     return STATUS_UNSUCCESSFUL;
+
+                content = str_util::ToString(value);
 
                 bool ok;
                 for (const char& x : content)
                 {
                     ok = (x >= '0' && x <= '9'
-                        || x >= 'A' && x <= 'F'
-                        || x >= 'a' && x <= 'f');
+                        || x >= 'A' && x <= 'F');
 
                     if (!ok)
                         return STATUS_UNSUCCESSFUL;

@@ -91,17 +91,19 @@ public:
             mContiguousData = (PCHAR)NdisGetDataBuffer(pNetBuffer,
                 bytesNeeded, mBuffer, 1, 0);
 
+            mLength = bytesNeeded;
             if (mBuffer != mContiguousData)
             {
-				// Data is contiguous, no allocation needed
+                // Data is contiguous, no allocation needed
                 // Or API call failed and buffer no longer required
-				delete[] mBuffer;
-				mBuffer = nullptr;
+                delete[] mBuffer;
+                mBuffer = nullptr;
 
                 if (mContiguousData == nullptr)
+                {
+                    mLength = 0;
                     kprintf(TRACE_NETFILTER_ERROR, "NdisGetDataBuffer failed");
-                else
-                    mLength = bytesNeeded;
+                }
             }
         }
         else
