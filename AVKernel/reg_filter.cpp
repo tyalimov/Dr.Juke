@@ -1,6 +1,7 @@
 #include "reg_filter.h"
 #include "fs_filter.h"
 #include "ps_protect.h"
+#include "net_helper.h"
 #include "preferences.h"
 #include "util.h"
 
@@ -225,13 +226,17 @@ RegPostSetValueKey(
 	gRegMon->onRegKeyChange(key_path, PreInfo, bDeleted);
 
 	// notify other filters
-	PFileSystemAccessMonitor FsFilterPtr = FsFilterGetInstancePtr();
+	auto FsFilterPtr = FsFilterGetInstancePtr();
 	if (FsFilterPtr != nullptr)
 		FsFilterPtr->onRegKeyChange(key_path, PreInfo, bDeleted);
 
-	PProcessAccessMonitor PsMonPtr = PsProtectGetInstancePtr();
+	auto PsMonPtr = PsProtectGetInstancePtr();
 	if (PsMonPtr != nullptr)
 		PsMonPtr->onRegKeyChange(key_path, PreInfo, bDeleted);
+
+	auto NetFilterPtr = NetFilterGetInstancePtr();
+	if (NetFilterPtr != nullptr)
+		NetFilterPtr->onRegKeyChange(key_path, PreInfo, bDeleted);
 
 	return STATUS_SUCCESS;
 }

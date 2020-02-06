@@ -1,7 +1,6 @@
 #include "net_helper.h"
 #include <EASTL/list.h>
-//#include "preferences.h"
-
+#include "preferences.h"
 #include "common.h"
 
 using namespace eastl;
@@ -13,6 +12,9 @@ using u8 = unsigned char;
 
     HexDeserializer::HexDeserializer(const char* buffer, ULONG length) 
     {
+        if (length == 0)
+            return;
+
         mLength = length * 2;
 		mBuffer = new char[mLength + 1];
 
@@ -36,6 +38,9 @@ using u8 = unsigned char;
 
     HexSerializer::HexSerializer(const char* buffer, ULONG length)
     {
+        if (length == 0)
+            return;
+
         mLength = length / 2;
 		mBuffer = new char[mLength + 1];
 		
@@ -60,10 +65,6 @@ using u8 = unsigned char;
 
 	// deny tcp 0.0.0.0:12 0.0.0.0:13 priority=2 offset=13 |00123456|
     // const wchar_t* r = L"deny tcp 255.255.255.250:65535 123.11.1.0:13 priority=7800 offset=65535 |0123456789ABCDEFabcdef|";
-
-    using u32 = unsigned int;
-    using u16 = unsigned short;
-    using u8 = unsigned char;
 
 	u8 wchar2dec(wchar_t c)
 	{
@@ -206,7 +207,7 @@ using u8 = unsigned char;
                 value = chunks.front();
 
                 int x = _wtoi(value.c_str());
-                if (x > 0 && x <= (u16)-1)
+                if (x >= 0 && x <= (u16)-1)
                     *out = (u16)x;
                 else
                     return -1;
@@ -340,14 +341,13 @@ using u8 = unsigned char;
         return STATUS_SUCCESS;
     }
 
-
-    void NetFilterRuleList::regReadReadConfiguration() 
+    void NetFilterRuleList::regReadConfiguration() 
     {
 		regReadRules([this](PWCH Name,
 			ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type)
 			{
 				modifyRule(Name, NameLen, Data, DataLen, Type,
-					[this](const wstring& rule_name, const NetFilterRule* rule_obj) {
+					[this](const wstring& rule_name, NetFilterRule* rule_obj) {
 
                         if (rule_obj != nullptr)
 						    this->addRule(rule_name, rule_obj);
@@ -356,20 +356,21 @@ using u8 = unsigned char;
 			});
 
 		if (mRuleMap.size() == 0)
-			kprintf(TRACE_NETFILTER_WARN, "Configuration: No protected objects found!");
+			kprintf(TRACE_NETFILTER_WARN, "Configuration: No filtering rules found!");
     }
 
     void NetFilterRuleList::onRegKeyChange(const wstring& KeyPath,
         PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted)
     {
         PUNICODE_STRING ValueName = PreInfo->ValueName;
+        kprintf(TRACE_NETFILTER_INFO, "Key path = %ws", KeyPath.c_str());
         if (KeyPath == mKeyBase + mKeyRules)
         {
             if (bDeleted)
             {
                 modifyRule(ValueName->Buffer, ValueName->Length,
                     PreInfo->Data, PreInfo->DataSize, PreInfo->Type,
-                    [this](const wstring& rule_name, const NetFilterRule* rule) {
+                    [this](const wstring& rule_name, NetFilterRule* rule) {
 
                         UNREFERENCED_PARAMETER(rule);
                         this->removeRule(rule_name);
@@ -380,7 +381,7 @@ using u8 = unsigned char;
             {
                 modifyRule(ValueName->Buffer, ValueName->Length,
                     PreInfo->Data, PreInfo->DataSize, PreInfo->Type,
-                    [this](const wstring& rule_name, const NetFilterRule* rule) {
+                    [this](const wstring& rule_name, NetFilterRule* rule) {
 
                         if (rule != nullptr)
                             this->addRule(rule_name, rule);
@@ -390,28 +391,32 @@ using u8 = unsigned char;
         }
     }
 
-    void NetFilterRuleList::addRule(const wstring& name, const NetFilterRule* rule)
+    void NetFilterRuleList::addRule(const wstring& name, NetFilterRule* rule)
     {
-        bool inserted;
-
+        rule->setName(name);
         mRuleLock.acquire();
 
         // insert priority
         priority_t pri = rule->getPriority();
 		auto result = mNamePriorityMap.try_emplace(name, pri);
-		inserted = result.second;
+		bool inserted = result.second;
 		auto it = result.first;
 
-		if (!inserted)
-			it->second = pri;
+        // if priority has changed in existing rule
+        // we must remove record from priority map
+        if (!inserted)
+        {
+            mRuleMap.erase(it->second);
+            it->second = pri;
+        }
 
         // insert rule
 		auto result2 = mRuleMap.try_emplace(pri, *rule);
-		inserted = result2.second;
+		bool inserted2 = result2.second;
 		auto it2 = result2.first;
 
-		if (!inserted)
-			it2->second = pri;
+		if (!inserted2)
+			it2->second = *rule;
 
         mRuleLock.release();
 
@@ -447,12 +452,12 @@ using u8 = unsigned char;
 		if (n > 0)
 			kprintf(TRACE_NETFILTER_INFO, "Removed rule <Name=%ws>", name.c_str());
 		else
-			kprintf(TRACE_NETFILTER_ERROR, "Attempt to remove"
+			kprintf(TRACE_NETFILTER_ERROR, "Attempt to remove "
 				"non existent rule <Name=%ws>", name.c_str());
     }
 
 	void NetFilterRuleList::modifyRule(PWCH Name, ULONG NameLen, PVOID Data, ULONG DataLen, 
-        ULONG Type, function<void(const wstring&, const NetFilterRule*)> cb)
+        ULONG Type, function<void(const wstring&, NetFilterRule*)> cb)
 	{
 		wstring rule_name(Name, NameLen / sizeof(WCHAR));
 
@@ -480,12 +485,12 @@ using u8 = unsigned char;
 	}
 
     void NetFilterRuleList::regReadRules(function<void(PWCH Name, ULONG NameLen,
-        PVOID Data, ULONG DataLen, ULONG Type)> cbAddProtectedObject)
+        PVOID Data, ULONG DataLen, ULONG Type)> cbAddRule)
 	{
 		NTSTATUS status;
 		wstring proc_key = mKeyBase + mKeyRules;
 
-		status = PreferencesReadFull(proc_key.c_str(), cbAddProtectedObject);
+		status = PreferencesReadFull(proc_key.c_str(), cbAddRule);
 		if (!NT_SUCCESS(status))
 		{
 			kprintf(TRACE_NETFILTER_ERROR, "Failed to read " 

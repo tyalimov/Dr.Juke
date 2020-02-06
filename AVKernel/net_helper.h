@@ -124,9 +124,10 @@ class NetFilterRule
 
     u16 m_offset = 0;
     eastl::string m_content;
+    eastl::wstring m_name;
 
     static const u16 mc_port_any = 0;
-    static const u16 mc_max_offset = (u16)-1;
+    static const u16 mc_ip_any = 0;
 
 public:
 
@@ -135,20 +136,26 @@ public:
 
     NetFilterRule(const NetFilterRule& other) = default;
 
-    bool isAllowPerm() {
+    bool isPacketAllowed() const {
         return m_allow;
     }
 
-    bool isProtocolMatch(u8 protocol) const {
-        return m_protocol == protocol; // || m_protocol == IP
+    bool isProtocolMatch(u8 protocol) const 
+    {
+        return m_protocol == protocol 
+            || m_protocol == IPV4;
     }
 
-    bool isIpFromMatch(u32 ip) const {
-        return m_ip_from == ip;
+    bool isIpFromMatch(u32 ip) const 
+    {
+        return m_ip_from == ip 
+            || m_ip_from == mc_ip_any;
     }
 
-    bool isIpToMatch(u32 ip) const {
-        return m_ip_to == ip;
+    bool isIpToMatch(u32 ip) const 
+    {
+        return m_ip_to == ip 
+            || m_ip_to == mc_ip_any;
     }
 
     bool isPortFromMatch(u32 port) const
@@ -165,10 +172,8 @@ public:
 
     bool isContentMatch(const char* buffer, size_t length) const
     {
-        if (!m_content.length() == 0)
-            return true;
-
         size_t content_length = m_content.length();
+
         if (length > m_offset)
         {
             if (length - m_offset > content_length)
@@ -215,18 +220,31 @@ public:
         m_priority = priority;
     }
 
-    u16 getPriority() {
+    void setName(const wstring& name) {
+        m_name = name;
+    }
+
+    u16 getPriority() const {
         return m_priority;
     }
 
+    const wchar_t* getName() const {
+        return m_name.c_str();
+    }
 };
 
 class NetFilterRuleList
 {
 
-private:
+public:
 
     using priority_t = unsigned short;
+
+private:
+
+	using u32 = unsigned int;
+	using u16 = unsigned short;
+	using u8 = unsigned char;
 
     const wstring mKeyRules = L"\\Rules\\Enabled";
     wstring mKeyBase;
@@ -234,7 +252,7 @@ private:
     map<wstring, priority_t> mNamePriorityMap;
     map<priority_t, NetFilterRule> mRuleMap;
 
-    GuardedMutex mRuleLock;
+    SpinLock mRuleLock;
 
 public:
 
@@ -242,26 +260,73 @@ public:
     NetFilterRuleList(const NetFilterRuleList&) = delete;
     NetFilterRuleList(const NetFilterRuleList&&) = delete;
 
-    NetFilterRuleList(const wstring& BaseKey) 
+    NetFilterRuleList(const wchar_t* BaseKey) 
         : mKeyBase(BaseKey) {}
 
     ~NetFilterRuleList() = default;
 
-    void regReadReadConfiguration();
+    void regReadConfiguration();
 
     void onRegKeyChange(const wstring& KeyPath,
         PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted);
 
-    void addRule(const wstring& name, const NetFilterRule* rule);
+    void addRule(const wstring& name, NetFilterRule* rule);
 
     void removeRule(const wstring& name);
 
     void modifyRule(PWCH Name, ULONG NameLen, PVOID Data, ULONG DataLen,
-        ULONG Type, function<void(const wstring&, const NetFilterRule*)> cb);
+        ULONG Type, function<void(const wstring&, NetFilterRule*)> cb);
 
     void regReadRules(function<void(PWCH Name, ULONG NameLen,
         PVOID Data, ULONG DataLen, ULONG Type)> cbAddProtectedObject);
 
+    const wchar_t* findMatchingRule(u8 prot, u32 ip_from, u16 port_from, 
+        u32 ip_to, u16 port_to, const char* content, size_t length, bool* allowed)
+    {
+        const wchar_t* rule_name = nullptr;
+        bool found;
+
+        mRuleLock.acquire();
+
+        for (const auto& elem : mRuleMap)
+        {
+            const NetFilterRule& rule = elem.second;
+
+            if (!rule.isProtocolMatch(prot))
+                continue;
+
+            if (!rule.isIpFromMatch(ip_from))
+                continue;
+
+            if (!rule.isPortFromMatch(port_from))
+                continue;
+
+            if (!rule.isIpToMatch(ip_to))
+                continue;
+
+            if (!rule.isPortToMatch(port_to))
+                continue;
+
+            found = (length == 0)
+                || rule.isContentMatch(content, length);
+
+            if (found)
+            {
+                *allowed = rule.isPacketAllowed();
+                rule_name = rule.getName();
+                break;
+            }
+        }
+
+        mRuleLock.release();
+
+        return rule_name;
+    }
+
 };
+
+using PNetFilterRuleList = NetFilterRuleList*;
+
+PNetFilterRuleList NetFilterGetInstancePtr();
 
 NTSTATUS parse_rule(const eastl::wstring& rule, NetFilterRule* ruleObj);

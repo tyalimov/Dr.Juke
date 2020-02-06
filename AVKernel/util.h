@@ -54,6 +54,27 @@ public:
 	GuardedMutex(GuardedMutex&&) = delete;
 };
 
+class SpinLock
+{
+private:
+
+	KSPIN_LOCK _lock;
+	KIRQL _irql;
+
+public:
+
+	VOID acquire();
+
+	VOID release();
+
+	SpinLock();
+	~SpinLock() = default;
+
+	// forbid copy/move
+	SpinLock(const SpinLock&) = delete;
+	SpinLock(SpinLock&&) = delete;
+};
+
 template <class TGuard>
 class LockGuard
 {

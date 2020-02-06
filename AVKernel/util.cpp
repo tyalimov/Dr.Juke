@@ -20,6 +20,18 @@ GuardedMutex::GuardedMutex() {
 	KeInitializeGuardedMutex(&_mutex);
 }
 
+VOID SpinLock::acquire() {
+	KeAcquireSpinLock(&_lock, &_irql);
+}
+
+VOID SpinLock::release() {
+	KeReleaseSpinLock(&_lock, _irql);
+}
+
+SpinLock::SpinLock() {
+	KeInitializeSpinLock(&_lock);
+}
+
 bool IsWin8OrGreater()
 {
     RTL_OSVERSIONINFOEXW VersionInfo = {0};

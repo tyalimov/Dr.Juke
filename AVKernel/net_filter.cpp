@@ -82,6 +82,9 @@ public:
 
     NetPacketBuffer(PNET_BUFFER pNetBuffer, ULONG bytesNeeded)
     {
+        if (bytesNeeded == 0)
+            return;
+
         mBuffer = new CHAR[bytesNeeded];
         if (mBuffer != nullptr)
         {
@@ -96,13 +99,13 @@ public:
 				mBuffer = nullptr;
 
                 if (mContiguousData == nullptr)
-                    kprintf(TRACE_ERROR, "NdisGetDataBuffer failed");
+                    kprintf(TRACE_NETFILTER_ERROR, "NdisGetDataBuffer failed");
                 else
                     mLength = bytesNeeded;
             }
         }
         else
-			kprintf(TRACE_ERROR, "Memory allocation failed");
+			kprintf(TRACE_NETFILTER_ERROR, "Memory allocation failed");
     }
 
     ~NetPacketBuffer()
@@ -134,49 +137,31 @@ public:
     }
 };
 
-class NetBufferPretty
+GuardedMutex gNetFltLock;
+PNetFilterRuleList gNetFlt = nullptr;
+
+PNetFilterRuleList NetFilterGetInstancePtr() 
 {
-	using u8 = unsigned char;
-    char* mBuffer = nullptr;
+	LockGuard<GuardedMutex> guard(&gNetFltLock);
+	return gNetFlt;
+}
 
-    inline char substitute(u8 i) {
-        return (i <= 9 ? '0' + i : 'A' - 10 + i);
-    }
+bool NetFilterNewInstance()
+{
+	LockGuard<GuardedMutex> guard(&gNetFltLock);
 
-    void int2hex(u8 in, char* out)
-    {
-		out[0] = substitute((in & 0xF0) >> 4);   
-		out[1] = substitute(in & 0x0F);
-    }
+	gNetFlt = new NetFilterRuleList(KNF_BASE_KEY);
+	gNetFlt->regReadConfiguration();
+	return gNetFlt != nullptr;
+}
 
-public:
-
-    NetBufferPretty(const char* buffer, ULONG length)
-    {
-		mBuffer = new char[length * 2 + 1];
-		if (mBuffer)
-		{
-			for (ULONG i = 0, j = 0; i < length; i++, j += 2)
-				int2hex(buffer[i], &mBuffer[j]);
-
-			mBuffer[length * 2] = '\0';
-		}
-    }
-
-    ~NetBufferPretty()
-    {
-        if (mBuffer)
-        {
-            delete[] mBuffer;
-            mBuffer = nullptr;
-        }
-    }
-
-    PCHAR getHexText() {
-        return mBuffer;
-    }
-};
-
+void NetFilterDeleteInstance()
+{
+	gNetFltLock.acquire();
+	delete gNetFlt;
+	gNetFlt = nullptr;
+	gNetFltLock.release();
+}
 
 NTSTATUS NotifyCallback(
    _In_  FWPS_CALLOUT_NOTIFY_TYPE notifyType,
@@ -193,9 +178,8 @@ NTSTATUS NotifyCallback(
 
 
 #define NETFILTER_ERROR_RETURN(fmt, ...)     \
-    return (kprintf(TRACE_ERROR, fmt, __VA_ARGS__)  \
+    return (kprintf(TRACE_NETFILTER_ERROR, fmt, __VA_ARGS__)  \
         ? STATUS_UNSUCCESSFUL : STATUS_UNSUCCESSFUL)
-
 
 #if(NTDDI_VERSION >= NTDDI_WIN7)
 
@@ -224,28 +208,36 @@ FilterCallbackImpl(
     PNET_BUFFER pNetBuffer = NET_BUFFER_LIST_FIRST_NB(
         (NET_BUFFER_LIST*)pLayerData);
 
-	NTSTATUS status = STATUS_SUCCESS;
-	FWP_VALUE* pSrcAddrValue = nullptr;
-	FWP_VALUE* pDstAddrValue = nullptr;
+    NTSTATUS status = STATUS_SUCCESS;
+    FWP_VALUE* pSrcAddrValue = nullptr;
+    FWP_VALUE* pDstAddrValue = nullptr;
     FWP_VALUE* pSrcPortValue = nullptr;
-	FWP_VALUE* pDstPortValue = nullptr;
-	FWP_VALUE* pProtocolValue = nullptr;
-	UINT8 protocol = IPPROTO_RAW;
+    FWP_VALUE* pDstPortValue = nullptr;
+    FWP_VALUE* pProtocolValue = nullptr;
+    UINT8 protocol = IPPROTO_RAW;
 
-    if (pClassifyValues->layerId != FWPS_LAYER_INBOUND_TRANSPORT_V4)
-        return STATUS_SUCCESS;
-
-    pDstAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_IPPACKET_V4_IP_LOCAL_ADDRESS].value);
-    pSrcAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_IPPACKET_V4_IP_REMOTE_ADDRESS].value);
-    pDstPortValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_LOCAL_PORT].value);
-    pSrcPortValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_REMOTE_PORT].value);
-    pProtocolValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_PROTOCOL].value);
+    if (pClassifyValues->layerId == FWPS_LAYER_INBOUND_TRANSPORT_V4)
+    {
+        pProtocolValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_PROTOCOL].value);
+        pDstAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_LOCAL_ADDRESS].value);
+        pSrcAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_REMOTE_ADDRESS].value);
+        pDstPortValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_LOCAL_PORT].value);
+        pSrcPortValue = &(pClassifyValues->incomingValue[FWPS_FIELD_INBOUND_TRANSPORT_V4_IP_REMOTE_PORT].value);
+    }
+    else
+    {
+        pProtocolValue = &(pClassifyValues->incomingValue[FWPS_FIELD_OUTBOUND_TRANSPORT_V4_IP_PROTOCOL].value);
+        pDstAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_OUTBOUND_TRANSPORT_V4_IP_REMOTE_ADDRESS].value);
+        pSrcAddrValue = &(pClassifyValues->incomingValue[FWPS_FIELD_OUTBOUND_TRANSPORT_V4_IP_LOCAL_ADDRESS].value);
+        pDstPortValue = &(pClassifyValues->incomingValue[FWPS_FIELD_OUTBOUND_TRANSPORT_V4_IP_REMOTE_PORT].value);
+        pSrcPortValue = &(pClassifyValues->incomingValue[FWPS_FIELD_OUTBOUND_TRANSPORT_V4_IP_LOCAL_PORT].value);
+    }
 
     if (!pProtocolValue)
         NETFILTER_ERROR_RETURN("pProtocolValue is NULL");
     else
         protocol = pProtocolValue->uint8;
-    
+
     if (!pSrcAddrValue)
         NETFILTER_ERROR_RETURN("pSrcAddrValue is NULL");
 
@@ -258,50 +250,46 @@ FilterCallbackImpl(
     if (!pDstPortValue)
         NETFILTER_ERROR_RETURN("pDstPortValue is NULL");
 
-    //kprintf(TRACE_INFO, "prot=%d, %08X:%d -> %08X:%d", protocol, pSrcAddrValue->int32, pSrcPortValue->uint16, pDstAddrValue->uint32, pDstPortValue->uint16);
+    bool allowed;
+    const wchar_t* rule = nullptr;
+    ULONG DataLength = NET_BUFFER_DATA_LENGTH(pNetBuffer);
+    NetPacketBuffer buffer(pNetBuffer, DataLength);
 
-    if (protocol == TCP)
+    if (gNetFlt != nullptr)
     {
-        ULONG DataLength = NET_BUFFER_DATA_LENGTH(pNetBuffer);
-        if (DataLength > 0 && DataLength < (UINT16)-1)
+        rule = gNetFlt->findMatchingRule(
+            pProtocolValue->uint8,
+            pSrcAddrValue->uint32,
+            pSrcPortValue->uint16,
+            pDstAddrValue->uint32,
+            pDstPortValue->uint16,
+            buffer.getData(),
+            buffer.getLength(),
+            &allowed);
+
+        if (rule != nullptr)
         {
-            NetPacketBuffer buffer(pNetBuffer, DataLength);
-            if (buffer.getData() == nullptr)
-                NETFILTER_ERROR_RETURN("NetPacketBuffer construct failed");
+            if (DataLength > 30)
+                DataLength = 30;
 
-            if (buffer.getLength() != DataLength)
-                NETFILTER_ERROR_RETURN("ssss construct failed");
+            HexDeserializer deser(buffer.getData(), DataLength);
+            unsigned ip_from = pSrcAddrValue->uint32;
+            unsigned ip_to = pDstAddrValue->uint32;
 
-            NetBufferPretty pretty(buffer.getData(), buffer.getLength());
-            if (pretty.getHexText() == nullptr)
-                NETFILTER_ERROR_RETURN("Pretty failed");
+            const char* prot_str = protocol == ICMPV4 
+                ? "ICMP" : protocol == TCP 
+                ? "TCP" : protocol == UDP 
+                ? "UDP" : "Unknown";
 
-            const wchar_t* r = L"deny tcp 255.255.255.250:65535 123.11.1.0:13 priority=7800 offset=65535 |0123456789ABCDEFabcdef|";
-            NetFilterRule ruleObj;
+            const char* perm_str = allowed ? "Allow" : "Deny";
 
-            parse_rule(r, &ruleObj);
+            if (!allowed)
+                status = STATUS_ACCESS_DENIED;
 
-            //kprintf(TRACE_INFO, "buf=%s", pretty.getHexText());
-
-            //if (DataLength < 200)
-            //{
-            //    //kprintf(TRACE_INFO, "%p", buffer.getData());
-            //    //for (ULONG i =0; i < buffer.getLength(); i++)
-            //    //    if (isalnum(buffer.getData()[i] & 0xFF))
-            //    //        kprintf(TRACE_INFO, "%c", buffer.getData()[i] & 0xFF);
-
-            //    //string s((char*)buffer.getData(), buffer.getLength());
-            //    //kprintf(TRACE_INFO, "buf=%s", s.c_str());
-
-            //    //wstring ws((wchar_t*)buffer.getData(), buffer.getLength() / sizeof(wchar_t));
-            //    //
-            //    //if (ws.length() < 10)
-            //    //    ws[10] = 0;
-
-            //    //kprintf(TRACE_INFO, "buf=%ws", ws.c_str());
-            //    //kprintf(TRACE_INFO, "len=%d buf=%ws", DataLength, s.c_str());
-            //    //kprintf(TRACE_INFO, "Here");
-            //}
+            kprintf(TRACE_NETFILTER_INFO, "%s packet <rule=%ws prot=%s %d.%d.%d.%d:%d -> %d.%d.%d.%d:%d first bytes=%s>",
+                perm_str, rule, prot_str, (ip_from & 0xFF000000) >> 24, (ip_from & 0x00FF0000) >> 16, (ip_from & 0x0000FF00) >> 8, ip_from & 0x000000FF,
+                pSrcPortValue->uint16, (ip_to & 0xFF000000) >> 24, (ip_to & 0x00FF0000) >> 16, (ip_to & 0x0000FF00) >> 8, ip_to & 0x000000FF,
+                pDstPortValue->uint16, deser.getHexText());
         }
     }
 
@@ -422,7 +410,7 @@ NTSTATUS WpfRegisterFilterCallback(
 
 end:
 
-    kprint_st(TRACE_INFO, Status);
+    kprint_st(TRACE_NETFILTER_INFO, Status);
     return Status;
 }
 
@@ -464,6 +452,13 @@ NTSTATUS NetFilterInit(PDRIVER_OBJECT DriverObject)
 {
     NTSTATUS Status;
     
+    bool ok = NetFilterNewInstance();
+    if (!ok)
+    {
+        Status = STATUS_INSUFFICIENT_RESOURCES;
+        goto end;
+    }
+
     Status = IoCreateDevice(DriverObject, 0, NULL, 
         FILE_DEVICE_UNKNOWN, FILE_DEVICE_SECURE_OPEN, FALSE, &gDeviceObject);
 
@@ -494,7 +489,13 @@ NTSTATUS NetFilterInit(PDRIVER_OBJECT DriverObject)
 
 end:
 
-    kprint_st(TRACE_INFO, Status);
+    if (!NT_SUCCESS(Status))
+    {
+        if (NetFilterGetInstancePtr() != nullptr)
+            NetFilterDeleteInstance();
+    }
+
+    kprint_st(TRACE_NETFILTER_INFO, Status);
     return Status;
 }
 
@@ -503,6 +504,7 @@ VOID NetFilterExit()
 	UINT64 filterId;
 	UINT32 addCalloutId;
 	UINT32 regCalloutId;
+
 
     if (gEngineHandle != NULL)
     {
@@ -529,5 +531,8 @@ VOID NetFilterExit()
     if (gDeviceObject != NULL)
         IoDeleteDevice(gDeviceObject); 
 
-    kprint_st(TRACE_INFO, STATUS_SUCCESS);
+	if (NetFilterGetInstancePtr() != nullptr)
+		NetFilterDeleteInstance();
+
+    kprint_st(TRACE_NETFILTER_INFO, STATUS_SUCCESS);
 }
