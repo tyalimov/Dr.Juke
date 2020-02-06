@@ -1,6 +1,4 @@
-//#include <ntddk.h>
 #include "net_filter.h"
-#include "net_helper.h"
 
 #include <fwpmk.h>
 
@@ -11,8 +9,8 @@
 
 #include <initguid.h>
 #include <ntstrsafe.h>
-#include <EASTL/string.h>
-using namespace eastl;
+
+#include "net_helper.h"
 
 //
 // Capture inbound and outbound traffic (cnt=2)

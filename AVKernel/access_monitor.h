@@ -377,6 +377,8 @@ protected:
 		UNREFERENCED_PARAMETER(DataLen);
 
 		ACCESS_MASK access;
+		if (Type == REG_NONE)
+			access = 0;
 		if (Type == REG_DWORD)
 			access = *(ACCESS_MASK*)Data;
 		else

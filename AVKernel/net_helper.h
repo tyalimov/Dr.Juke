@@ -1,6 +1,7 @@
 #pragma once
 
-#include "common.h"
+#include "util.h"
+#include <EASTL/map.h>
 
 #define ETHERNET_ADDRESS_SIZE 6
 
@@ -115,11 +116,11 @@ class NetFilterRule
     u8 m_protocol = 0;
     u16 m_priority = 0;
     
-    u16 m_local_port = 0;
-    u16 m_remote_port = 0;
+    u16 m_port_from = 0;
+    u16 m_port_to = 0;
 
-    u32 m_local_ip = 0;
-    u32 m_remote_ip = 0;
+    u32 m_ip_from = 0;
+    u32 m_ip_to = 0;
 
     u16 m_offset = 0;
     eastl::string m_content;
@@ -142,24 +143,24 @@ public:
         return m_protocol == protocol; // || m_protocol == IP
     }
 
-    bool isLocalIpMatch(u32 ip) const {
-        return m_local_ip == ip;
+    bool isIpFromMatch(u32 ip) const {
+        return m_ip_from == ip;
     }
 
-    bool isRemoteIpMatch(u32 ip) const {
-        return m_remote_ip == ip;
+    bool isIpToMatch(u32 ip) const {
+        return m_ip_to == ip;
     }
 
-    bool isLocalPortMatch(u32 port) const
+    bool isPortFromMatch(u32 port) const
     {
-        return m_local_port == port
-            || m_local_port == mc_port_any;
+        return m_port_from == port
+            || m_port_from == mc_port_any;
     }
 
-    bool isRemotePortMatch(u32 port) const
+    bool isPortToMatch(u32 port) const
     {
-        return m_remote_port == port
-            || m_remote_port == mc_port_any;
+        return m_port_to == port
+            || m_port_to == mc_port_any;
     }
 
     bool isContentMatch(const char* buffer, size_t length) const
@@ -189,19 +190,19 @@ public:
     }
 
     void setLocalIp(u32 local_ip) {
-        m_local_ip = local_ip;
+        m_ip_from = local_ip;
     }
 
     void setRemoteIp(u32 remote_ip) {
-        m_remote_ip = remote_ip;
+        m_ip_to = remote_ip;
     }
 
     void setLocalPort(u16 local_port) {
-        m_local_port = local_port;
+        m_port_from = local_port;
     }
 
     void setRemotePort(u16 remote_port) {
-        m_remote_port = remote_port;
+        m_port_to = remote_port;
     }
 
     void setContent(const char* content, size_t len, u16 offset) 
@@ -220,5 +221,47 @@ public:
 
 };
 
+class NetFilterRuleList
+{
+
+private:
+
+    using priority_t = unsigned short;
+
+    const wstring mKeyRules = L"\\Rules\\Enabled";
+    wstring mKeyBase;
+
+    map<wstring, priority_t> mNamePriorityMap;
+    map<priority_t, NetFilterRule> mRuleMap;
+
+    GuardedMutex mRuleLock;
+
+public:
+
+	// Forbid copy/move
+    NetFilterRuleList(const NetFilterRuleList&) = delete;
+    NetFilterRuleList(const NetFilterRuleList&&) = delete;
+
+    NetFilterRuleList(const wstring& BaseKey) 
+        : mKeyBase(BaseKey) {}
+
+    ~NetFilterRuleList() = default;
+
+    void regReadReadConfiguration();
+
+    void onRegKeyChange(const wstring& KeyPath,
+        PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted);
+
+    void addRule(const wstring& name, const NetFilterRule* rule);
+
+    void removeRule(const wstring& name);
+
+    void modifyRule(PWCH Name, ULONG NameLen, PVOID Data, ULONG DataLen,
+        ULONG Type, function<void(const wstring&, const NetFilterRule*)> cb);
+
+    void regReadRules(function<void(PWCH Name, ULONG NameLen,
+        PVOID Data, ULONG DataLen, ULONG Type)> cbAddProtectedObject);
+
+};
 
 NTSTATUS parse_rule(const eastl::wstring& rule, NetFilterRule* ruleObj);

@@ -1,6 +1,8 @@
 #include "net_helper.h"
-#include "EASTL/list.h"
-#include "util.h"
+#include <EASTL/list.h>
+//#include "preferences.h"
+
+#include "common.h"
 
 using namespace eastl;
 
@@ -90,7 +92,7 @@ using u8 = unsigned char;
 		return chunks;
 	}
 
-    // EF FF FF FA -> 239.255.255.250
+    // EF FF FF FA <- 239.255.255.250
     int parse_ip(const wstring& ip_string, u32* ip)
     {
         int i = 24;
@@ -338,3 +340,155 @@ using u8 = unsigned char;
         return STATUS_SUCCESS;
     }
 
+
+    void NetFilterRuleList::regReadReadConfiguration() 
+    {
+		regReadRules([this](PWCH Name,
+			ULONG NameLen, PVOID Data, ULONG DataLen, ULONG Type)
+			{
+				modifyRule(Name, NameLen, Data, DataLen, Type,
+					[this](const wstring& rule_name, const NetFilterRule* rule_obj) {
+
+                        if (rule_obj != nullptr)
+						    this->addRule(rule_name, rule_obj);
+
+					});
+			});
+
+		if (mRuleMap.size() == 0)
+			kprintf(TRACE_NETFILTER_WARN, "Configuration: No protected objects found!");
+    }
+
+    void NetFilterRuleList::onRegKeyChange(const wstring& KeyPath,
+        PREG_SET_VALUE_KEY_INFORMATION PreInfo, BOOLEAN bDeleted)
+    {
+        PUNICODE_STRING ValueName = PreInfo->ValueName;
+        if (KeyPath == mKeyBase + mKeyRules)
+        {
+            if (bDeleted)
+            {
+                modifyRule(ValueName->Buffer, ValueName->Length,
+                    PreInfo->Data, PreInfo->DataSize, PreInfo->Type,
+                    [this](const wstring& rule_name, const NetFilterRule* rule) {
+
+                        UNREFERENCED_PARAMETER(rule);
+                        this->removeRule(rule_name);
+
+                    });
+            }
+            else
+            {
+                modifyRule(ValueName->Buffer, ValueName->Length,
+                    PreInfo->Data, PreInfo->DataSize, PreInfo->Type,
+                    [this](const wstring& rule_name, const NetFilterRule* rule) {
+
+                        if (rule != nullptr)
+                            this->addRule(rule_name, rule);
+
+                    });
+            }
+        }
+    }
+
+    void NetFilterRuleList::addRule(const wstring& name, const NetFilterRule* rule)
+    {
+        bool inserted;
+
+        mRuleLock.acquire();
+
+        // insert priority
+        priority_t pri = rule->getPriority();
+		auto result = mNamePriorityMap.try_emplace(name, pri);
+		inserted = result.second;
+		auto it = result.first;
+
+		if (!inserted)
+			it->second = pri;
+
+        // insert rule
+		auto result2 = mRuleMap.try_emplace(pri, *rule);
+		inserted = result2.second;
+		auto it2 = result2.first;
+
+		if (!inserted)
+			it2->second = pri;
+
+        mRuleLock.release();
+
+		if (inserted)
+		{
+			kprintf(TRACE_NETFILTER_INFO, "Added rule <Name=%ws>, <Priority=0x%04X>",
+				name.c_str(), pri);
+		}
+		else
+		{
+			kprintf(TRACE_NETFILTER_INFO, "Modified <Name=%ws>, <Priority=0x%04X>",
+				name.c_str(), pri);
+		}
+
+    }
+
+    void NetFilterRuleList::removeRule(const wstring& name)
+    {
+        eastl_size_t n = 0;
+
+		mRuleLock.acquire();
+
+        auto it = mNamePriorityMap.find(name);
+        if (it != mNamePriorityMap.end())
+        {
+            priority_t pri = it->second;
+            n = mRuleMap.erase(pri);
+            mNamePriorityMap.erase(it);
+        }
+
+		mRuleLock.release();
+
+		if (n > 0)
+			kprintf(TRACE_NETFILTER_INFO, "Removed rule <Name=%ws>", name.c_str());
+		else
+			kprintf(TRACE_NETFILTER_ERROR, "Attempt to remove"
+				"non existent rule <Name=%ws>", name.c_str());
+    }
+
+	void NetFilterRuleList::modifyRule(PWCH Name, ULONG NameLen, PVOID Data, ULONG DataLen, 
+        ULONG Type, function<void(const wstring&, const NetFilterRule*)> cb)
+	{
+		wstring rule_name(Name, NameLen / sizeof(WCHAR));
+
+        if (Type == REG_NONE)
+            cb(rule_name, nullptr);
+        else if (Type == REG_SZ)
+        {
+            wstring rule((PWCH)Data, DataLen / sizeof(WCHAR));
+
+            NetFilterRule ruleObj;
+            if (NT_SUCCESS(parse_rule(rule, &ruleObj)))
+                cb(rule_name, &ruleObj);
+            else
+            {
+				kprintf(TRACE_NETFILTER_ERROR, "Bad format. "
+					"Unable to parse rule <Name=%ws>", rule_name.c_str());
+            }
+
+        }
+		else
+		{
+			kprintf(TRACE_NETFILTER_ERROR, "Type != REG_SZ. "
+				"Nothing to do with record <Name=%ws>", rule_name.c_str());
+		}
+	}
+
+    void NetFilterRuleList::regReadRules(function<void(PWCH Name, ULONG NameLen,
+        PVOID Data, ULONG DataLen, ULONG Type)> cbAddProtectedObject)
+	{
+		NTSTATUS status;
+		wstring proc_key = mKeyBase + mKeyRules;
+
+		status = PreferencesReadFull(proc_key.c_str(), cbAddProtectedObject);
+		if (!NT_SUCCESS(status))
+		{
+			kprintf(TRACE_NETFILTER_ERROR, "Failed to read " 
+                "rules registry key <KeyPath=%ws>", proc_key.c_str());
+		}
+	}
