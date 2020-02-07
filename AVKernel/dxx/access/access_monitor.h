@@ -1,9 +1,10 @@
 #pragma once
 
 #include "common.h"
-#include "util.h"
-#include "preferences.h"
-#include "ps_monitor.h"
+#include "util/util.h"
+#include "util/preferences.h"
+#include "access/ps_monitor/ps_monitor.h"
+
 #include "EASTL/hash_map.h"
 #include "EASTL/hash_set.h"
 #include "EASTL/map.h"

@@ -1,10 +1,10 @@
 #include "common.h"
-#include "util.h"
-#include <ntddk.h>
-#include "ps_monitor.h"
-#include "reg_filter.h"
-#include "fs_filter.h"
-#include "ps_protect.h"
+#include "util/util.h"
+
+#include "access/ps_monitor/ps_monitor.h"
+#include "access/reg_filter/reg_filter.h"
+#include "access/ps_protect/ps_protect.h"
+#include "access/fs_filter/fs_filter.h"
 
 BOOLEAN ProcessNotifyRoutineSet = FALSE;
 extern ZwQuerySystemInformationRoutine ZwQuerySystemInformation;

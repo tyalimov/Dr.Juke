@@ -28,7 +28,9 @@ VOID SpinLock::release() {
 	KeReleaseSpinLock(&_lock, _irql);
 }
 
-SpinLock::SpinLock() {
+SpinLock::SpinLock() 
+{
+	_irql = 0;
 	KeInitializeSpinLock(&_lock);
 }
 

@@ -43,7 +43,7 @@
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
     <ConfigurationType>Driver</ConfigurationType>
     <DriverType>WDM</DriverType>
-    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <TargetVersion>
@@ -60,7 +60,7 @@
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
     <ConfigurationType>Driver</ConfigurationType>
     <DriverType>WDM</DriverType>
-    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -73,26 +73,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <EnableInf2cat>false</EnableInf2cat>
-    <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(ConfigurationName)\</IntDir>
-    <OutDir>$(SolutionDir)bin\$(Platform)\$(ConfigurationName)\</OutDir>
+    <IntDir>$(SolutionDir)tmp\$(ProjectName)\$(Platform)\$(ConfigurationName)\</IntDir>
+    <OutDir>$(SolutionDir)..\build\$(Platform)_debug\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <EnableInf2cat>false</EnableInf2cat>
-    <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(ConfigurationName)\</IntDir>
-    <OutDir>$(SolutionDir)bin\$(Platform)\$(ConfigurationName)\</OutDir>
+    <IntDir>$(SolutionDir)tmp\$(ProjectName)\$(Platform)\$(ConfigurationName)\</IntDir>
+    <OutDir>$(SolutionDir)..\build\$(Platform)_release\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <EnableInf2cat>false</EnableInf2cat>
-    <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(ConfigurationName)\</IntDir>
-    <OutDir>$(SolutionDir)bin\$(Platform)\$(ConfigurationName)\</OutDir>
+    <IntDir>$(SolutionDir)tmp\$(ProjectName)\$(Platform)\$(ConfigurationName)\</IntDir>
+    <OutDir>$(SolutionDir)..\build\$(Platform)_debug\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
     <EnableInf2cat>false</EnableInf2cat>
-    <IntDir>$(SolutionDir)inter\$(ProjectName)\$(Platform)\$(ConfigurationName)\</IntDir>
-    <OutDir>$(SolutionDir)bin\$(Platform)\$(ConfigurationName)\</OutDir>
+    <IntDir>$(SolutionDir)tmp\$(ProjectName)\$(Platform)\$(ConfigurationName)\</IntDir>
+    <OutDir>$(SolutionDir)..\build\$(Platform)_release\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Link>
@@ -113,9 +113,8 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Link />
     <ClCompile>
-      <AdditionalIncludeDirectories>./kstl;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./dxx;./kstl;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_EASTL;_DEBUG;NDIS_SUPPORT_NDIS6;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -125,27 +124,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Link>
-      <AdditionalDependencies>libcntpr.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>./kstl;./lua/lua;./msgpack;./kxml/pugixml;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_EASTL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>./dxx;./kstl;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_EASTL;NDEBUG;NDIS_SUPPORT_NDIS6;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>libcntpr.lib;netio.lib;fltMgr.lib;fwpkclnt.lib;uuid.lib;ndis.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <FilesToPackage Include="$(TargetPath)" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="fs_filter.cpp" />
-    <ClCompile Include="net_filter.cpp" />
-    <ClCompile Include="net_helper.cpp" />
-    <ClCompile Include="ps_monitor.cpp" />
-    <ClCompile Include="ps_protect.cpp" />
-    <ClCompile Include="reg_filter.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="preferences.cpp" />
-    <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="kcrt\kcrt.vcxproj">
@@ -156,16 +146,27 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="common.h" />
-    <ClInclude Include="access_monitor.h" />
-    <ClInclude Include="fs_filter.h" />
-    <ClInclude Include="net_filter.h" />
-    <ClInclude Include="net_helper.h" />
-    <ClInclude Include="preferences.h" />
-    <ClInclude Include="ps_monitor.h" />
-    <ClInclude Include="ps_protect.h" />
-    <ClInclude Include="reg_filter.h" />
-    <ClInclude Include="util.h" />
+    <ClInclude Include="dxx\access\access_monitor.h" />
+    <ClInclude Include="dxx\access\fs_filter\fs_filter.h" />
+    <ClInclude Include="dxx\access\ps_monitor\ps_monitor.h" />
+    <ClInclude Include="dxx\access\ps_protect\ps_protect.h" />
+    <ClInclude Include="dxx\access\reg_filter\reg_filter.h" />
+    <ClInclude Include="dxx\common.h" />
+    <ClInclude Include="dxx\network\net_filter.h" />
+    <ClInclude Include="dxx\network\net_helper.h" />
+    <ClInclude Include="dxx\util\preferences.h" />
+    <ClInclude Include="dxx\util\util.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dxx\access\fs_filter\fs_filter.cpp" />
+    <ClCompile Include="dxx\access\ps_monitor\ps_monitor.cpp" />
+    <ClCompile Include="dxx\access\ps_protect\ps_protect.cpp" />
+    <ClCompile Include="dxx\access\reg_filter\reg_filter.cpp" />
+    <ClCompile Include="dxx\main.cpp" />
+    <ClCompile Include="dxx\network\net_filter.cpp" />
+    <ClCompile Include="dxx\network\net_helper.cpp" />
+    <ClCompile Include="dxx\util\preferences.cpp" />
+    <ClCompile Include="dxx\util\util.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

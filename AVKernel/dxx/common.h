@@ -4,7 +4,7 @@
 #include <EASTL/string.h>
 
 #define DRIVER_NAME             L"AVKernel"
-#define DRIVER_NAME_WITH_EXT    L"AVKernel.sys"
+#define DRIVER_NAME_WITH_EXT    L"dxx.sys"
 #define NT_DEVICE_NAME          L"\\Device\\AVKernel"
 
 #define OS_WIN8_OR_GREATER     (NTDDI_VERSION >= NTDDI_WIN8)
@@ -63,7 +63,6 @@
 	| TRACE_NETFILTER_INFO \
 	| TRACE_NETFILTER_WARN \
 	| TRACE_NETFILTER_ERROR \
-	| TRACE_REGFILTER \
 	| TRACE_STANDARD)
 
 

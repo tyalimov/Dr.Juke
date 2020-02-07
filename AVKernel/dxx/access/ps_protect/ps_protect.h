@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "access_monitor.h"
+#include "access/access_monitor.h"
 
 #define KPF_BASE_KEY L"\\REGISTRY\\MACHINE\\SOFTWARE\\Dr.Juke\\AVSecGeneric\\PsMonitor"
 

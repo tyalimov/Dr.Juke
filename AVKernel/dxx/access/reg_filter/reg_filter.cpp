@@ -1,9 +1,10 @@
-#include "reg_filter.h"
-#include "fs_filter.h"
-#include "ps_protect.h"
-#include "net_helper.h"
-#include "preferences.h"
-#include "util.h"
+#include "access/ps_protect/ps_protect.h"
+#include "access/reg_filter/reg_filter.h"
+#include "access/fs_filter/fs_filter.h"
+#include "access/access_monitor.h"
+#include "network/net_helper.h"
+#include "util/preferences.h"
+#include "util/util.h"
 
 //------------------------------------------------------------>
 // Prototypes

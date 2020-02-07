@@ -1,13 +1,13 @@
 #include <ntifs.h>
-#include <wdm.h>
 #include <ntstrsafe.h>
-#include "preferences.h"
-#include "reg_filter.h"
-#include "fs_filter.h"
-#include "ps_monitor.h"
-#include "ps_protect.h"
-#include "net_filter.h"
-#include "util.h"
+
+#include "util/preferences.h"
+#include "util/util.h"
+#include "access/reg_filter/reg_filter.h"
+#include "access/fs_filter/fs_filter.h"
+#include "access/ps_monitor/ps_monitor.h"
+#include "access/ps_protect/ps_protect.h"
+#include "network/net_filter.h"
 
 ZwQuerySystemInformationRoutine ZwQuerySystemInformation = nullptr;
 ZwQueryInformationProcessRoutine ZwQueryInformationProcess = nullptr;
