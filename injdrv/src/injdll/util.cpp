@@ -48,63 +48,58 @@ ProtectDll(HANDLE ModuleHandle)
 	Wow64LogCreateExports(ModuleHandle);
 }
 
-//NTSTATUS QueryKeyValue(const wchar_t* szAbsRegPath, 
-//	const wchar_t* szValueName, NTSTATUS(*onRecord)(PKEY_VALUE_FULL_INFORMATION))
-//{
-//	NTSTATUS Status;
-//	HANDLE KeyHandle;
-//	OBJECT_ATTRIBUTES Attrs;
-//	UNICODE_STRING KeyPath;
-//	UNICODE_STRING ValueName;
-//	ULONG Size = 0;
-//	CHAR* InfoBuffer;
-//	PKEY_VALUE_FULL_INFORMATION Info;
-//
-//	RtlInitUnicodeString(&KeyPath, (PWCH)szAbsRegPath);
-//	InitializeObjectAttributes(&Attrs, &KeyPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
-//	Status = ZwOpenKeyEx(&KeyHandle, KEY_READ, &Attrs, 0);
-//	if (!NT_SUCCESS(Status))
-//	{
-//		kprintf(TRACE_ERROR, 
-//			"ZwOpenKeyEx failed <Status=0x%08X>", Status);
-//
-//		return Status;
-//	}
-//
-//	RtlInitUnicodeString(&ValueName, szValueName);
-//	Status = ZwQueryValueKey(KeyHandle, &ValueName,
-//		KeyValueFullInformation, NULL, Size, &Size);
-//
-//	if (Status != STATUS_BUFFER_TOO_SMALL && Status != STATUS_BUFFER_OVERFLOW)
-//	{
-//		kprintf(TRACE_ERROR, 
-//			"ZwQueryValueKey failed <Status=0x%08X>", Status);
-//
-//		return Status;
-//	}
-//
-//	if (Size > 0)
-//	{
-//		InfoBuffer = new CHAR[Size];
-//		if (InfoBuffer)
-//		{
-//			Info = (PKEY_VALUE_FULL_INFORMATION)InfoBuffer;
-//			Status = ZwQueryValueKey(KeyHandle, &ValueName, 
-//				KeyValueFullInformation, InfoBuffer, Size, &Size);
-//
-//			if (NT_SUCCESS(Status))
-//				Status = onRecord(Info);
-//
-//			delete[] InfoBuffer;
-//		}
-//		else
-//			Status = STATUS_INSUFFICIENT_RESOURCES;
-//	}
-//	else
-//		Status = STATUS_BUFFER_TOO_SMALL;
-//
-//	ZwClose(KeyHandle);
-//
-//	kprint_st(TRACE_PREF, Status);
-//	return Status;
-//}
+NTSTATUS NTAPI
+QueryKeyValue(const wchar_t* szAbsRegPath, 
+	const wchar_t* szValueName, NTSTATUS(*onRecord)(PKEY_VALUE_FULL_INFORMATION))
+{
+	NTSTATUS Status;
+	HANDLE KeyHandle;
+	OBJECT_ATTRIBUTES Attrs;
+	UNICODE_STRING KeyPath;
+	UNICODE_STRING ValueName;
+	ULONG Size = 0;
+	CHAR* InfoBuffer;
+	PKEY_VALUE_FULL_INFORMATION Info;
+
+	RtlInitUnicodeString(&KeyPath, (PWCH)szAbsRegPath);
+	InitializeObjectAttributes(&Attrs, &KeyPath, OBJ_CASE_INSENSITIVE, NULL, NULL);
+	Status = NtOpenKeyEx(&KeyHandle, KEY_READ, &Attrs, 0);
+	if (!NT_SUCCESS(Status))
+	{
+		Trace::logError(L"NtOpenKeyEx failed <Status=0x%08X>", Status);
+		return Status;
+	}
+
+	RtlInitUnicodeString(&ValueName, (PWSTR)szValueName);
+	Status = ZwQueryValueKey(KeyHandle, &ValueName,
+		KeyValueFullInformation, NULL, Size, &Size);
+
+	if (Status != STATUS_BUFFER_TOO_SMALL && Status != STATUS_BUFFER_OVERFLOW)
+	{
+		Trace::logError(L"ZwQueryValueKey failed <Status=0x%08X>", Status);
+		return Status;
+	}
+
+	if (Size > 0)
+	{
+		InfoBuffer = new CHAR[Size];
+		if (InfoBuffer)
+		{
+			Info = (PKEY_VALUE_FULL_INFORMATION)InfoBuffer;
+			Status = ZwQueryValueKey(KeyHandle, &ValueName, 
+				KeyValueFullInformation, InfoBuffer, Size, &Size);
+
+			if (NT_SUCCESS(Status))
+				Status = onRecord(Info);
+
+			delete[] InfoBuffer;
+		}
+		else
+			Status = STATUS_INSUFFICIENT_RESOURCES;
+	}
+	else
+		Status = STATUS_BUFFER_TOO_SMALL;
+
+	ZwClose(KeyHandle);
+	return Status;
+}

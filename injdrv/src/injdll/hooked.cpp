@@ -1,28 +1,37 @@
 #include "hooked.h"
 
-//extern api_call_t HookHandlerUpper;
+extern api_call_t HookHandlerUpper;
 
 template <typename TFunc, typename TRetVal, typename ...TArgs>
 TRetVal HookHandler(CallId id, TFunc f, TArgs&... args)
 {
-	//if (HookHandlerUpper == NULL)
-	//	return f(args...);
+	//
+	// Call pre handlers
+	//
 
 	ApiCall call_pre(id, true, args...);
 	HookHandlerLower(&call_pre);
-	//HookHandlerUpper(&call_pre);
+
+	if (HookHandlerUpper != NULL)
+		HookHandlerUpper(&call_pre);
+
 	if (call_pre.isCallSkipped())
 		return call_pre.getReturnValue();
+
+	//
+	// Call post handlers
+	//
 
 	TRetVal ret_val = f(args...);
 	ApiCall call_post(id, false, args...);
 
 	call_post.setReturnValue(ret_val);
 	HookHandlerLower(&call_post);
-	//HookHandlerUpper(&call_post);
-	ret_val = call_post.getReturnValue();
 
-	return ret_val;
+	if (HookHandlerUpper != NULL)
+		HookHandlerUpper(&call_post);
+
+	return call_post.getReturnValue();
 }
 
 //------------------------------------------------------------//
