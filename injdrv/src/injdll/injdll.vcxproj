@@ -173,22 +173,18 @@
     <ClInclude Include="..\..\include\phnt\subprocesstag.h" />
     <ClInclude Include="..\..\include\phnt\winsta.h" />
     <ClInclude Include="hooked.h" />
-    <ClInclude Include="list.h" />
-    <ClInclude Include="map.h" />
-    <ClInclude Include="mem_util.h" />
-    <ClInclude Include="mw_tricks.h" />
-    <ClInclude Include="net_filter.h" />
-    <ClInclude Include="string.h" />
-    <ClInclude Include="str_util.h" />
-    <ClInclude Include="synch.h" />
+    <ClInclude Include="api_call.h" />
+    <ClInclude Include="hook_handler.h" />
+    <ClInclude Include="trace.h" />
+    <ClInclude Include="util.h" />
     <ClInclude Include="wow64log.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="hooked.cpp" />
+    <ClCompile Include="hook_handler.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="mem_util.cpp" />
-    <ClCompile Include="net_filter.cpp" />
-    <ClCompile Include="str_util.cpp" />
+    <ClCompile Include="trace.cpp" />
+    <ClCompile Include="util.cpp" />
     <ClCompile Include="wow64log.cpp" />
   </ItemGroup>
 </Project>

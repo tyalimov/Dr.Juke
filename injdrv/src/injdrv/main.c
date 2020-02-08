@@ -246,13 +246,7 @@ DriverEntry(
     return Status;
   }
 
-#if defined (_M_IX86)
   Settings.Method = InjMethodThunk;
-#elif defined (_M_AMD64)
-  Settings.Method = InjMethodThunkless;
-#elif defined (_M_ARM64)
-  Settings.Method = InjMethodWow64LogReparse;
-#endif
   //
   // Initialize injection driver.
   //

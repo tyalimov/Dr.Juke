@@ -126,7 +126,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="injlib.c" />
-    <ClCompile Include="reparse.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="injlib.h" />

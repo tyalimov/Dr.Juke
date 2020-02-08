@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="reparse.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="injlib.c">
       <Filter>Source Files</Filter>
     </ClCompile>

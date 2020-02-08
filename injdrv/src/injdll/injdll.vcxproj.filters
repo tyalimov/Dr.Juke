@@ -120,31 +120,19 @@
     <ClInclude Include="hooked.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="list.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="map.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mem_util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mw_tricks.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="str_util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="string.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="synch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="wow64log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="net_filter.h">
+    <ClInclude Include="api_call.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hook_handler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -155,16 +143,16 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mem_util.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="str_util.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="wow64log.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="net_filter.cpp">
+    <ClCompile Include="hook_handler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
