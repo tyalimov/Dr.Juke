@@ -22,31 +22,11 @@ namespace drjuke::ipclib
 	}
 
 	Communicator::~Communicator() {
-		disconnect();
+		cleanup();
 	}
 
-	bool Communicator::connect()
+	void Communicator::cleanup()
 	{
-		bool result;
-
-		if (m_role == RoleId::kRoleClient)
-		{
-			clientInit();
-			result = serverInit();
-		}
-		else
-		{
-			result = serverInit();
-			clientInit();
-		}
-
-		return result;
-	}
-
-	void Communicator::disconnect()
-	{
-		SetEvent(m_pipe_recv);
-
 		if (m_pipe_send != nullptr)
 		{
 			CloseHandle(m_pipe_send);
@@ -65,6 +45,29 @@ namespace drjuke::ipclib
 			CloseHandle(m_event);
 			m_event = nullptr;
 		}
+	}
+
+	bool Communicator::connect()
+	{
+		bool result;
+
+		if (m_role == RoleId::kRoleClient)
+		{
+			clientInit();
+			result = serverInit();
+		}
+		else
+		{
+			result = serverInit();
+			if (result == true)
+				clientInit();
+		}
+
+		return result;
+	}
+
+	void Communicator::disconnect() {
+		SetEvent(m_event);
 	}
 
 	void Communicator::clientInit()

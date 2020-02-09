@@ -38,13 +38,15 @@ namespace drjuke::ipclib
         // Private functions
         //------------------------------------------------------------>
 
+        bool waitForClientConnection(HANDLE hPipe, LPOVERLAPPED lpo);
+
+        Json validateJson(Json&& message);
+
         void clientInit();
 
         bool serverInit();
 
-        bool waitForClientConnection(HANDLE hPipe, LPOVERLAPPED lpo);
-
-        Json validateJson(Json&& message);
+        void cleanup();
 
     public:
 
@@ -61,12 +63,39 @@ namespace drjuke::ipclib
         Communicator(const Communicator&) = delete;
         Communicator(Communicator&&) = delete;
 
-        void putMessage(const Json &message) override;
+        //
+        // Blocks until recieve json message
+        // Returns Json object if successfull
+        // Returns empty Json object if disconnect 
+        // was called at the moment of receiving
+        //
 
         Json getMessage() override;
 
+        //
+        // Establishes connection with another node
+        // Returnes <true> if connection is established
+        // Returnes <false> if disconnect was called 
+        // at the moment of establishing connection
+        //
+
         virtual bool connect() override;
+
+        //
+        // Sets event to exit immediately
+        // and not wait for operation completion
+        //
+
         virtual void disconnect() override;
+
+        //
+        // Blocks until recieve json message.
+        // Returns Json object if successfull.
+        // Returns empty Json object if disconnect 
+        // was called at the moment of receiving
+        //
+
+        void putMessage(const Json &message) override;
 
     };
 }
