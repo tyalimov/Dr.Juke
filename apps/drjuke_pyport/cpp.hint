@@ -1,0 +1,2 @@
+#define DRJUKEPYPORT_API __declspec(dllexport)
+#define DRJUKEPYPORT_API __declspec(dllimport)
