@@ -66,6 +66,7 @@
     <ClCompile Include="..\..\tests\netlib_test.cpp" />
     <ClCompile Include="..\..\tests\scanlib_test.cpp" />
     <ClCompile Include="..\..\tests\winlib_test.cpp" />
+    <ClCompile Include="ipclib_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cryptolib\cryptolib.vcxproj">

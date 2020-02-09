@@ -1,50 +1,203 @@
 #include "communicator.h"
 
-#include <common/utils.h>
+#include <Windows.h>
+#include "winlib/windows_exception.h"
 
 namespace drjuke::ipclib
 {
-    Communicator::Communicator(const std::string &queue_name)
-        : m_queue
-          (
-              boost::interprocess::open_or_create_t(), 
-              queue_name.c_str(), 
-              ToUnderlying(Constants::kMaxQueueSize),
-              ToUnderlying(Constants::kMaxMessageSize)
-          )
-    {
-    }
+	Communicator::Communicator(const std::wstring& pipe_send, const std::wstring& pipe_recv, 
+		RoleId role, DWORD conn_timeout, DWORD read_timeout)
+	{
+		m_role = role;
+		m_pipe_recv_name = pipe_recv;
+		m_pipe_send_name = pipe_send;
 
-    void Communicator::putMessage(const Json &message)
-    {
-        std::string serialized_data = message.dump();
+		m_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+		if (m_event == NULL)
+			throw winlib::WindowsException("Create event failed");
+	}
 
-        m_queue.send
-        (
-            serialized_data.c_str(), 
-            serialized_data.size(), 
-            ToUnderlying(Constants::kMaxMessageSize)
-        );
-    }
+	Communicator::~Communicator() 
+	{
+		CloseHandle(m_event);
+		CloseHandle(m_pipe_recv);
+		CloseHandle(m_pipe_send);
+	}
 
-    Json Communicator::getMessage()
-    {
-        std::vector<char> buffer;
-        buffer.reserve(ToUnderlying(Constants::kMaxMessageSize));
+	bool Communicator::createDuplexConnection()
+	{
+		bool result;
 
-        size_t   received_size{ 0 };
-        unsigned priority{ 0 };
+		if (m_role == RoleId::kRoleClient)
+		{
+			clientInit();
+			result = serverInit();
+		}
+		else
+		{
+			result = serverInit();
+			clientInit();
+		}
 
-        m_queue.receive
-        (
-            buffer.data(), 
-            ToUnderlying(Constants::kMaxMessageSize), 
-            received_size, 
-            priority
-        );
+		return result;
+	}
 
-        std::string serialized_data{ buffer.data(), received_size };
+	void Communicator::clientInit()
+	{
+		while (1)
+		{
+			m_pipe_send = CreateFile(
+				m_pipe_send_name.c_str(),		// pipe name 
+				GENERIC_WRITE,					// Write access
+				0,								// no sharing 
+				NULL,							// default security attributes
+				OPEN_EXISTING,					// opens existing pipe 
+				0,								// default attributes 
+				NULL);							// no template file 
 
-        return Json::parse(serialized_data);
-    }
+			// connected, break
+			if (m_pipe_send != INVALID_HANDLE_VALUE)
+				break;
+
+			// Exit if an error other than ERROR_PIPE_BUSY occurs. 
+			DWORD dwErr = GetLastError();
+			if (dwErr != ERROR_PIPE_BUSY)
+				throw winlib::WindowsException("Error opening pipe", dwErr);
+
+			// All pipe instances are busy, so wait for 5 seconds. 
+			if (!WaitNamedPipe(m_pipe_send_name.c_str(), 5000))
+				throw winlib::WindowsException("Wait pipe timeout exceeded");
+		}
+	}
+
+	bool Communicator::serverInit()
+	{
+		OVERLAPPED wait;
+
+		m_pipe_recv = CreateNamedPipe(
+			m_pipe_recv_name.c_str(), // pipe name 
+			PIPE_ACCESS_INBOUND |     // read/write access 
+			FILE_FLAG_OVERLAPPED,		// async
+			PIPE_TYPE_MESSAGE |       // message type pipe 
+			PIPE_READMODE_MESSAGE |   // message-read mode 
+			PIPE_WAIT,                // blocking mode 
+			PIPE_UNLIMITED_INSTANCES, // max. instances  
+			0,						// output buffer size 
+			BUFSIZE,                  // input buffer size 
+			0,                        // client time-out 
+			NULL);                    // default security attribute 
+
+		if (m_pipe_recv == INVALID_HANDLE_VALUE)
+			throw winlib::WindowsException("Failed to create named pipe");
+
+		return waitForClientConnection(m_pipe_recv, &wait);
+	}
+
+	bool Communicator::waitForClientConnection(HANDLE hPipe, LPOVERLAPPED lpo)
+	{
+		BOOL conn_failed, fPendingIO = FALSE;
+		DWORD dwErr;
+
+		// Start an overlapped connection for this pipe instance. 
+		conn_failed = ConnectNamedPipe(hPipe, lpo);
+		dwErr = GetLastError();
+
+		// Overlapped ConnectNamedPipe should return zero. 
+		if (conn_failed)
+			throw winlib::WindowsException("ConnectNamedPipe failed", dwErr);
+
+		if (dwErr == ERROR_PIPE_CONNECTED)
+		{
+			// Already connected. Set event and exit
+			SetEvent(lpo->hEvent);
+			return true;
+		}
+		else if (dwErr == ERROR_IO_PENDING)
+		{
+			// Operation in progress. 
+			// Wait until it finihes or exit event
+			HANDLE handles[] = { lpo->hEvent, m_event };
+			dwErr = WaitForMultipleObjects(RTL_NUMBER_OF(handles), 
+				handles, FALSE, m_conn_timeout);
+
+			if (dwErr == WAIT_FAILED)
+				throw winlib::WindowsException("WaitForMultipleObjects wait failed");
+
+			if (dwErr == WAIT_OBJECT_0)
+				return true;
+			else
+				return false;
+		}
+		else
+		{
+			// Unknown error
+			throw winlib::WindowsException("ConnectNamedPipe failed", dwErr);
+		}
+	}
+
+	void Communicator::putMessage(const Json& message)
+	{
+		BOOL ok;
+		DWORD cnt_written;
+
+		std::string data = message.dump();
+		if (data.length() > BUFSIZE)
+			throw winlib::WindowsException("Data length is too much");
+
+		ok = WriteFile(
+			m_pipe_send,            // pipe handle 
+			data.c_str(),             // message 
+			data.length(),              // message length 
+			&cnt_written,             // bytes written 
+			NULL);                  // not overlapped 
+
+		if (cnt_written != data.length())
+			throw winlib::WindowsException("WriteFile not full transmit");
+
+		if (!ok)
+			throw winlib::WindowsException("WriteFile failed");
+	}
+
+	Json Communicator::getMessage()
+	{
+		BOOL ok;
+		DWORD cnt_read;
+		OVERLAPPED wait;
+
+		char buffer[BUFSIZE] = { 0 };
+
+		ok = ReadFile(
+			m_pipe_recv,           // handle to pipe 
+			buffer,                // buffer to receive data 
+			BUFSIZE,               // size of buffer 
+			&cnt_read,             // number of bytes read 
+			&wait);                // not overlapped I/O 
+
+		if (!ok || cnt_read == 0)
+		{
+			DWORD dwErr = GetLastError();
+			if (dwErr == ERROR_IO_PENDING)
+			{
+				// Operation in progress. 
+				// Wait until it finihes or exit event
+				HANDLE handles[] = { wait.hEvent, m_event };
+				dwErr = WaitForMultipleObjects(RTL_NUMBER_OF(handles), 
+					handles, FALSE, m_read_timeout);
+
+				if (dwErr == WAIT_FAILED)
+					throw winlib::WindowsException("WaitForMultipleObjects wait failed");
+
+				if (dwErr == WAIT_OBJECT_0)
+					return Json::parse(std::string(buffer, cnt_read));
+				else
+					return Json{};
+			}
+			else if (dwErr == ERROR_BROKEN_PIPE)
+				throw winlib::WindowsException("Client disconnected");
+			else
+				throw winlib::WindowsException("ReadFile failed", dwErr);
+		}
+		else
+			return Json::parse(std::string(buffer, cnt_read));
+	}
 }

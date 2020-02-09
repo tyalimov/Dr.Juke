@@ -103,7 +103,7 @@ VOID WINAPI ServiceMain(int, char **)
 
 
 
-
+#include <memory>
 #include "queue_executor.h"
 #include "ipc_listener.h"
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     UNREFERENCED_PARAMETER(argv);
 
     auto task_queue            = drjuke::tasklib::Factory::getTaskQueue();
-    auto listener_communicator = drjuke::ipclib::Factory::getCommunicator(drjuke::ipclib::Factory::QueueId::kServiceToGui);
+    auto listener_communicator = drjuke::ipclib::Factory::getCommunicator(drjuke::ipclib::DirectionId::kServiceToGui);
 
     std::thread ipc_listener   { drjuke::service::RunIpcListener, task_queue, listener_communicator };
     std::thread queue_executor { drjuke::service::RunQueueExecutor, task_queue                      };
