@@ -306,7 +306,7 @@ namespace drjuke::settingslib
 
     std::wstring SettingsManager::getQuarantineDirectory() const
     {
-        getKey(KeyId::kQuarantine).GetStringValue(L"value");
+        return getKey(KeyId::kQuarantine).GetStringValue(L"value");
     }
 
     void SettingsManager::clearFilesystemFilterRules()

@@ -4,20 +4,23 @@
 
 namespace drjuke::ipclib
 {
+
+	enum class DirectionId
+	{ 
+		kGuiToService,             
+		kServiceToGui,   
+		kReatimeToService,  
+		kServiceToRealtime,
+		kScanToService,
+		kServiceToScan,
+	};
+
     class Factory
     {
+
     public:
 
-        enum class QueueId
-        { 
-            kGuiToService,             
-            kServiceToGui,   
-            kReatimeToService,  
-            kServiceToRealtime, 
-        };
+        [[nodiscard]] static CommunicatorPtr getCommunicator(DirectionId id);
 
-        static std::vector<std::string> m_queues_names;
-
-        [[nodiscard]] static CommunicatorPtr getCommunicator(QueueId id);
     }; 
 }
