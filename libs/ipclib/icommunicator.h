@@ -15,7 +15,8 @@ namespace drjuke::ipclib
         virtual ~ICommunicator()                     = default;
         virtual Json getMessage()                    = 0;
         virtual void putMessage(const Json& message) = 0;
-        virtual bool createDuplexConnection()        = 0;
+        virtual bool connect()                       = 0;
+        virtual void disconnect()                    = 0;
     };
 
     //constexpr 

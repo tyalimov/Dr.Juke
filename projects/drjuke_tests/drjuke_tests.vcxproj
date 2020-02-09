@@ -46,17 +46,21 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)build\$(ProjectName)\$(Configuration)\</OutDir>
+    <LibraryPath>$(SolutionDir)packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-static.1.8.1\lib\native\v140\windesktop\msvcstl\static\rt-static\x86\Debug;$(SolutionDir)build\x86_debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)build\$(ProjectName)\$(Configuration)\</OutDir>
+    <LibraryPath>$(SolutionDir)build\x86_release;$(SolutionDir)packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-static.1.8.1\lib\native\v140\windesktop\msvcstl\static\rt-static\x86\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)build\$(ProjectName)\$(Configuration)\</OutDir>
     <TargetName>$(ProjectName)64</TargetName>
+    <LibraryPath>$(SolutionDir)build\x64_debug;$(SolutionDir)packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-static.1.8.1\lib\native\v140\windesktop\msvcstl\static\rt-static\x64\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)build\$(ProjectName)\$(Configuration)\</OutDir>
     <TargetName>$(ProjectName)64</TargetName>
+    <LibraryPath>$(SolutionDir)build\x64_release;$(SolutionDir)packages\Microsoft.googletest.v140.windesktop.msvcstl.static.rt-static.1.8.1\lib\native\v140\windesktop\msvcstl\static\rt-static\x64\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -110,6 +114,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(ExternalSDK)libs;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ipclib.lib;gtest_maind.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -129,6 +134,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(ExternalSDK)libs;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ipclib.lib;gtest_maind.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -149,6 +155,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(ExternalSDK)libs;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ipclib.lib;gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -169,6 +176,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories); $(ExternalSDK)libs;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ipclib.lib;gtest_main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
