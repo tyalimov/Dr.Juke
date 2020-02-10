@@ -31,8 +31,11 @@ bool PsProtectNewInstance()
 void PsProtectDeleteInstance()
 {
 	gPsMonLock.acquire();
-	delete gPsMon;
-	gPsMon = nullptr;
+    if (gPsMon)
+    {
+        delete gPsMon;
+        gPsMon = nullptr;
+    }
 	gPsMonLock.release();
 }
 
@@ -90,10 +93,10 @@ NTSTATUS PsProtectInit()
 VOID PsProtectExit()
 {
 	if (PsProtectGetInstancePtr())
-	{
-        ObUnRegisterCallbacks(pCBRegistrationHandle);
 		PsProtectDeleteInstance();
-	}
+
+    if (pCBRegistrationHandle)
+        ObUnRegisterCallbacks(pCBRegistrationHandle);
 
 	kprint_st(TRACE_PSPROTECT, STATUS_SUCCESS);
 }
@@ -153,7 +156,7 @@ PsProtectPreOperationCallback (
         goto Exit;
     }
 
-    if (gPsMon != nullptr)
+    if (PsProtectGetInstancePtr() != nullptr)
     {
         bool allowed = gPsMon->accessCheck(CurrentProcessId, ProcessId);
 

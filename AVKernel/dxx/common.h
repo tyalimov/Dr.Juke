@@ -3,10 +3,7 @@
 #include <ntifs.h>
 #include <EASTL/string.h>
 
-#define DRIVER_NAME             L"AVKernel"
-#define DRIVER_NAME_WITH_EXT    L"dxx.sys"
-#define NT_DEVICE_NAME          L"\\Device\\AVKernel"
-
+#define DRIVER_NAME L"AVKernel"
 #define OS_WIN8_OR_GREATER     (NTDDI_VERSION >= NTDDI_WIN8)
 #define OS_WIN7_OR_GREATER     (NTDDI_VERSION >= NTDDI_WIN7)
 #define OS_VISTA_OR_GREATER    (NTDDI_VERSION >= NTDDI_VISTA)
@@ -21,11 +18,11 @@
 // Tracing options
 
 //#define TRACING_STANDARD
-//#define TRACING_CUSTOM
+#define TRACING_CUSTOM
 //#define TRACING_FSFILTER_ONLY
 //#define TRACING_REGFILTER_ONLY
 //#define TRACING_PSPROTECT_ONLY
-#define TRACING_NETFILTER_ONLY
+//#define TRACING_NETFILTER_ONLY
 
 
 #define TRACE_NONE				0x00000000
@@ -67,14 +64,12 @@
 
 
 #define TRACE_CUSTOM ( TRACE_NONE \
-	| TRACE_INFO \
-	| TRACE_WARN \
-	| TRACE_ERROR \
-	| TRACE_PSMON)
+	| TRACE_STANDARD \
+	| TRACE_NETFILTER_ONLY)
 
-#define LOG_MODE_REGFILTER_CUSTOM LogMode::OFF, LogMode::ON, LogMode::ON
+#define LOG_MODE_REGFILTER_CUSTOM LogMode::ON, LogMode::ON, LogMode::ON
 #define LOG_MODE_PSPROTECT_CUSTOM LogMode::OFF, LogMode::ON, LogMode::ON
-#define LOG_MODE_FSFILTER_CUSTOM LogMode::OFF, LogMode::ON, LogMode::ON
+#define LOG_MODE_FSFILTER_CUSTOM LogMode::ON, LogMode::ON, LogMode::ON
 
 #ifdef TRACING_STANDARD
 #	define LOG_MODE_REGFILTER LogMode::OFF, LogMode::ON, LogMode::ON

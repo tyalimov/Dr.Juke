@@ -249,7 +249,7 @@ private:
 	using u16 = unsigned short;
 	using u8 = unsigned char;
 
-    const wstring mKeyRules = L"\\Rules\\Enabled";
+    const wstring mKeyRules = L"\\EnabledRules";
     wstring mKeyBase;
 
     map<wstring, priority_t> mNamePriorityMap;

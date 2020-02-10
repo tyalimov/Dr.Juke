@@ -2,7 +2,7 @@
 #include "common.h"
 #include "access/access_monitor.h"
 
-#define KRF_BASE_KEY L"\\REGISTRY\\MACHINE\\SOFTWARE\\Dr.Juke\\AVSecGeneric\\RegFilter"
+#define KRF_BASE_KEY LR"(\REGISTRY\MACHINE\SOFTWARE\Dr.Juke\RegistryFilterRules)"
 #define REGFILTER_ALTITUDE L"380010"
 
 void RegFilterExit();

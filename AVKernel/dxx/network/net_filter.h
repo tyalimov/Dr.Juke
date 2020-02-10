@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-#define KNF_BASE_KEY L"\\REGISTRY\\MACHINE\\SOFTWARE\\Dr.Juke\\AVSecGeneric\\NetFilter"
+#define KNF_BASE_KEY LR"(\REGISTRY\MACHINE\SOFTWARE\Dr.Juke\FirewallRules)"
 
 VOID NetFilterExit();
 
