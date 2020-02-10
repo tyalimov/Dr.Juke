@@ -1,0 +1,42 @@
+#include "ref_handles.h"
+
+#include <set>
+
+using namespace std;
+
+struct ReferencedHandles
+{
+	CallId id;
+	set<HANDLE> handles;
+};
+
+ReferencedHandles g_ref_handles[] = {
+	{ CallId::ntdll_NtCreateUserProcess, set<HANDLE>() },
+	{ CallId::ntdll_NtUnmapViewOfSection, set<HANDLE>() },
+	{ CallId::ntdll_NtWriteProcessMemory, set<HANDLE>() },
+	{ CallId::ntdll_NtSetInformationThread, set<HANDLE>() },
+	{ CallId::ntdll_NtResumeThread, set<HANDLE>() },
+};
+
+void RefHandlesEmplace(CallId id, HANDLE handle)
+{
+	int i = static_cast<int>(id);
+	auto& handles = g_ref_handles[i].handles;
+	handles.emplace(handle);
+}
+
+bool RefHandlesIsReferenced(CallId id, HANDLE handle)
+{
+	int i = static_cast<int>(id);
+	auto& handles = g_ref_handles[i].handles;
+
+	auto it = handles.find(handle);
+	return it != handles.end();
+}
+
+void RefHandlesErase(CallId id, HANDLE handle)
+{
+	int i = static_cast<int>(id);
+	auto& handles = g_ref_handles[i].handles;
+	handles.erase(handle);
+}

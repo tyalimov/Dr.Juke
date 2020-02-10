@@ -2,10 +2,23 @@
 
 enum class CallId
 {
+	//----------------------------------->
+	// Dll load notify 
 	ntdll_LdrLoadDll,
 	ntdll_LdrGetDllHandle,
+
+	//----------------------------------->
+	// Malware 
+	ntdll_NtCreateUserProcess,
 	ntdll_NtWriteProcessMemory,
 	ntdll_NtReadProcessMemory,
+	ntdll_NtUnmapViewOfSection,
+	ntdll_NtAllocateVirtualMemory,
+	ntdll_NtSetInformationThread,
+	ntdll_NtResumeThread,
+
+	//----------------------------------->
+	// Network
 	ws2_32_connect,
 	ws2_32_recv,
 	ws2_32_send,
@@ -13,12 +26,14 @@ enum class CallId
 	ws2_32_closesocket,
 };
 
+typedef long NTSTATUS;
+
 class ApiCall
 {
 
 public:
 
-	using arg_t = uintptr_t;
+	using arg_t = void*;
 
 private:
 
@@ -27,9 +42,10 @@ private:
 	unsigned m_num_args = 0;
 	bool m_is_pre = true;
 	bool m_skip_call = false;
+	bool m_dangerous = false;
 
 	CallId m_call_id;
-	arg_t m_ret_val = 0;
+	NTSTATUS m_ret_val = 0;
 	arg_t m_args[N];
 
 	template <int i, typename T = void>
@@ -60,12 +76,16 @@ public:
 		return m_args[i];
 	}
 
-	arg_t getReturnValue() const {
+	NTSTATUS getReturnValue() const {
 		return m_ret_val;
 	}
 
-	void setReturnValue(arg_t value) {
+	void setReturnValue(NTSTATUS value) {
 		m_ret_val = value;
+	}
+
+	void setDangerousState() {
+		m_dangerous = true;
 	}
 
 	void skipCall() {
@@ -90,6 +110,10 @@ public:
 
 	unsigned getArgumentCnt() const {
 		return m_num_args;
+	}
+
+	bool isDangerous() const {
+		return m_dangerous;
 	}
 };
 
