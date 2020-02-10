@@ -27,6 +27,7 @@ typedef int (*_snwprintf_fn_t)(wchar_t* buffer,
 #define EventWriteString        EtwEventWriteString
 #define EventWriteTransfer      EtwEventWriteTransfer
 
+#define NTDLL_NO_INLINE_INIT_STRING
 #include <ntdll.h>
 #include <evntprov.h>
 
@@ -85,7 +86,7 @@ public:
 	template <typename ...T>
 	inline static void logWarning(const wchar_t* fmt, T... args)
 	{
-		if constexpr (info_enabled)
+		if constexpr (warn_enabled)
 			log(L"[WARNING] ", fmt, args...);
 		else
 			unused_parameter(args...);
@@ -94,7 +95,7 @@ public:
 	template <typename ...T>
 	inline static void logError(const wchar_t* fmt, T... args)
 	{
-		if constexpr (info_enabled)
+		if constexpr (err_enabled)
 			log(L"[ERROR] ", fmt, args...);
 		else
 			unused_parameter(args...);

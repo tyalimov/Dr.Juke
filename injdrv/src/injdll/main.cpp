@@ -47,16 +47,14 @@ _load_config_used = {
 #endif
 
 
-#pragma region functions_to_import
-//
 _snwprintf_fn_t _snwprintf = nullptr;
-//_tolower_t __tolower = nullptr;
-//_towlower_t __towlower = nullptr;
-//_inet_ntop_t _inet_ntop = nullptr;
-//_ntohs_t _ntohs = nullptr;
-//
-#pragma endregion functions_to_import
 
+#define DETOUR_HOOK(func)							\
+Orig_##func = func;									\
+DetourAttach((PVOID*)& Orig_##func, Hooked_##func)
+
+#define DETOUR_UNHOOK(func)							\
+DetourDetach((PVOID*)& Orig_##func, Hooked_##func) 	
 
 
 NTSTATUS
@@ -67,6 +65,12 @@ EnableDetours(
 {
 	DetourTransactionBegin();
 	{
+		DETOUR_HOOK(NtCreateUserProcess);
+		DETOUR_HOOK(NtWriteVirtualMemory);
+		DETOUR_HOOK(NtUnmapViewOfSection);
+		DETOUR_HOOK(NtSetContextThread);
+		DETOUR_HOOK(NtResumeThread);
+
 		DETOUR_HOOK(LdrGetDllHandle);
 		DETOUR_HOOK(LdrLoadDll);
 	}
@@ -83,6 +87,12 @@ DisableDetours(
 {
 	DetourTransactionBegin();
 	{
+		DETOUR_UNHOOK(NtCreateUserProcess);
+		DETOUR_UNHOOK(NtWriteVirtualMemory);
+		DETOUR_UNHOOK(NtUnmapViewOfSection);
+		DETOUR_UNHOOK(NtSetContextThread);
+		DETOUR_UNHOOK(NtResumeThread);
+
 		DETOUR_UNHOOK(LdrGetDllHandle);
 		DETOUR_UNHOOK(LdrLoadDll);
 	}

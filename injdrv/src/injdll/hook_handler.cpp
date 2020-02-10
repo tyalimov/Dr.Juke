@@ -63,7 +63,7 @@ on_LdrLoadDll(ApiCall* call)
 			RTL_ASSERT(pLoadLibraryExW != NULL);
 			RTL_ASSERT(pGetProcAddress != NULL);
 
-			const wchar_t* key = L"\\REGISTRY\\MACHINE\\SOFTWARE\\Dr.Juke\\AVSecGeneric\\InjDrv";
+			const wchar_t* key = L"\\REGISTRY\\MACHINE\\SOFTWARE\\Dr.Juke\\InjDrv";
 			const wchar_t* val = L"LevelTwoDll";
 
 			NTSTATUS status = QueryKeyValue(key, val, LoadLevelTwo);

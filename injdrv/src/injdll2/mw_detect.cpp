@@ -2,36 +2,78 @@
 #include "ref_handles.h"
 #include "handle_borne.h"
 
+#include "log.h"
+
 // CallId::ntdll_NtCreateUserProcess
 // CallId::ntdll_NtUnmapViewOfSection
 // CallId::ntdll_NtWriteProcessMemory
-// CallId::ntdll_NtSetInformationThread
+// CallId::ntdll_NtSetContextThread
 // CallId::ntdll_NtResumeThread
-void mw_detect_process_hollowing(HANDLE h_thread, ApiCall* call)
+
+#include <functional>
+#include <vector>
+
+using CheckFunc = bool(*)(HANDLE);
+
+using namespace std;
+
+bool mwCleanupOnFalsePassOnTrue(HANDLE handle, bool res)
 {
-	bool is_ref;
+	if (res == false)
+	{
+		HandleBorneEraseReqursive(handle,
+			[](HANDLE handle) {
+				RefHandlesErase(CallId::ntdll_NtUnmapViewOfSection, handle);
+			});
+	}
 
-	is_ref = RefHandlesIsReferenced(CallId::ntdll_NtResumeThread, h_thread);
-	if (!is_ref)
-		return;
+	return res;
+}
 
-	is_ref = RefHandlesIsReferenced(CallId::ntdll_NtSetInformationThread, h_thread);
-	if (!is_ref)
-		return;
+bool mwDetectProcessHollowing2(HANDLE hProcess)
+{
+	bool res = RefHandlesIsReferenced(CallId::ntdll_NtCreateUserProcess, hProcess);
 
-	HANDLE h_process = HandleBorneGetParent(h_thread);
+	dbg("res = %d", res);
+	return res;
+}
 
-	is_ref = RefHandlesIsReferenced(CallId::ntdll_NtWriteProcessMemory, h_process);
-	if (!is_ref)
-		return;
+bool mwDetectProcessHollowing3(HANDLE hProcess)
+{
+	bool res = RefHandlesIsReferenced(CallId::ntdll_NtUnmapViewOfSection, hProcess);
 
-	is_ref = RefHandlesIsReferenced(CallId::ntdll_NtUnmapViewOfSection, h_process);
-	if (!is_ref)
-		return;
+	if (mwCleanupOnFalsePassOnTrue(hProcess, res))
+		res = mwDetectProcessHollowing2(hProcess);
 
-	is_ref = RefHandlesIsReferenced(CallId::ntdll_NtCreateUserProcess, h_process);
-	if (!is_ref)
-		return;
+	dbg("res = %d", res);
+	return res;
+}
 
-	call->setDangerousState();
+bool mwDetectProcessHollowing4(HANDLE hThread)
+{
+	HANDLE hProcess = HandleBorneGetParent(hThread);
+	bool res = RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, hProcess);
+
+	if (mwCleanupOnFalsePassOnTrue(hThread, res))
+		res = mwDetectProcessHollowing3(hProcess);
+
+	dbg("res = %d", res);
+	return res;
+}
+
+bool mwDetectProcessHollowing(HANDLE hThread, ApiCall* call)
+{
+	bool res = RefHandlesIsReferenced(CallId::ntdll_NtSetContextThread, hThread);
+
+	if (mwCleanupOnFalsePassOnTrue(hThread, res))
+		res = mwDetectProcessHollowing4(hThread);
+
+	if (res == true)
+	{
+		call->setMalwareId(MalwareId::ProcessHollowing);
+		call->skipCall();
+	}
+
+	dbg("res = %d", res);
+	return res;
 }

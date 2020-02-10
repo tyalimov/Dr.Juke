@@ -11,7 +11,12 @@ inline extern decltype(name)* Orig_##name = nullptr;
 
 ORIG_DECL(LdrLoadDll);
 ORIG_DECL(LdrGetDllHandle);
-ORIG_DECL(NtReadFile);
+
+ORIG_DECL(NtCreateUserProcess);
+ORIG_DECL(NtWriteVirtualMemory);
+ORIG_DECL(NtUnmapViewOfSection);
+ORIG_DECL(NtSetContextThread);
+ORIG_DECL(NtResumeThread);
 
 ORIG_DECL(socket);
 ORIG_DECL(closesocket);
@@ -39,6 +44,48 @@ Hooked_LdrGetDllHandle(
 	_In_ PUNICODE_STRING DllName,
 	_Out_ PVOID* DllHandle
 );
+
+NTSTATUS NTAPI
+Hooked_NtCreateUserProcess(
+	PHANDLE	ProcessHandle,
+	PHANDLE	ThreadHandle,
+	ACCESS_MASK	ProcessDesiredAccess,
+	ACCESS_MASK	ThreadDesiredAccess,
+	POBJECT_ATTRIBUTES ProcessObjectAttributes,
+	POBJECT_ATTRIBUTES ThreadObjectAttributes,
+	ULONG CreateProcessFlags,
+	ULONG CreateThreadFlags,
+	PRTL_USER_PROCESS_PARAMETERS ProcessParameters,
+	PPS_CREATE_INFO Unknown,
+	PPS_ATTRIBUTE_LIST AttributeList
+);
+
+NTSTATUS NTAPI
+Hooked_NtWriteVirtualMemory(
+	_In_ HANDLE ProcessHandle,
+	_In_opt_ PVOID BaseAddress,
+	_In_reads_bytes_(BufferSize) PVOID Buffer,
+	_In_ SIZE_T BufferSize,
+	_Out_opt_ PSIZE_T NumberOfBytesWritten
+);
+
+NTSTATUS NTAPI
+Hooked_NtUnmapViewOfSection(
+    _In_ HANDLE ProcessHandle,
+    _In_opt_ PVOID BaseAddress
+    );
+
+NTSTATUS NTAPI
+Hooked_NtSetContextThread(
+	_In_ HANDLE ThreadHandle,
+	_In_ PCONTEXT ThreadContext
+    );
+
+NTSTATUS NTAPI
+Hooked_NtResumeThread(
+    _In_ HANDLE ThreadHandle,
+    _Out_opt_ PULONG PreviousSuspendCount
+    );
 
 //------------------------------------------------------------//
 //                   ws2_32 hooked functions                  //

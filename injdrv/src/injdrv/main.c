@@ -247,6 +247,7 @@ DriverEntry(
   }
 
   Settings.Method = InjMethodThunk;
+
   //
   // Initialize injection driver.
   //

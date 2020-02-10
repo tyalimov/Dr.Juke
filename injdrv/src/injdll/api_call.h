@@ -1,21 +1,26 @@
 #pragma once
 
+enum class MalwareId {
+	ProcessHollowing,
+	ProcessDoppelganging,
+	None,
+};
+
 enum class CallId
 {
+	//----------------------------------->
+	// Malware 
+	ntdll_NtCreateUserProcess,
+	ntdll_NtWriteVirtualMemory,
+	ntdll_NtUnmapViewOfSection,
+	ntdll_NtSetContextThread,
+	ntdll_NtResumeThread,
+
 	//----------------------------------->
 	// Dll load notify 
 	ntdll_LdrLoadDll,
 	ntdll_LdrGetDllHandle,
 
-	//----------------------------------->
-	// Malware 
-	ntdll_NtCreateUserProcess,
-	ntdll_NtWriteProcessMemory,
-	ntdll_NtReadProcessMemory,
-	ntdll_NtUnmapViewOfSection,
-	ntdll_NtAllocateVirtualMemory,
-	ntdll_NtSetInformationThread,
-	ntdll_NtResumeThread,
 
 	//----------------------------------->
 	// Network
@@ -24,9 +29,8 @@ enum class CallId
 	ws2_32_send,
 	ws2_32_socket,
 	ws2_32_closesocket,
+	none,
 };
-
-typedef long NTSTATUS;
 
 class ApiCall
 {
@@ -42,10 +46,10 @@ private:
 	unsigned m_num_args = 0;
 	bool m_is_pre = true;
 	bool m_skip_call = false;
-	bool m_dangerous = false;
+	MalwareId m_malware_id = MalwareId::None;
 
-	CallId m_call_id;
-	NTSTATUS m_ret_val = 0;
+	CallId m_call_id = CallId::none;
+	arg_t m_ret_val = 0;
 	arg_t m_args[N];
 
 	template <int i, typename T = void>
@@ -76,16 +80,16 @@ public:
 		return m_args[i];
 	}
 
-	NTSTATUS getReturnValue() const {
+	arg_t getReturnValue() const {
 		return m_ret_val;
 	}
 
-	void setReturnValue(NTSTATUS value) {
+	void setReturnValue(arg_t value) {
 		m_ret_val = value;
 	}
 
-	void setDangerousState() {
-		m_dangerous = true;
+	void setMalwareId(MalwareId id) {
+		m_malware_id = id;
 	}
 
 	void skipCall() {
@@ -112,8 +116,8 @@ public:
 		return m_num_args;
 	}
 
-	bool isDangerous() const {
-		return m_dangerous;
+	MalwareId getMalwareId() const {
+		return m_malware_id;
 	}
 };
 

@@ -162,8 +162,6 @@ typedef enum _INJ_SYSTEM_DLL
   INJ_SYSTEM32_WOW64CPU_LOADED  = 0x0040,
   INJ_SYSTEM32_WOWARMHW_LOADED  = 0x0080,
   INJ_SYSTEM32_XTAJIT_LOADED    = 0x0100,
-  INJ_SYSTEM32_KERNEL32_LOADED  = 0x0200,
-  INJ_SYSWOW64_KERNEL32_LOADED  = 0x0400,
 } INJ_SYSTEM_DLL;
 
 //////////////////////////////////////////////////////////////////////////
@@ -236,8 +234,6 @@ INJ_SYSTEM_DLL_DESCRIPTOR InjpSystemDlls[] = {
   { RTL_CONSTANT_STRING(L"\\System32\\wow64cpu.dll"), INJ_SYSTEM32_WOW64CPU_LOADED },
   { RTL_CONSTANT_STRING(L"\\System32\\wowarmhw.dll"), INJ_SYSTEM32_WOWARMHW_LOADED },
   { RTL_CONSTANT_STRING(L"\\System32\\xtajit.dll"),   INJ_SYSTEM32_XTAJIT_LOADED   },
-  { RTL_CONSTANT_STRING(L"\\System32\\kernel32.dll"), INJ_SYSTEM32_KERNEL32_LOADED },
-  { RTL_CONSTANT_STRING(L"\\SysWOW64\\kernel32.dll"), INJ_SYSWOW64_KERNEL32_LOADED },
 };
 
 //
@@ -868,13 +864,12 @@ InjInitialize(
 {
   NTSTATUS Status;
 
-  UNREFERENCED_PARAMETER(RegistryPath);
-  UNREFERENCED_PARAMETER(DriverObject);
-
   //
   // Initialize injection info linked list.
   //
 
+  UNREFERENCED_PARAMETER(DriverObject);
+  UNREFERENCED_PARAMETER(RegistryPath);
   InitializeListHead(&InjInfoListHead);
 
   ULONG Flags = RTL_DUPLICATE_UNICODE_STRING_NULL_TERMINATE
@@ -931,6 +926,7 @@ InjInitialize(
   InjDbgPrint("[injlib]: InjMethod: '%s'\n",
     InjMethod == InjMethodThunk           ? "InjMethodThunk"           :
     InjMethod == InjMethodThunkless       ? "InjMethodThunkLess"       :
+    InjMethod == InjMethodWow64LogReparse ? "InjMethodWow64LogReparse" :
                                             "UNKNOWN"
     );
 
@@ -1081,8 +1077,7 @@ InjCanInject(
   // x86 Windows) before we can safely load our DLL.
   //
 
-  ULONG RequiredDlls = INJ_SYSTEM32_NTDLL_LOADED
-	  | INJ_SYSTEM32_KERNEL32_LOADED;
+  ULONG RequiredDlls = INJ_SYSTEM32_NTDLL_LOADED;
 
 #if defined(INJ_CONFIG_SUPPORTS_WOW64)
 
@@ -1096,7 +1091,6 @@ InjCanInject(
     RequiredDlls |= INJ_SYSTEM32_NTDLL_LOADED;
     RequiredDlls |= INJ_SYSTEM32_WOW64_LOADED;
     RequiredDlls |= INJ_SYSTEM32_WOW64WIN_LOADED;
-	RequiredDlls |= INJ_SYSWOW64_KERNEL32_LOADED;
 
 #   if defined (_M_AMD64)
 

@@ -12,9 +12,9 @@ struct ReferencedHandles
 
 ReferencedHandles g_ref_handles[] = {
 	{ CallId::ntdll_NtCreateUserProcess, set<HANDLE>() },
+	{ CallId::ntdll_NtWriteVirtualMemory, set<HANDLE>() },
 	{ CallId::ntdll_NtUnmapViewOfSection, set<HANDLE>() },
-	{ CallId::ntdll_NtWriteProcessMemory, set<HANDLE>() },
-	{ CallId::ntdll_NtSetInformationThread, set<HANDLE>() },
+	{ CallId::ntdll_NtSetContextThread, set<HANDLE>() },
 	{ CallId::ntdll_NtResumeThread, set<HANDLE>() },
 };
 

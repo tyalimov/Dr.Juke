@@ -71,12 +71,12 @@ QueryKeyValue(const wchar_t* szAbsRegPath,
 	}
 
 	RtlInitUnicodeString(&ValueName, (PWSTR)szValueName);
-	Status = ZwQueryValueKey(KeyHandle, &ValueName,
+	Status = NtQueryValueKey(KeyHandle, &ValueName,
 		KeyValueFullInformation, NULL, Size, &Size);
 
 	if (Status != STATUS_BUFFER_TOO_SMALL && Status != STATUS_BUFFER_OVERFLOW)
 	{
-		Trace::logError(L"ZwQueryValueKey failed <Status=0x%08X>", Status);
+		Trace::logError(L"NtQueryValueKey failed <Status=0x%08X>", Status);
 		return Status;
 	}
 
@@ -86,7 +86,7 @@ QueryKeyValue(const wchar_t* szAbsRegPath,
 		if (InfoBuffer)
 		{
 			Info = (PKEY_VALUE_FULL_INFORMATION)InfoBuffer;
-			Status = ZwQueryValueKey(KeyHandle, &ValueName, 
+			Status = NtQueryValueKey(KeyHandle, &ValueName, 
 				KeyValueFullInformation, InfoBuffer, Size, &Size);
 
 			if (NT_SUCCESS(Status))
@@ -100,6 +100,6 @@ QueryKeyValue(const wchar_t* szAbsRegPath,
 	else
 		Status = STATUS_BUFFER_TOO_SMALL;
 
-	ZwClose(KeyHandle);
+	NtClose(KeyHandle);
 	return Status;
 }
