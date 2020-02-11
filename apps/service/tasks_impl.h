@@ -47,10 +47,12 @@ namespace drjuke::service::tasks
             }       
         */
 
-        void execute() override
+        Json execute() override
         {
             auto name = ToWstring(m_input["parameters"]["name"].get<std::string>());
             settingslib::Factory::getSettingsManager()->enableFirewallRule(name);
+
+            return Json{"123", "456"};
         }
     };
 
@@ -84,7 +86,7 @@ namespace drjuke::service::tasks
             }       
         */
 
-        void execute() override
+        Json execute() override
         {
             auto path        = ToWstring(m_input["parameters"]["path"].get<std::string>());
             auto type        = m_input["parameters"]["type"].get<int>();
@@ -98,6 +100,53 @@ namespace drjuke::service::tasks
             case ProtectedObjects::kKey:     settings_manager->addRegistryFilterRule(path, access_mask); break;
             case ProtectedObjects::kProcess: settings_manager->addProcessFilterRule(path, access_mask); break;
             }
+
+            return Json{"123", "456"};
+        }
+    };
+
+    class DelProtectedObject final
+        : public BaseTask
+    {
+    private:
+
+        struct ProtectedObjects { enum 
+        {
+            kFile    = 0,
+            kKey     = 1,
+            kProcess = 2
+        }; };
+
+    public:
+
+        DECLARE_TASK(DelProtectedObject)
+        
+        /*
+            {
+                "task"        : "del_protected_object",
+                "parameters"  : 
+                {
+                    "path"        : <путь>,
+                    "type:        : { 0 - файл, 1 - ключ реестра, 2 - процесс }
+                }
+            }       
+        */
+
+        Json execute() override
+        {
+            auto path        = ToWstring(m_input["parameters"]["path"].get<std::string>());
+            auto type        = m_input["parameters"]["type"].get<int>();
+
+            auto settings_manager = settingslib::Factory::getSettingsManager();
+
+            switch (type)
+            {
+            case ProtectedObjects::kFile:    settings_manager->removeFilesystemFilterRule(path); break;
+            case ProtectedObjects::kKey:     settings_manager->removeRegistryFilterRule(path);   break;
+            case ProtectedObjects::kProcess: settings_manager->removeProcessFilterRule(path);    break;
+            }
+
+            return Json{"123", "456"};
         }
     };
 
@@ -129,7 +178,7 @@ namespace drjuke::service::tasks
             }       
         */
 
-        void execute() override
+        Json execute() override
         {
             auto excludor_path = ToWstring(m_input["parameters"]["exclusor_path"].get<std::string>());
             auto exclusion_path = ToWstring(m_input["parameters"]["exclusion_path"].get<std::string>());
@@ -143,6 +192,8 @@ namespace drjuke::service::tasks
             case Exclusions::kKey:     settings_manager->excludeFromRegistryFilter(excludor_path, exclusion_path); break;
             case Exclusions::kProcess: settings_manager->excludeFromProcessFilter(excludor_path, exclusion_path); break;
             }
+
+            return Json{"123", "456"};
         }
     };
 
@@ -164,8 +215,9 @@ namespace drjuke::service::tasks
             }       
         */
 
-        void execute() override
+        Json execute() override
         {
+            return Json{"123", "456"};
         }
     };
 
@@ -187,8 +239,9 @@ namespace drjuke::service::tasks
             }       
         */
 
-        void execute() override
+        Json execute() override
         {
+            return Json{"123", "456"};
         }
     };
 
@@ -212,11 +265,13 @@ namespace drjuke::service::tasks
             !!! Правило по умолчанию становится enabled !!!
         */
 
-        void execute() override
+        Json execute() override
         {
             auto name    = ToWstring(m_input["parameters"]["name"].get<std::string>());
             auto content = ToWstring(m_input["parameters"]["content"].get<std::string>());
             settingslib::Factory::getSettingsManager()->addFirewallRule(name, content);
+
+            return Json{"123", "456"};
         }
     };
 
@@ -239,10 +294,12 @@ namespace drjuke::service::tasks
             !!! Будет искать его и в enabled и в disabled !!!
         */
 
-        void execute() override
+        Json execute() override
         {
             auto name = ToWstring(m_input["parameters"]["name"].get<std::string>());
-            settingslib::Factory::getSettingsManager()->enableFirewallRule(name);
+            settingslib::Factory::getSettingsManager()->removeFirewallRule(name);
+
+            return Json{"123", "456"};
         }
     };
 
@@ -264,10 +321,12 @@ namespace drjuke::service::tasks
             }    
         */
 
-        void execute() override
+        Json execute() override
         {
             auto name    = ToWstring(m_input["parameters"]["name"].get<std::string>());
             settingslib::Factory::getSettingsManager()->enableFirewallRule(name);
+
+            return Json{"123", "456"};
         }
     };
 
@@ -290,10 +349,12 @@ namespace drjuke::service::tasks
             }    
         */
 
-        void execute() override
+        Json execute() override
         {
             auto name    = ToWstring(m_input["parameters"]["name"].get<std::string>());
             settingslib::Factory::getSettingsManager()->disableFirewallRule(name);
+
+            return Json{"123", "456"};
         }
     };
 
@@ -315,10 +376,102 @@ namespace drjuke::service::tasks
             }    
         */
 
-        void execute() override
+        Json execute() override
         {
             // Скопировать в папку карантина (дописать в сеттингслиб getQuarantineDirectory)
             // Удалить оттуда, откуда взял
+        }
+    };
+
+    class GetRegistry final
+        : public BaseTask
+    {
+    public:
+
+        DECLARE_TASK(GetRegistry)
+        
+
+        /*
+            {
+                "task"        : "get_registry_rules",
+                "parameters"  : 
+                {
+                }
+            }    
+        */
+
+        Json execute() override
+        {
+            return  settingslib::Factory::getSettingsManager()->getRegistryFilterRules();
+        }
+    };
+
+    class GetFilesystem final
+        : public BaseTask
+    {
+    public:
+
+        DECLARE_TASK(GetFilesystem)
+        
+
+        /*
+            {
+                "task"        : "get_filesystem_rules",
+                "parameters"  : 
+                {
+                }
+            }    
+        */
+
+        Json execute() override
+        {
+            return  settingslib::Factory::getSettingsManager()->getFilesystemFilterRules();
+        }
+    };
+
+    class GetProcesses final
+        : public BaseTask
+    {
+    public:
+
+        DECLARE_TASK(GetProcesses)
+        
+
+        /*
+            {
+                "task"        : "get_process_rules",
+                "parameters"  : 
+                {
+                }
+            }    
+        */
+
+        Json execute() override
+        {
+            return  settingslib::Factory::getSettingsManager()->getProcessFilterRules();
+        }
+    };
+
+    class GetFirewall final
+        : public BaseTask
+    {
+    public:
+
+        DECLARE_TASK(GetFirewall)
+        
+
+        /*
+            {
+                "task"        : "get_firewall_rules",
+                "parameters"  : 
+                {
+                }
+            }    
+        */
+
+        Json execute() override
+        {
+            return  settingslib::Factory::getSettingsManager()->getFirewallRules();
         }
     };
 }

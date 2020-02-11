@@ -1,18 +1,30 @@
 ﻿#include "settings_manager.h"
 
+#pragma warning( push , 0 )
+#   include <json/json.hpp>
+#pragma warning( pop )
+
 #include <map>
 #include <string>
 #include <utility>
 #include <sstream>
 
-#pragma warning( push , 0 )
-#   include <json/json.hpp>
-#pragma warning( pop )
-
 #define PROCESS_ACCESS_ALLOW 1
 #define PROCESS_ACCESS_DENY  0
 #define FIREWALL_ENABLE      1
 #define FIREWALL_DISABLE     0
+
+#include <codecvt>
+
+#pragma warning ( push )
+#pragma warning ( disable:4996 )
+
+    inline std::string ToString(const std::wstring& text)
+    {
+        return std::wstring_convert<std::codecvt_utf8<wchar_t>>{"", L""}.to_bytes(text);
+    }
+
+#pragma warning (pop)
 
 namespace drjuke::settingslib
 {
@@ -218,6 +230,90 @@ namespace drjuke::settingslib
     void SettingsManager::addFirewallRule(const std::wstring& name, const std::wstring& content)
     {
         getKey(KeyId::kFirewallEnabledRules).SetStringValue(name, content);
+    }
+
+    Json SettingsManager::getRegistryFilterRules()
+    {
+        Json result;
+
+        auto key = getKey(KeyId::kRegistryObjects);
+
+        for (const auto& value : key.EnumValues())
+        {
+            result.emplace_back
+            (
+                Json
+                {
+                    ToString(value.first),
+                    key.GetDwordValue(value.first)
+                }
+            );
+        }
+
+        return result;
+    }
+
+    Json SettingsManager::getFilesystemFilterRules()
+    {
+        Json result;
+
+        auto key = getKey(KeyId::kFilesystemObjects);
+
+        for (const auto& value : key.EnumValues())
+        {
+            result.emplace_back
+            (
+                Json
+                {
+                    ToString(value.first),
+                    key.GetDwordValue(value.first)
+                }
+            );
+        }
+
+        return result;
+    }
+
+    Json SettingsManager::getProcessFilterRules()
+    {
+        Json result;
+
+        auto key = getKey(KeyId::kProcessObjects);
+
+        for (const auto& value : key.EnumValues())
+        {
+            result.emplace_back
+            (
+                Json
+                {
+                    ToString(value.first),
+                    key.GetDwordValue(value.first)
+                }
+            );
+        }
+
+        return result;
+    }
+
+    Json SettingsManager::getFirewallRules()
+    {
+        Json result;
+
+        auto key = getKey(KeyId::kFirewallEnabledRules);
+
+        for (const auto& value : key.EnumValues())
+        {
+            result.emplace_back
+            (
+                Json
+                {
+                    ToString(value.first),
+                    ToString(key.GetStringValue(value.first))
+                }
+            );
+        }
+
+        return result;
     }
 
     void SettingsManager::enableFirewall(bool enable)

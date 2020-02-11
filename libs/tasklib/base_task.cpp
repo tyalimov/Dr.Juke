@@ -2,12 +2,5 @@
 
 namespace drjuke::tasklib
 {
-    void EndTask::execute()
-    {
-    }
 
-    bool EndTask::isEndTask()
-    {
-        return true;
-    }
 }

@@ -26,13 +26,13 @@ namespace drjuke::service
 
             WORKER_LOG("[Listener] Got new message: " + message.dump());
 
-            //auto task = TaskBuilder::buildTask(message);
+            auto task = TaskBuilder::buildTask(message);
 
-            //WORKER_LOG("[Listener] executing task with name: " + task->getName());
-            //task->execute();
+            WORKER_LOG("[Listener] executing task with name: " + task->getName());
+            auto responce = task->execute();
 
-            WORKER_LOG("[Listener] Writing responce");
-            m_communicator->putMessage(message);
+            WORKER_LOG("[Listener] Writing responce: " + responce.dump());
+            m_communicator->putMessage(responce);
         }
     }
     catch (const std::exception& ex)

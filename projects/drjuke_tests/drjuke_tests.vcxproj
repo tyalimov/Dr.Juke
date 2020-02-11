@@ -67,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tests\cryptolib_test.cpp" />
+    <ClCompile Include="..\..\tests\drjuke_tests\settingslib_tests.cpp" />
     <ClCompile Include="..\..\tests\netlib_test.cpp" />
     <ClCompile Include="..\..\tests\scanlib_test.cpp" />
     <ClCompile Include="..\..\tests\winlib_test.cpp" />
