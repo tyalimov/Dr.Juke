@@ -4,7 +4,6 @@
 #include "handle_borne.h"
 #include "mw_detect.h"
 
-#include "log.h"
 
 #define NT_SUCCESS(status) ((NTSTATUS)(status) >= 0)
 
@@ -39,10 +38,13 @@ void on_NtUnmapViewOfSection(ApiCall* call)
 	if (call->isPre())
 		return;
 
-	if (!NT_SUCCESS(call->getReturnValue()))
-		return;
-
 	HANDLE hProcess = (HANDLE)call->getArgument(0);
+	if (!NT_SUCCESS(call->getReturnValue()))
+	{
+		mwCleanup(hProcess);
+		return;
+	}
+
 	RefHandlesEmplace(CallId::ntdll_NtUnmapViewOfSection, hProcess);
 	mwDetectProcessHollowing2(hProcess);
 }
@@ -53,10 +55,13 @@ void on_NtWriteVirtualMemory(ApiCall* call)
 	if (call->isPre())
 		return;
 
-	if (!NT_SUCCESS(call->getReturnValue()))
-		return;
-
 	HANDLE hProcess = (HANDLE)call->getArgument(0);
+	if (!NT_SUCCESS(call->getReturnValue()))
+	{
+		mwCleanup(hProcess);
+		return;
+	}
+
 	RefHandlesEmplace(CallId::ntdll_NtWriteVirtualMemory, hProcess);
 	mwDetectProcessHollowing3(hProcess);
 }
@@ -67,10 +72,13 @@ void on_NtSetContextThread(ApiCall* call)
 	if (call->isPre())
 		return;
 
-	if (!NT_SUCCESS(call->getReturnValue()))
-		return;
-
 	HANDLE hThread = (HANDLE)call->getArgument(0);
+	if (!NT_SUCCESS(call->getReturnValue()))
+	{
+		mwCleanup(hThread);
+		return;
+	}
+
 	RefHandlesEmplace(CallId::ntdll_NtSetContextThread, hThread);
 	mwDetectProcessHollowing4(hThread);
 }
@@ -81,40 +89,32 @@ void on_NtResumeThread(ApiCall* call)
 	if (call->isPost())
 		return;
 
-	if (!NT_SUCCESS(call->getReturnValue()))
-		return;
-
 	HANDLE hThread = (HANDLE)call->getArgument(0);
 	RefHandlesEmplace(CallId::ntdll_NtResumeThread, hThread);
 	mwDetectProcessHollowing(hThread, call);
 }
 
-
+// TODO change geistry path, windows 10
 extern "C" __declspec(dllexport) 
 void onApiCall(ApiCall* call)
 {
 	switch (call->getCallId())
 	{
 	case CallId::ntdll_NtCreateUserProcess:
-		dbg("NtCreateUserProcess");
 		on_NtCreateUserProcess(call);
 		break;
 	case CallId::ntdll_NtUnmapViewOfSection:
-		dbg("NtUnmapViewOfSection");
 		on_NtUnmapViewOfSection(call);
 		break;
-	//case CallId::ntdll_NtWriteVirtualMemory:
-	//	dbg("NtWriteVirtualMemory");
-	//	on_NtWriteVirtualMemory(call);
-	//	break;
-	//case CallId::ntdll_NtSetContextThread:
-	//	dbg("NtSetContextThread");
-	//	on_NtSetContextThread(call);
-	//	break;
-	//case CallId::ntdll_NtResumeThread:
-	//	dbg("NtResumeThread");
-	//	on_NtResumeThread(call);
-	//	break;
+	case CallId::ntdll_NtWriteVirtualMemory:
+		on_NtWriteVirtualMemory(call);
+		break;
+	case CallId::ntdll_NtSetContextThread:
+		on_NtSetContextThread(call);
+		break;
+	case CallId::ntdll_NtResumeThread:
+		on_NtResumeThread(call);
+		break;
 	default:
 		break;
 	}

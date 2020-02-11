@@ -31,8 +31,10 @@ TRetVal HookHandler(CallId id, TFunc f, TArgs&... args)
 			{
 			case MalwareId::ProcessHollowing:
 				Trace::logWarning(L"%s ProcessHollowing", prefix);
+				break;
 			case MalwareId::ProcessDoppelganging:
 				Trace::logWarning(L"%s ProcessDoppelganging", prefix);
+				break;
 			default:
 				break;
 			}

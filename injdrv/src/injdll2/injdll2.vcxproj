@@ -116,6 +116,11 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>echo "Copying x86 dll to x64/Debug"
+copy /Y "$(SolutionDir)bin\x86\$(Configuration)\injdllx86.dll" "$(SolutionDir)bin\x64\$(Configuration)"
+copy /Y "$(SolutionDir)bin\x86\$(Configuration)\injdll2x86.dll" "$(SolutionDir)bin\x64\$(Configuration)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -157,7 +162,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="handle_borne.h" />
-    <ClInclude Include="log.h" />
     <ClInclude Include="mw_detect.h" />
     <ClInclude Include="ref_handles.h" />
   </ItemGroup>

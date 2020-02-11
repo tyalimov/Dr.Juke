@@ -2,7 +2,7 @@
 
 #include "hooked.h"
 #include "hook_handler.h"
-//#include "util.h"
+#include "util.h"
 #include "trace.h"
 
 #if defined(_M_IX86)
@@ -111,15 +111,14 @@ OnProcessAttach(
 	_In_ PVOID ModuleHandle
 )
 {
-
-	UNICODE_STRING NtdllPath;
-	RtlInitUnicodeString(&NtdllPath, (PWSTR)L"ntdll.dll");
+	UNICODE_STRING DllName;
+	RtlInitUnicodeString(&DllName, (PWSTR)L"ntdll.dll");
 
 	HANDLE NtdllHandle;
-	LdrGetDllHandle(NULL, 0, &NtdllPath, &NtdllHandle);
+	LdrGetDllHandle(NULL, 0, &DllName, &NtdllHandle);
 
-//	ProtectDll(NtdllHandle);
 	Trace::init(NtdllHandle);
+	ProtectDll(ModuleHandle);
 
 	//
 	// Get command line of the current process and send it.
@@ -129,6 +128,23 @@ OnProcessAttach(
 	PWSTR CommandLine = Peb->ProcessParameters->CommandLine.Buffer;
 
 	Trace::logInfo(L"Arch: %s, CommandLine: '%s'", ARCH_W, CommandLine);
+
+	//
+	// Check kernel32 has been already loaded
+	// If so, we are able to load level 2 dll
+	//
+
+	HANDLE Kernel32Handle;
+	RtlInitUnicodeString(&DllName, (PWSTR)L"kernel32.dll");
+	LdrGetDllHandle(NULL, 0, &DllName, &Kernel32Handle);
+
+	if (Kernel32Handle != NULL)
+	{
+		ApiCall call(CallId::ntdll_LdrLoadDll, false,
+			(PWSTR)NULL, (PULONG)0, &DllName, &Kernel32Handle);
+
+		HookHandlerLower(&call);
+	}
 
 	//
 	// Hook all functions.

@@ -17,9 +17,6 @@ VOID NTAPI
 on_LdrLoadDll(ApiCall* call);
 
 VOID NTAPI
-on_LdrUnloadDll(ApiCall* call);
-
-VOID NTAPI
 HookHandlerLower(ApiCall* call)
 {
 	switch (call->getCallId())
@@ -51,7 +48,12 @@ NTSTATUS LoadLevelTwo(PKEY_VALUE_FULL_INFORMATION info)
 		RtlInitUnicodeString(&DllName, (PWSTR)L"injdll2x64.dll");
 #endif
 
-		Orig_LdrGetDllHandle(NULL, 0 , &DllName, (PVOID*)&hLevelTwo);
+		// Use Orig_LdrGetDllHandle when hooks installed, otherwise - original func
+		if (Orig_LdrGetDllHandle != NULL)
+			Orig_LdrGetDllHandle(NULL, 0 , &DllName, (PVOID*)&hLevelTwo);
+		else
+			LdrGetDllHandle(NULL, 0 , &DllName, (PVOID*)&hLevelTwo);
+
 		ProtectDll(hLevelTwo);
 		return STATUS_SUCCESS;
 	}
@@ -91,12 +93,16 @@ on_LdrLoadDll(ApiCall* call)
 			RTL_ASSERT(pLoadLibraryExW != NULL);
 			RTL_ASSERT(pGetProcAddress != NULL);
 
+#ifdef _M_IX86
+			const wchar_t* val = L"LevelTwoDllx86";
+#else
+			const wchar_t* val = L"LevelTwoDllx64";
+#endif
 			const wchar_t* key = L"\\REGISTRY\\MACHINE\\SOFTWARE\\Dr.Juke\\InjDrv";
-			const wchar_t* val = L"LevelTwoDll";
 
 			NTSTATUS status = QueryKeyValue(key, val, LoadLevelTwo);
 			if (!NT_SUCCESS(status))
-				Trace::logError(L"Unable to read LevelTwoDll key - 0x%08X", status);
+				Trace::logError(L"Unable to read %s key - 0x%08X", val, status);
 		}
 
 	}

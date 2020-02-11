@@ -2,8 +2,6 @@
 #include "ref_handles.h"
 #include "handle_borne.h"
 
-#include "log.h"
-
 // CallId::ntdll_NtCreateUserProcess
 // CallId::ntdll_NtUnmapViewOfSection
 // CallId::ntdll_NtWriteProcessMemory
@@ -17,15 +15,18 @@ using CheckFunc = bool(*)(HANDLE);
 
 using namespace std;
 
+void mwCleanup(HANDLE handle)
+{
+	HandleBorneEraseReqursive(handle,
+		[](HANDLE handle) {
+			RefHandlesErase(CallId::ntdll_NtUnmapViewOfSection, handle);
+		});
+}
+
 bool mwCleanupOnFalsePassOnTrue(HANDLE handle, bool res)
 {
 	if (res == false)
-	{
-		HandleBorneEraseReqursive(handle,
-			[](HANDLE handle) {
-				RefHandlesErase(CallId::ntdll_NtUnmapViewOfSection, handle);
-			});
-	}
+		mwCleanup(handle);
 
 	return res;
 }
@@ -33,8 +34,6 @@ bool mwCleanupOnFalsePassOnTrue(HANDLE handle, bool res)
 bool mwDetectProcessHollowing2(HANDLE hProcess)
 {
 	bool res = RefHandlesIsReferenced(CallId::ntdll_NtCreateUserProcess, hProcess);
-
-	dbg("res = %d", res);
 	return res;
 }
 
@@ -45,7 +44,6 @@ bool mwDetectProcessHollowing3(HANDLE hProcess)
 	if (mwCleanupOnFalsePassOnTrue(hProcess, res))
 		res = mwDetectProcessHollowing2(hProcess);
 
-	dbg("res = %d", res);
 	return res;
 }
 
@@ -57,7 +55,6 @@ bool mwDetectProcessHollowing4(HANDLE hThread)
 	if (mwCleanupOnFalsePassOnTrue(hThread, res))
 		res = mwDetectProcessHollowing3(hProcess);
 
-	dbg("res = %d", res);
 	return res;
 }
 
@@ -74,6 +71,5 @@ bool mwDetectProcessHollowing(HANDLE hThread, ApiCall* call)
 		call->skipCall();
 	}
 
-	dbg("res = %d", res);
 	return res;
 }
