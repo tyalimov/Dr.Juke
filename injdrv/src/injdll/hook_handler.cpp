@@ -57,9 +57,14 @@ on_LdrLoadDll(ApiCall* call)
 		BOOLEAN bkernel32 = RtlPrefixUnicodeString(&NeededDll, DllName, TRUE);
 		if (bkernel32)
 		{
-			ANSI_STRING VarRoutineName;
-			GET_PROC_ADDR("LoadLibraryExW", *DllHandle, pLoadLibraryExW, VarRoutineName);
-			GET_PROC_ADDR("GetProcAddress", *DllHandle, pGetProcAddress, VarRoutineName);
+			ANSI_STRING RoutineName;
+
+			RtlInitAnsiString(&RoutineName, (PSTR)"LoadLibraryExW");
+			LdrGetProcedureAddress(DllHandle, &RoutineName, 0, (PVOID*)&pLoadLibraryExW);
+
+			RtlInitAnsiString(&RoutineName, (PSTR)"GetProcAddress");
+			LdrGetProcedureAddress(DllHandle, &RoutineName, 0, (PVOID*)&pGetProcAddress);
+
 			RTL_ASSERT(pLoadLibraryExW != NULL);
 			RTL_ASSERT(pGetProcAddress != NULL);
 

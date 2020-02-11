@@ -10,9 +10,6 @@ extern api_call_t HookHandlerUpper;
 template <typename TRetVal, typename TFunc, typename ...TArgs>
 TRetVal HookHandler(CallId id, TFunc f, TArgs&... args)
 {
-
-	Trace::logInfo(L"HookHandler");
-
 	//
 	// Call pre handlers
 	//

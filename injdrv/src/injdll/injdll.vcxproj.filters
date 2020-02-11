@@ -129,10 +129,10 @@
     <ClInclude Include="hook_handler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="util.h">
+    <ClInclude Include="trace.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="trace.h">
+    <ClInclude Include="util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -149,10 +149,10 @@
     <ClCompile Include="hook_handler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="util.cpp">
+    <ClCompile Include="trace.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="trace.cpp">
+    <ClCompile Include="util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

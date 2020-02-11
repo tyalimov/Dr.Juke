@@ -2,7 +2,7 @@
 
 #include "hooked.h"
 #include "hook_handler.h"
-#include "util.h"
+//#include "util.h"
 #include "trace.h"
 
 #if defined(_M_IX86)
@@ -46,6 +46,7 @@ _load_config_used = {
 
 #endif
 
+#include <detours.h>
 
 _snwprintf_fn_t _snwprintf = nullptr;
 
@@ -115,7 +116,7 @@ OnProcessAttach(
 	HANDLE NtdllHandle;
 	LdrGetDllHandle(NULL, 0, &NtdllPath, &NtdllHandle);
 
-	ProtectDll(NtdllHandle);
+//	ProtectDll(NtdllHandle);
 	Trace::init(NtdllHandle);
 
 	//
