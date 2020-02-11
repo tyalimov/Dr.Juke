@@ -18,6 +18,9 @@ ORIG_DECL(NtWriteVirtualMemory);
 ORIG_DECL(NtUnmapViewOfSection);
 ORIG_DECL(NtSetContextThread);
 ORIG_DECL(NtResumeThread);
+ORIG_DECL(NtOpenProcess);
+ORIG_DECL(NtCreateThreadEx);
+ORIG_DECL(RtlCreateUserThread);
 
 ORIG_DECL(socket);
 ORIG_DECL(closesocket);
@@ -45,11 +48,6 @@ Hooked_LdrGetDllHandle(
 	_In_ PUNICODE_STRING DllName,
 	_Out_ PVOID* DllHandle
 );
-
-NTSTATUS NTAPI
-Hooked_LdrUnloadDll(
-    _In_ PVOID DllHandle
-    );
 
 NTSTATUS NTAPI
 Hooked_NtCreateUserProcess(
@@ -91,6 +89,35 @@ NTSTATUS NTAPI
 Hooked_NtResumeThread(
     _In_ HANDLE ThreadHandle,
     _Out_opt_ PULONG PreviousSuspendCount
+    );
+
+NTSTATUS NTAPI
+Hooked_NtCreateThreadEx(
+    _Out_ PHANDLE ThreadHandle,
+    _In_ ACCESS_MASK DesiredAccess,
+    _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+    _In_ HANDLE ProcessHandle,
+    _In_ PVOID StartRoutine, // PUSER_THREAD_START_ROUTINE
+    _In_opt_ PVOID Argument,
+    _In_ ULONG CreateFlags, // THREAD_CREATE_FLAGS_*
+    _In_ SIZE_T ZeroBits,
+    _In_ SIZE_T StackSize,
+    _In_ SIZE_T MaximumStackSize,
+    _In_opt_ PPS_ATTRIBUTE_LIST AttributeList
+    );
+
+NTSTATUS NTAPI
+Hooked_RtlCreateUserThread(
+    _In_ HANDLE Process,
+    _In_opt_ PSECURITY_DESCRIPTOR ThreadSecurityDescriptor,
+    _In_ BOOLEAN CreateSuspended,
+    _In_opt_ ULONG ZeroBits,
+    _In_opt_ SIZE_T MaximumStackSize,
+    _In_opt_ SIZE_T CommittedStackSize,
+    _In_ PUSER_THREAD_START_ROUTINE StartAddress,
+    _In_opt_ PVOID Parameter,
+    _Out_opt_ PHANDLE Thread,
+    _Out_opt_ PCLIENT_ID ClientId
     );
 
 //------------------------------------------------------------//

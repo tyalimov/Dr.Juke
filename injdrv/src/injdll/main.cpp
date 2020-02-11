@@ -71,10 +71,11 @@ EnableDetours(
 		DETOUR_HOOK(NtUnmapViewOfSection);
 		DETOUR_HOOK(NtSetContextThread);
 		DETOUR_HOOK(NtResumeThread);
+		DETOUR_HOOK(NtCreateThreadEx);
+		DETOUR_HOOK(RtlCreateUserThread);
 
 		DETOUR_HOOK(LdrGetDllHandle);
 		DETOUR_HOOK(LdrLoadDll);
-		DETOUR_HOOK(LdrUnloadDll);
 	}
 	DetourTransactionCommit();
 
@@ -94,10 +95,11 @@ DisableDetours(
 		DETOUR_UNHOOK(NtUnmapViewOfSection);
 		DETOUR_UNHOOK(NtSetContextThread);
 		DETOUR_UNHOOK(NtResumeThread);
+		DETOUR_UNHOOK(NtCreateThreadEx);
+		DETOUR_UNHOOK(RtlCreateUserThread);
 
 		DETOUR_UNHOOK(LdrGetDllHandle);
 		DETOUR_UNHOOK(LdrLoadDll);
-		DETOUR_UNHOOK(LdrUnloadDll);
 	}
 	DetourTransactionCommit();
 	return STATUS_SUCCESS;

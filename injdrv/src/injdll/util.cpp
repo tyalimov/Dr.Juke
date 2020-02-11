@@ -101,3 +101,7 @@ NTSTATUS QueryKeyValue(const wchar_t* szAbsRegPath,
 	NtClose(KeyHandle);
 	return Status;
 }
+
+PUNICODE_STRING NtCurrentProcessImagePath() {
+	return &NtCurrentPeb()->ProcessParameters->ImagePathName;
+}

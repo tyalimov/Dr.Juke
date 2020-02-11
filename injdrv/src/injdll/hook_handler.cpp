@@ -35,6 +35,8 @@ NTSTATUS LoadLevelTwo(PKEY_VALUE_FULL_INFORMATION info)
 	const wchar_t* path = (const wchar_t*)((PCHAR)info + info->DataOffset);
 	hLevelTwo = INVALID_HANDLE_VALUE;
 
+	//return STATUS_UNSUCCESSFUL;
+
 	HMODULE hMod = pLoadLibraryExW(path, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 	HookHandlerUpper = (api_call_t)pGetProcAddress(hMod, "onApiCall");
 
@@ -102,7 +104,7 @@ on_LdrLoadDll(ApiCall* call)
 
 			NTSTATUS status = QueryKeyValue(key, val, LoadLevelTwo);
 			if (!NT_SUCCESS(status))
-				Trace::logError(L"Unable to read %s key - 0x%08X", val, status);
+				Trace::logError(L"Unable to load level 2 dll - 0x%08X", status);
 		}
 
 	}

@@ -17,3 +17,5 @@ bool mwDetectProcessHollowing3(HANDLE hProcess);
 bool mwDetectProcessHollowing4(HANDLE hThread);
 
 bool mwDetectProcessHollowing(HANDLE hThread, ApiCall* call);
+
+bool mwDetectSimpleProcessInjection(HANDLE hProcess, ApiCall* call);

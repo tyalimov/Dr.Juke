@@ -17,12 +17,19 @@ ReferencedHandles g_ref_handles[] = {
 	{ CallId::ntdll_NtUnmapViewOfSection, set<HANDLE>() },
 	{ CallId::ntdll_NtSetContextThread, set<HANDLE>() },
 	{ CallId::ntdll_NtResumeThread, set<HANDLE>() },
+	{ CallId::ntdll_NtCreateThreadEx, set<HANDLE>() },
+	{ CallId::ntdll_RtlCreateUserThread, set<HANDLE>() },
 };
 
+CallId idx_start = CallId::ntdll_NtCreateUserProcess;
+CallId idx_end = CallId::ntdll_RtlCreateUserThread;
 
 void RefHandlesEmplace(CallId id, HANDLE handle)
 {
 	lock_guard<mutex> guard(g_rh_lock);
+
+	if (id < idx_start || id > idx_end)
+		return;
 
 	int i = static_cast<int>(id);
 	auto& handles = g_ref_handles[i].handles;
@@ -32,6 +39,9 @@ void RefHandlesEmplace(CallId id, HANDLE handle)
 bool RefHandlesIsReferenced(CallId id, HANDLE handle)
 {
 	lock_guard<mutex> guard(g_rh_lock);
+
+	if (id < idx_start || id > idx_end)
+		return false;
 
 	int i = static_cast<int>(id);
 	auto& handles = g_ref_handles[i].handles;
@@ -43,6 +53,9 @@ bool RefHandlesIsReferenced(CallId id, HANDLE handle)
 void RefHandlesErase(CallId id, HANDLE handle)
 {
 	lock_guard<mutex> guard(g_rh_lock);
+
+	if (id < idx_start || id > idx_end)
+		return;
 
 	int i = static_cast<int>(id);
 	auto& handles = g_ref_handles[i].handles;

@@ -50,6 +50,7 @@ void on_NtUnmapViewOfSection(ApiCall* call)
 }
 
 __middle_func__(MalwareId::ProcessHollowing, 3)
+__start_func__(MalwareId::SimpleProcessInjection)
 void on_NtWriteVirtualMemory(ApiCall* call)
 {
 	if (call->isPre())
@@ -90,8 +91,27 @@ void on_NtResumeThread(ApiCall* call)
 		return;
 
 	HANDLE hThread = (HANDLE)call->getArgument(0);
-	RefHandlesEmplace(CallId::ntdll_NtResumeThread, hThread);
 	mwDetectProcessHollowing(hThread, call);
+}
+
+__trigger_func__(MalwareId::SimpleProcessInjection)
+void on_NtCreateCreateThreadEx(ApiCall* call)
+{
+	if (call->isPost())
+		return;
+
+	HANDLE hProcess = (HANDLE)call->getArgument(3);
+	mwDetectSimpleProcessInjection(hProcess, call);
+}
+
+__trigger_func__(MalwareId::SimpleProcessInjection)
+void on_NtRtlCreateUserThread(ApiCall* call)
+{
+	if (call->isPost())
+		return;
+
+	HANDLE hProcess = (HANDLE)call->getArgument(0);
+	mwDetectSimpleProcessInjection(hProcess, call);
 }
 
 // TODO change geistry path, windows 10
@@ -114,6 +134,12 @@ void onApiCall(ApiCall* call)
 		break;
 	case CallId::ntdll_NtResumeThread:
 		on_NtResumeThread(call);
+		break;
+	case CallId::ntdll_NtCreateThreadEx:
+		on_NtCreateCreateThreadEx(call);
+		break;
+	case CallId::ntdll_RtlCreateUserThread:
+		on_NtRtlCreateUserThread(call);
 		break;
 	default:
 		break;

@@ -3,6 +3,7 @@
 enum class MalwareId {
 	ProcessHollowing,
 	ProcessDoppelganging,
+	SimpleProcessInjection,
 	None,
 };
 
@@ -15,6 +16,8 @@ enum class CallId
 	ntdll_NtUnmapViewOfSection,
 	ntdll_NtSetContextThread,
 	ntdll_NtResumeThread,
+	ntdll_NtCreateThreadEx,
+	ntdll_RtlCreateUserThread,
 
 	//----------------------------------->
 	// Dll load notify 

@@ -73,3 +73,17 @@ bool mwDetectProcessHollowing(HANDLE hThread, ApiCall* call)
 
 	return res;
 }
+
+bool mwDetectSimpleProcessInjection(HANDLE hProcess, ApiCall* call)
+{
+	bool res = RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, hProcess);
+	mwCleanupOnFalsePassOnTrue(hProcess, res);
+
+	if (res == true)
+	{
+		call->setMalwareId(MalwareId::SimpleProcessInjection);
+		call->skipCall();
+	}
+
+	return res;
+}

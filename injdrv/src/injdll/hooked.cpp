@@ -35,6 +35,9 @@ TRetVal HookHandler(CallId id, TFunc f, TArgs&... args)
 			case MalwareId::ProcessDoppelganging:
 				Trace::logWarning(L"%s ProcessDoppelganging", prefix);
 				break;
+			case MalwareId::SimpleProcessInjection:
+				Trace::logWarning(L"%s SimpleProcessInjection", prefix);
+				break;
 			default:
 				break;
 			}
@@ -81,17 +84,6 @@ Hooked_LdrLoadDll(
 		DllName,
 		DllHandle
 		);
-}
-
-NTSTATUS NTAPI
-Hooked_LdrUnloadDll(
-	_In_ PVOID DllHandle
-)
-{
-	return HookHandler<NTSTATUS, decltype(LdrUnloadDll)>(
-		CallId::ntdll_LdrUnloadDll,
-		Orig_LdrUnloadDll,
-		DllHandle);
 }
 
 NTSTATUS NTAPI
@@ -203,6 +195,68 @@ Hooked_NtResumeThread(
 		Orig_NtResumeThread,
 		ThreadHandle,
 		PreviousSuspendCount
+		);
+}
+
+NTSTATUS NTAPI
+Hooked_NtCreateThreadEx(
+	_Out_ PHANDLE ThreadHandle,
+	_In_ ACCESS_MASK DesiredAccess,
+	_In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+	_In_ HANDLE ProcessHandle,
+	_In_ PVOID StartRoutine, // PUSER_THREAD_START_ROUTINE
+	_In_opt_ PVOID Argument,
+	_In_ ULONG CreateFlags, // THREAD_CREATE_FLAGS_*
+	_In_ SIZE_T ZeroBits,
+	_In_ SIZE_T StackSize,
+	_In_ SIZE_T MaximumStackSize,
+	_In_opt_ PPS_ATTRIBUTE_LIST AttributeList
+)
+{
+	return HookHandler<NTSTATUS, decltype(NtCreateThreadEx)>(
+		CallId::ntdll_NtCreateThreadEx,
+		Orig_NtCreateThreadEx,
+		ThreadHandle,
+		DesiredAccess,
+		ObjectAttributes,
+		ProcessHandle,
+		StartRoutine, // PUSER_THREAD_START_ROUTINE
+		Argument,
+		CreateFlags, // THREAD_CREATE_FLAGS_*
+		ZeroBits,
+		StackSize,
+		MaximumStackSize,
+		AttributeList
+		);
+}
+
+NTSTATUS NTAPI
+Hooked_RtlCreateUserThread(
+	_In_ HANDLE Process,
+	_In_opt_ PSECURITY_DESCRIPTOR ThreadSecurityDescriptor,
+	_In_ BOOLEAN CreateSuspended,
+	_In_opt_ ULONG ZeroBits,
+	_In_opt_ SIZE_T MaximumStackSize,
+	_In_opt_ SIZE_T CommittedStackSize,
+	_In_ PUSER_THREAD_START_ROUTINE StartAddress,
+	_In_opt_ PVOID Parameter,
+	_Out_opt_ PHANDLE Thread,
+	_Out_opt_ PCLIENT_ID ClientId
+)
+{
+	return HookHandler<NTSTATUS, decltype(RtlCreateUserThread)>(
+		CallId::ntdll_RtlCreateUserThread,
+		Orig_RtlCreateUserThread,
+		Process,
+		ThreadSecurityDescriptor,
+		CreateSuspended,
+		ZeroBits,
+		MaximumStackSize,
+		CommittedStackSize,
+		StartAddress,
+		Parameter,
+		Thread,
+		ClientId
 		);
 }
 
