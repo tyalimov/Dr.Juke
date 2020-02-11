@@ -2,16 +2,27 @@
 
 #include <tasklib/task_queue.h>
 
+#include <mutex>
+#include <iostream>
+
+#define WORKER_LOG(message)                           \
+    {                                                 \
+        std::lock_guard<std::mutex> lock(m_console);  \
+        std::cout << (message) << std::endl;          \
+    }
+
 namespace drjuke::service
 {
     class QueueConsumerThread
     {
-    private:
+    protected:
         tasklib::TaskQueuePtr m_queue;
+        std::mutex&           m_console;
     public:
 
-        explicit QueueConsumerThread(tasklib::TaskQueuePtr queue)
+        explicit QueueConsumerThread(tasklib::TaskQueuePtr queue, std::mutex& console)
             : m_queue(queue)
+            , m_console(console)
         {}
 
         virtual void run()             = 0;
@@ -20,8 +31,4 @@ namespace drjuke::service
 
     using QueueConsumerThreadPtr = std::unique_ptr<QueueConsumerThread>;
 
-    inline void RunQueueConsumer(QueueConsumerThreadPtr thr)
-    {
-        thr->run();
-    }
 }

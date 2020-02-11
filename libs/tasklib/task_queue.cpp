@@ -14,7 +14,7 @@ namespace drjuke::tasklib
                 return m_stop || !this->m_queue.empty();
             });
 
-        if (m_stop)
+        if (m_stop && m_queue.empty())
         {
             return std::make_shared<EndTask>();
         }

@@ -21,6 +21,11 @@ namespace drjuke::tasklib
         virtual void execute()   = 0;
         virtual bool isEndTask() = 0;
         virtual ~BaseTask()      = default;
+
+        [[nodiscard]] std::string getName() const
+        {
+            return m_input["task"].get<std::string>();
+        }
     };
 
     using BaseTaskPtr = std::shared_ptr<BaseTask>;

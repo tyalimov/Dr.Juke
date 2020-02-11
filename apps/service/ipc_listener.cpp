@@ -1,29 +1,43 @@
 ﻿#include "ipc_listener.h"
+#include "task_builder.h"
+
+#include <winlib/winlib.h>
+
 
 namespace drjuke::service
 {
-    void IpcListenerThread::run()
+    void IpcListenerThread::run() try
     {
-        while (true) try
+        WORKER_LOG("[Listener] started");
+        WORKER_LOG("[Listener] waiting for GUI to connect...");
+
+        auto status = m_communicator->connect();
+
+        if (!status)
+        {
+            throw winlib::WindowsException("[Listener] failed connect to GUI");
+        }
+
+        WORKER_LOG("[Listener] GUI connected");
+
+        while (true)
         {
             auto message = m_communicator->getMessage();
 
-            // Создать задачу на основе message
-            // Положить задачу в m_queue
+            WORKER_LOG("[Listener] Got new message: " + message.dump());
 
-            /*
-                Здесь нужно из списка задач брать по названию 
-                задачи необходимую имплементацию
-            */
-        }
-        catch (const std::exception& /*ex*/)
-        {
-            // TODO: Залогировать ошибку
+            //auto task = TaskBuilder::buildTask(message);
+
+            //WORKER_LOG("[Listener] executing task with name: " + task->getName());
+            //task->execute();
+
+            WORKER_LOG("[Listener] Writing responce");
+            m_communicator->putMessage(message);
         }
     }
-
-    void RunIpcListener(tasklib::TaskQueuePtr queue, ipclib::CommunicatorPtr communicator)
+    catch (const std::exception& ex)
     {
-        IpcListenerThread{ queue, communicator }.run();
+        WORKER_LOG(ex.what());
+        return;
     }
 }

@@ -31,7 +31,7 @@ namespace drjuke::service
     };
 
 
-    BaseTaskPtr TaskBuilder::getTask(const Json& message)
+    BaseTaskPtr TaskBuilder::buildTask(const Json& message)
     {
         auto name = message["task"].get<std::string>();
         auto id   = m_ids.at(name);
@@ -49,6 +49,6 @@ namespace drjuke::service
             case TaskId::kDisableFirewallRule : return std::make_shared<tasks::DisableFirewallRule>(message); break;
         }
 
-        return std::make_shared<tasklib::EndTask>();
+        return std::make_shared<EndTask>();
     }
 }
