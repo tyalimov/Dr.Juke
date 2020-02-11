@@ -11,6 +11,7 @@ inline extern decltype(name)* Orig_##name = nullptr;
 
 ORIG_DECL(LdrLoadDll);
 ORIG_DECL(LdrGetDllHandle);
+ORIG_DECL(LdrUnloadDll);
 
 ORIG_DECL(NtCreateUserProcess);
 ORIG_DECL(NtWriteVirtualMemory);
@@ -44,6 +45,11 @@ Hooked_LdrGetDllHandle(
 	_In_ PUNICODE_STRING DllName,
 	_Out_ PVOID* DllHandle
 );
+
+NTSTATUS NTAPI
+Hooked_LdrUnloadDll(
+    _In_ PVOID DllHandle
+    );
 
 NTSTATUS NTAPI
 Hooked_NtCreateUserProcess(

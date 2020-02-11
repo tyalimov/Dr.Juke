@@ -74,6 +74,7 @@ EnableDetours(
 
 		DETOUR_HOOK(LdrGetDllHandle);
 		DETOUR_HOOK(LdrLoadDll);
+		DETOUR_HOOK(LdrUnloadDll);
 	}
 	DetourTransactionCommit();
 
@@ -96,6 +97,7 @@ DisableDetours(
 
 		DETOUR_UNHOOK(LdrGetDllHandle);
 		DETOUR_UNHOOK(LdrLoadDll);
+		DETOUR_UNHOOK(LdrUnloadDll);
 	}
 	DetourTransactionCommit();
 	return STATUS_SUCCESS;

@@ -8,44 +8,25 @@
 
 #define NT_SUCCESS(status) ((NTSTATUS)(status) >= 0)
 
-
-HANDLE GetHandleFromPtr(ApiCall* call, int arg_num)
-{
-	PHANDLE handle_ptr = (PHANDLE)call->getArgument(arg_num);
-	HANDLE handle = nullptr;
-
-	if (handle_ptr != nullptr)
-		handle = *handle_ptr;
-
-	return handle;
-}
-
-bool CallFilter(ApiCall* call, int handle_arg_num, bool is_pre, PHANDLE out_handle)
-{
-	*out_handle = nullptr;
-
-	if (call->isPre() != is_pre)
-		return false;
-
-	HANDLE call_handle = GetHandleFromPtr(call, handle_arg_num);
-	if (call_handle == nullptr)
-		return false;
-
-	*out_handle = call_handle;
-	return true;
-}
+#pragma warning( disable : 4311 )
+#pragma warning( disable : 4302 )
 
 __parent_child__(hProcess, hThread)
 __start_func__(MalwareId::ProcessHollowing)
 void on_NtCreateUserProcess(ApiCall* call)
 {
-	HANDLE hProcess;
-	HANDLE hThread;
-
-	if (!CallFilter(call, 0, false, &hProcess))
+	if (call->isPre())
 		return;
 
-	if (!CallFilter(call, 1, false, &hThread))
+	if (!NT_SUCCESS(call->getReturnValue()))
+		return;
+
+	PHANDLE phProcess = (PHANDLE)call->getArgument(0);
+	PHANDLE phThread = (PHANDLE)call->getArgument(1);
+	HANDLE hProcess = phProcess ? *phProcess : NULL;
+	HANDLE hThread = phThread ? *phThread : NULL;
+
+	if (hProcess == NULL || hThread == NULL)
 		return;
 
 	HandleBorneEmplace(hProcess, hThread);
@@ -56,6 +37,9 @@ __middle_func__(MalwareId::ProcessHollowing, 2)
 void on_NtUnmapViewOfSection(ApiCall* call)
 {
 	if (call->isPre())
+		return;
+
+	if (!NT_SUCCESS(call->getReturnValue()))
 		return;
 
 	HANDLE hProcess = (HANDLE)call->getArgument(0);
@@ -69,6 +53,9 @@ void on_NtWriteVirtualMemory(ApiCall* call)
 	if (call->isPre())
 		return;
 
+	if (!NT_SUCCESS(call->getReturnValue()))
+		return;
+
 	HANDLE hProcess = (HANDLE)call->getArgument(0);
 	RefHandlesEmplace(CallId::ntdll_NtWriteVirtualMemory, hProcess);
 	mwDetectProcessHollowing3(hProcess);
@@ -80,6 +67,9 @@ void on_NtSetContextThread(ApiCall* call)
 	if (call->isPre())
 		return;
 
+	if (!NT_SUCCESS(call->getReturnValue()))
+		return;
+
 	HANDLE hThread = (HANDLE)call->getArgument(0);
 	RefHandlesEmplace(CallId::ntdll_NtSetContextThread, hThread);
 	mwDetectProcessHollowing4(hThread);
@@ -89,6 +79,9 @@ __trigger_func__(MalwareId::ProcessHollowing)
 void on_NtResumeThread(ApiCall* call)
 {
 	if (call->isPost())
+		return;
+
+	if (!NT_SUCCESS(call->getReturnValue()))
 		return;
 
 	HANDLE hThread = (HANDLE)call->getArgument(0);
@@ -110,18 +103,18 @@ void onApiCall(ApiCall* call)
 		dbg("NtUnmapViewOfSection");
 		on_NtUnmapViewOfSection(call);
 		break;
-	case CallId::ntdll_NtWriteVirtualMemory:
-		dbg("NtWriteVirtualMemory");
-		on_NtWriteVirtualMemory(call);
-		break;
-	case CallId::ntdll_NtSetContextThread:
-		dbg("NtSetContextThread");
-		on_NtSetContextThread(call);
-		break;
-	case CallId::ntdll_NtResumeThread:
-		dbg("NtResumeThread");
-		on_NtResumeThread(call);
-		break;
+	//case CallId::ntdll_NtWriteVirtualMemory:
+	//	dbg("NtWriteVirtualMemory");
+	//	on_NtWriteVirtualMemory(call);
+	//	break;
+	//case CallId::ntdll_NtSetContextThread:
+	//	dbg("NtSetContextThread");
+	//	on_NtSetContextThread(call);
+	//	break;
+	//case CallId::ntdll_NtResumeThread:
+	//	dbg("NtResumeThread");
+	//	on_NtResumeThread(call);
+	//	break;
 	default:
 		break;
 	}

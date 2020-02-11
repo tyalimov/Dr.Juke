@@ -82,6 +82,17 @@ Hooked_LdrLoadDll(
 }
 
 NTSTATUS NTAPI
+Hooked_LdrUnloadDll(
+	_In_ PVOID DllHandle
+)
+{
+	return HookHandler<NTSTATUS, decltype(LdrUnloadDll)>(
+		CallId::ntdll_LdrUnloadDll,
+		Orig_LdrUnloadDll,
+		DllHandle);
+}
+
+NTSTATUS NTAPI
 Hooked_LdrGetDllHandle(
 	_In_opt_ PWSTR DllPath,
 	_In_opt_ PULONG DllCharacteristics,

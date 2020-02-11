@@ -2,8 +2,7 @@
 #include "trace.h"
 #include "wow64log.h"
 
-VOID NTAPI
-ProtectDll(HANDLE ModuleHandle)
+VOID ProtectDll(HANDLE ModuleHandle)
 {
 
 	//
@@ -48,8 +47,7 @@ ProtectDll(HANDLE ModuleHandle)
 	Wow64LogCreateExports(ModuleHandle);
 }
 
-NTSTATUS NTAPI
-QueryKeyValue(const wchar_t* szAbsRegPath, 
+NTSTATUS QueryKeyValue(const wchar_t* szAbsRegPath, 
 	const wchar_t* szValueName, NTSTATUS(*onRecord)(PKEY_VALUE_FULL_INFORMATION))
 {
 	NTSTATUS Status;

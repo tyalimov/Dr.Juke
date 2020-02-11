@@ -19,8 +19,8 @@ enum class CallId
 	//----------------------------------->
 	// Dll load notify 
 	ntdll_LdrLoadDll,
+	ntdll_LdrUnloadDll,
 	ntdll_LdrGetDllHandle,
-
 
 	//----------------------------------->
 	// Network

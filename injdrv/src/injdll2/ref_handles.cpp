@@ -1,5 +1,5 @@
 #include "ref_handles.h"
-
+#include <mutex>
 #include <set>
 
 using namespace std;
@@ -10,6 +10,7 @@ struct ReferencedHandles
 	set<HANDLE> handles;
 };
 
+mutex g_rh_lock;
 ReferencedHandles g_ref_handles[] = {
 	{ CallId::ntdll_NtCreateUserProcess, set<HANDLE>() },
 	{ CallId::ntdll_NtWriteVirtualMemory, set<HANDLE>() },
@@ -18,8 +19,11 @@ ReferencedHandles g_ref_handles[] = {
 	{ CallId::ntdll_NtResumeThread, set<HANDLE>() },
 };
 
+
 void RefHandlesEmplace(CallId id, HANDLE handle)
 {
+	lock_guard<mutex> guard(g_rh_lock);
+
 	int i = static_cast<int>(id);
 	auto& handles = g_ref_handles[i].handles;
 	handles.emplace(handle);
@@ -27,6 +31,8 @@ void RefHandlesEmplace(CallId id, HANDLE handle)
 
 bool RefHandlesIsReferenced(CallId id, HANDLE handle)
 {
+	lock_guard<mutex> guard(g_rh_lock);
+
 	int i = static_cast<int>(id);
 	auto& handles = g_ref_handles[i].handles;
 
@@ -36,6 +42,8 @@ bool RefHandlesIsReferenced(CallId id, HANDLE handle)
 
 void RefHandlesErase(CallId id, HANDLE handle)
 {
+	lock_guard<mutex> guard(g_rh_lock);
+
 	int i = static_cast<int>(id);
 	auto& handles = g_ref_handles[i].handles;
 	handles.erase(handle);
