@@ -1,5 +1,6 @@
 #include "hooked.h"
 #include "trace.h"
+#include "util.h"
 
 extern api_call_t HookHandlerUpper;
 
@@ -10,6 +11,8 @@ extern api_call_t HookHandlerUpper;
 template <typename TRetVal, typename TFunc, typename ...TArgs>
 TRetVal HookHandler(CallId id, TFunc f, TArgs&... args)
 {
+	PUNICODE_STRING path = CurrentProcessImagePath();
+
 	//
 	// Call pre handlers
 	//
@@ -18,25 +21,25 @@ TRetVal HookHandler(CallId id, TFunc f, TArgs&... args)
 	HookHandlerLower(&call_pre);
 
 	if (HookHandlerUpper != NULL)
-		HookHandlerUpper(&call_pre);
+		HookHandlerUpper(&call_pre, path->Buffer, path->Length);
 
 	if (call_pre.isCallSkipped())
 	{
 		MalwareId id = call_pre.getMalwareId();
 		if (id != MalwareId::None)
 		{
-			const wchar_t prefix[] = L"Malware detected - ";
+			const wchar_t fmt[] = L"Malware detected - <Type=%ws ImagePath=%wZ>";
 
 			switch (id)
 			{
 			case MalwareId::ProcessHollowing:
-				Trace::logWarning(L"%s ProcessHollowing", prefix);
+				Trace::logWarning(fmt, L"ProcessHollowing", path);
 				break;
 			case MalwareId::ProcessDoppelganging:
-				Trace::logWarning(L"%s ProcessDoppelganging", prefix);
+				Trace::logWarning(fmt, L"ProcessDoppelganging", path);
 				break;
 			case MalwareId::SimpleProcessInjection:
-				Trace::logWarning(L"%s SimpleProcessInjection", prefix);
+				Trace::logWarning(fmt, L"SimpleProcessInjection", path);
 				break;
 			default:
 				break;
@@ -59,7 +62,7 @@ TRetVal HookHandler(CallId id, TFunc f, TArgs&... args)
 	HookHandlerLower(&call_post);
 
 	if (HookHandlerUpper != NULL)
-		HookHandlerUpper(&call_post);
+		HookHandlerUpper(&call_post, path->Buffer, path->Length);
 
 	return (TRetVal)call_post.getReturnValue();
 }

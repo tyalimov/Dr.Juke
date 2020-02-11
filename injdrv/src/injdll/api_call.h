@@ -95,8 +95,8 @@ public:
 		m_malware_id = id;
 	}
 
-	void skipCall() {
-		m_skip_call = true;
+	void skipCall(bool skip) {
+		m_skip_call = skip;
 	}
 
 	bool isCallSkipped() const {
@@ -124,4 +124,4 @@ public:
 	}
 };
 
-typedef void(*api_call_t)(ApiCall*);
+typedef void(*api_call_t)(ApiCall*, const wchar_t*, size_t);

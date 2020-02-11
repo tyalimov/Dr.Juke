@@ -68,7 +68,7 @@ bool mwDetectProcessHollowing(HANDLE hThread, ApiCall* call)
 	if (res == true)
 	{
 		call->setMalwareId(MalwareId::ProcessHollowing);
-		call->skipCall();
+		call->skipCall(true);
 	}
 
 	return res;
@@ -82,7 +82,7 @@ bool mwDetectSimpleProcessInjection(HANDLE hProcess, ApiCall* call)
 	if (res == true)
 	{
 		call->setMalwareId(MalwareId::SimpleProcessInjection);
-		call->skipCall();
+		call->skipCall(true);
 	}
 
 	return res;

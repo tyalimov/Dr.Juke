@@ -3,12 +3,15 @@
 #include "ref_handles.h"
 #include "handle_borne.h"
 #include "mw_detect.h"
+#include "string"
 
 
 #define NT_SUCCESS(status) ((NTSTATUS)(status) >= 0)
 
 #pragma warning( disable : 4311 )
 #pragma warning( disable : 4302 )
+
+bool IsWhiteListProcess(const wchar_t* image_path, size_t length);
 
 __parent_child__(hProcess, hThread)
 __start_func__(MalwareId::ProcessHollowing)
@@ -116,7 +119,7 @@ void on_NtRtlCreateUserThread(ApiCall* call)
 
 // TODO change geistry path, windows 10
 extern "C" __declspec(dllexport) 
-void onApiCall(ApiCall* call)
+void onApiCall(ApiCall* call, const wchar_t* image_path, size_t length)
 {
 	switch (call->getCallId())
 	{
@@ -144,6 +147,12 @@ void onApiCall(ApiCall* call)
 	default:
 		break;
 	}
+
+	if (IsWhiteListProcess(image_path, length))
+	{
+		call->setMalwareId(MalwareId::None);
+		call->skipCall(false);
+	}
 }
 
 BOOL APIENTRY DllMain(HINSTANCE hinstDLL,
@@ -164,4 +173,18 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL,
 		break;
 	}
 	return TRUE;
+}
+
+bool IsWhiteListProcess(const wchar_t* image_path, size_t length)
+{
+	std::wstring path(image_path, length);
+
+	for (auto& c : path)
+		c = towlower(c);
+
+	bool is_white = false;
+	is_white = is_white || path.find(L"c:\\program files\\") == 0;
+	is_white = is_white || path.find(L"c:\\program files (x86)\\") == 0;
+
+	return is_white;
 }
