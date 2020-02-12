@@ -5,7 +5,7 @@ namespace drjuke::service
 {
     enum class TaskId
     {
-        kEnableFirewall,      // +
+        kEnableFirewall,      // -- не будем
         kAddprotectedObject,  // ++
         kAddExclusion,        // ++
         kScan,                // --
@@ -14,12 +14,12 @@ namespace drjuke::service
         kRemoveFirewallRule,  // ++
         kEnableFirewallRule,  // ++
         kDisableFirewallRule, // ++
-        kAddToQuarantine,     // --
-        kGetRegistryRules,
-        kGetFilesystemRules,
-        kGetProcessRules,
-        kGetFirewall,
-        kDelProtectedObject
+        kAddToQuarantine,     // -- не будем
+        kGetRegistryRules,    // ++
+        kGetFilesystemRules,  // ++
+        kGetProcessRules,     // ++
+        kGetFirewall,         // ++
+        kDelProtectedObject   // ++
     };
 
     std::map<std::string, TaskId> TaskBuilder::m_ids

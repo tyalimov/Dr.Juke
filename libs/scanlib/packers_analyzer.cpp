@@ -43,12 +43,7 @@ namespace drjuke::scanlib
 
     PackersReport::PackersReport(const std::vector<yaracpp::YaraRule> &rules)
     {
-        m_report["infected"]      = !rules.empty();
-        m_report["total_matched"] = rules.size();
-
-        for (const auto& rule : rules)
-        {
-            m_report["matched_packers"].push_back(rule.getName());
-        }
+        m_report["infected"]  = !rules.empty();
+        m_report["name"]      = "Packers";
     }
 }

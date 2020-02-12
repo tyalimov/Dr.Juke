@@ -2,9 +2,15 @@
 #include "update_checker.h"
 #include "updater.h"
 #include "uploader.h"
+#include "cloud_scanner.h"
 
 namespace drjuke::netlib
 {
+    CloudScannerPtr Factory::getCloudScanner()
+    {
+        return std::make_unique<CloudScanner>();
+    }
+
     UpdateCheckerPtr Factory::getUpdateChecker()
     {
         return std::make_unique<UpdateChecker>();

@@ -34,22 +34,17 @@ namespace drjuke::scanlib
 
     std::string ClamAvAnalyzer::getName()
     {
-        return "Packers analyzer";
+        return "ClamAV analyzer";
     }
 
     const char *ClamAvAnalyzerException::what() const
     {
-        return "Packers analyzer error";
+        return "ClamAV analyzer error";
     }
 
     ClamAvReport::ClamAvReport(const std::vector<yaracpp::YaraRule> &rules)
     {
-        m_report["infected"]      = !rules.empty();
-        m_report["total_matched"] = rules.size();
-
-        for (const auto& rule : rules)
-        {
-            m_report["matched_malware"].push_back(rule.getName());
-        }
+        m_report["infected"]  = !rules.empty();
+        m_report["name"]      = "ClamAV";
     }
 }

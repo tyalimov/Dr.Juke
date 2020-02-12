@@ -2,7 +2,10 @@
 
 #include <tasklib/base_task.h>
 #include <settingslib/settingslib.h>
+#include <scanlib/scanlib.h>
+#include <netlib/netlib.h>
 #include <codecvt>
+#include <filesystem>
 
 #define TASK_STD_CTOR(class_name)               \
     explicit class_name(const Json& message)    \
@@ -217,7 +220,17 @@ namespace drjuke::service::tasks
 
         Json execute() override
         {
-            return Json{"123", "456"};
+            Path filepath = m_input["parameters"]["path"].get<std::string>();
+
+            auto analyzers = scanlib::Factory::getAll();
+            Json result;
+
+            for (const auto& analyzer : analyzers)
+            {
+                result += analyzer->getReport(filepath)->makeJson();
+            }
+
+            return result;
         }
     };
 
@@ -241,7 +254,14 @@ namespace drjuke::service::tasks
 
         Json execute() override
         {
-            return Json{"123", "456"};
+            drjuke::Path filename = m_input["parameters"]["path"].get<std::string>();
+
+            auto cloud_scanner  = drjuke::netlib::Factory::getCloudScanner();
+            auto uploader       = drjuke::netlib::Factory::getUploader(filename);
+
+            uploader->upload();
+
+            return cloud_scanner->scanFile(filename);
         }
     };
 

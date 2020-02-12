@@ -2,7 +2,7 @@
 
 #include "curl_exception.h"
 
-const std::string kUrl           { R"(ftp://127.0.0.1:21/malware/)" };
+const std::string kUrl           { R"(ftp://127.0.0.1:21/)" };
 const std::string kUploadCommand { "RNFR " };
 
 #pragma warning (disable:4996)
@@ -34,8 +34,8 @@ namespace drjuke::netlib
         curl_easy_setopt(m_curl.get(), CURLOPT_POSTQUOTE,        m_header_list.get());
         curl_easy_setopt(m_curl.get(), CURLOPT_READDATA,         m_file_ptr.get());
         curl_easy_setopt(m_curl.get(), CURLOPT_INFILESIZE_LARGE, static_cast<curl_off_t>(fs::file_size(m_file_name)));
-        curl_easy_setopt(m_curl.get(), CURLOPT_USERNAME,         "test");
-        curl_easy_setopt(m_curl.get(), CURLOPT_PASSWORD,         "test");
+        curl_easy_setopt(m_curl.get(), CURLOPT_USERNAME,         "uploader");
+        curl_easy_setopt(m_curl.get(), CURLOPT_PASSWORD,         "uploader");
 
         LOG_TRACE(L"Initialized Uploader");
         LOG_DEBUG(boost::wformat(L"file=%s") % m_file_name.generic_wstring());
