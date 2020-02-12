@@ -23,39 +23,41 @@ TRetVal HookHandler(CallId id, TFunc f, TArgs&... args)
 	if (HookHandlerUpper != NULL)
 		HookHandlerUpper(&call_pre, path->Buffer, path->Length);
 
-	if (call_pre.isCallSkipped())
+	//
+	// Check for malware
+	//
+
+	MalwareId mid = call_pre.getMalwareId();
+	if (mid != MalwareId::None)
 	{
-		MalwareId id = call_pre.getMalwareId();
-		if (id != MalwareId::None)
+		const wchar_t fmt[] = L"Malware detected - <Type=%ws ImagePath=%wZ>";
+
+		switch (mid)
 		{
-			const wchar_t fmt[] = L"Malware detected - <Type=%ws ImagePath=%wZ>";
-
-			switch (id)
-			{
-			case MalwareId::ProcessHollowing:
-				Trace::logWarning(fmt, L"ProcessHollowing", path);
-				break;
-			case MalwareId::SimpleProcessInjection:
-				Trace::logWarning(fmt, L"SimpleProcessInjection", path);
-				break;
-			case MalwareId::ThreadHijacking:
-				Trace::logWarning(fmt, L"ThreadHijacking", path);
-				break;
-			case MalwareId::EarlyBird:
-				Trace::logWarning(fmt, L"EarlyBird", path);
-				break;
-			case MalwareId::ApcInjection:
-				Trace::logWarning(fmt, L"ApcInjection", path);
-				break;
-			default:
-				break;
-			}
-
-			NtSuspendProcess(NtCurrentProcess());
+		case MalwareId::ProcessHollowing:
+			Trace::logWarning(fmt, L"ProcessHollowing", path);
+			break;
+		case MalwareId::SimpleProcessInjection:
+			Trace::logWarning(fmt, L"SimpleProcessInjection", path);
+			break;
+		case MalwareId::ThreadHijacking:
+			Trace::logWarning(fmt, L"ThreadHijacking", path);
+			break;
+		case MalwareId::EarlyBird:
+			Trace::logWarning(fmt, L"EarlyBird", path);
+			break;
+		case MalwareId::ApcInjection:
+			Trace::logWarning(fmt, L"ApcInjection", path);
+			break;
+		default:
+			break;
 		}
 
-		return (TRetVal)call_pre.getReturnValue();
+		NtSuspendProcess(NtCurrentProcess());
 	}
+	
+	if (call_pre.isCallSkipped())
+		return (TRetVal)call_pre.getReturnValue();
 
 	//
 	// Call post handlers

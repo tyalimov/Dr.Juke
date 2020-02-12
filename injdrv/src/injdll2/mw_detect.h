@@ -8,8 +8,6 @@
 #define __middle_func__(m, n)
 #define __trigger_func__(m)
 
-void mwCleanup(HANDLE handle);
-
 bool mwDetectProcessHollowing2(HANDLE hProcess);
 
 bool mwDetectProcessHollowing3(HANDLE hProcess);

@@ -11,11 +11,8 @@ HANDLE HandleBorneGetParent(HANDLE child);
 
 HANDLE HandleBorneGetChild(HANDLE parent);
 
-void HandleBorneEraseReqursive(HANDLE node,
-	std::function<void(HANDLE)> onDelete);
+void HandleBorneEraseReqursive(HANDLE node);
 
-void HandleBorneEraseChildrenReq(HANDLE node,
-	std::function<void(HANDLE)> onDelete);
+void HandleBorneEraseChildrenReq(HANDLE node);
 
-void HandleBorneEraseParentsReq(HANDLE node,
-	std::function<void(HANDLE)> onDelete);
+void HandleBorneEraseParentsReq(HANDLE node);

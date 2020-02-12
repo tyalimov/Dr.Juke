@@ -45,7 +45,8 @@ void on_NtUnmapViewOfSection(ApiCall* call)
 	HANDLE hProcess = (HANDLE)call->getArgument(0);
 	if (!NT_SUCCESS(call->getReturnValue()))
 	{
-		mwCleanup(hProcess);
+		HandleBorneEraseReqursive(hProcess);
+		RefHandlesErase(CallId::ntdll_NtUnmapViewOfSection, hProcess);
 		return;
 	}
 
@@ -55,7 +56,11 @@ void on_NtUnmapViewOfSection(ApiCall* call)
 	detected = mwDetectProcessHollowing2(hProcess);
 
 	if (!detected)
-		mwCleanup(hProcess);
+	{
+		HandleBorneEraseReqursive(hProcess);
+		RefHandlesErase(CallId::ntdll_NtUnmapViewOfSection, hProcess);
+		return;
+	}
 }
 
 __middle_func__(MalwareId::ProcessHollowing, 3)
@@ -71,8 +76,11 @@ void on_NtWriteVirtualMemory(ApiCall* call)
 	PVOID lpBaseAddress = (HANDLE)call->getArgument(1);
 	if (!NT_SUCCESS(call->getReturnValue()))
 	{
-		mwCleanup(hProcess);
-		mwCleanup(lpBaseAddress);
+		HandleBorneEraseReqursive(hProcess);
+		RefHandlesErase(CallId::ntdll_NtWriteVirtualMemory, hProcess);
+
+		HandleBorneEraseReqursive(lpBaseAddress);
+		RefHandlesErase(CallId::ntdll_NtWriteVirtualMemory, lpBaseAddress);
 		return;
 	}
 
@@ -84,7 +92,11 @@ void on_NtWriteVirtualMemory(ApiCall* call)
 	detected = detected || mwDetectEarlyBird2(hProcess);
 
 	if (!detected)
-		mwCleanup(hProcess);
+	{
+		HandleBorneEraseReqursive(hProcess);
+		RefHandlesErase(CallId::ntdll_NtWriteVirtualMemory, hProcess);
+		return;
+	}
 }
 
 __parent_child__(hThread, lpBaseAddress)
@@ -98,7 +110,8 @@ void on_NtSetContextThread(ApiCall* call)
 
 	if (!NT_SUCCESS(call->getReturnValue()))
 	{
-		mwCleanup(hThread);
+		HandleBorneEraseReqursive(hThread);
+		RefHandlesErase(CallId::ntdll_NtSetContextThread, hThread);
 		return;
 	}
 
@@ -109,7 +122,11 @@ void on_NtSetContextThread(ApiCall* call)
 	detected = detected || mwDetectThreadHijacking2(hThread);
 
 	if (!detected)
-		mwCleanup(hThread);
+	{
+		HandleBorneEraseReqursive(hThread);
+		RefHandlesErase(CallId::ntdll_NtSetContextThread, hThread);
+		return;
+	}
 }
 
 __trigger_func__(MalwareId::ProcessHollowing)
@@ -126,7 +143,11 @@ void on_NtResumeThread(ApiCall* call)
 	detected = detected || mwDetectThreadHijacking(hThread, call);
 
 	if (!detected)
-		mwCleanup(hThread);
+	{
+		HandleBorneEraseReqursive(hThread);
+		RefHandlesErase(CallId::ntdll_NtResumeThread, hThread);
+		return;
+	}
 }
 
 __trigger_func__(MalwareId::SimpleProcessInjection)
@@ -141,12 +162,16 @@ void on_NtCreateCreateThreadEx(ApiCall* call)
 	detected = mwDetectSimpleProcessInjection(hProcess, call);
 
 	if (!detected)
-		mwCleanup(hProcess);
+	{
+		HandleBorneEraseReqursive(hProcess);
+		RefHandlesErase(CallId::ntdll_NtCreateThreadEx, hProcess);
+		return;
+	}
 	
 }
 
 __trigger_func__(MalwareId::SimpleProcessInjection)
-void on_NtRtlCreateUserThread(ApiCall* call)
+void on_RtlCreateUserThread(ApiCall* call)
 {
 	if (call->isPost())
 		return;
@@ -157,7 +182,11 @@ void on_NtRtlCreateUserThread(ApiCall* call)
 	detected = mwDetectSimpleProcessInjection(hProcess, call);
 
 	if (!detected)
-		mwCleanup(hProcess);
+	{
+		HandleBorneEraseReqursive(hProcess);
+		RefHandlesErase(CallId::ntdll_RtlCreateUserThread, hProcess);
+		return;
+	}
 }
 
 __trigger_func__(MalwareId::ApcInjection)
@@ -175,7 +204,14 @@ void on_NtQueueApcThread(ApiCall* call)
 	detected = detected || mwDetectEarlyBird(hThread, ApcRoutineContext, call);
 
 	if (!detected)
-		mwCleanup(ApcRoutineContext);
+	{
+		HandleBorneEraseReqursive(hThread);
+		RefHandlesErase(CallId::ntdll_NtQueueApcThread, hThread);
+
+		HandleBorneEraseReqursive(ApcRoutineContext);
+		RefHandlesErase(CallId::ntdll_NtQueueApcThread, ApcRoutineContext);
+		return;
+	}
 }
 
 __start_func__(MalwareId::ThreadHijacking)
@@ -188,7 +224,8 @@ void on_NtSuspendThread(ApiCall* call)
 
 	if (!NT_SUCCESS(call->getReturnValue()))
 	{
-		mwCleanup(hThread);
+		HandleBorneEraseReqursive(hThread);
+		RefHandlesErase(CallId::ntdll_NtSuspendThread, hThread);
 		return;
 	}
 
@@ -225,7 +262,7 @@ void onApiCall(ApiCall* call, const wchar_t* image_path, size_t length)
 		on_NtCreateCreateThreadEx(call);
 		break;
 	case CallId::ntdll_RtlCreateUserThread:
-		on_NtRtlCreateUserThread(call);
+		on_RtlCreateUserThread(call);
 		break;
 	case CallId::ntdll_NtQueueApcThread:
 		on_NtQueueApcThread(call);

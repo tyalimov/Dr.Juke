@@ -19,14 +19,6 @@ using CheckFunc = bool(*)(HANDLE);
 
 using namespace std;
 
-void mwCleanup(HANDLE handle)
-{
-	HandleBorneEraseReqursive(handle,
-		[](HANDLE handle) {
-			RefHandlesErase(CallId::ntdll_NtUnmapViewOfSection, handle);
-		});
-}
-
 // Process was create in suspended mode
 bool mwDetectProcessHollowing2(HANDLE hProcess) {
 	return RefHandlesIsReferenced(CallId::ntdll_NtCreateUserProcess, hProcess);
@@ -55,11 +47,7 @@ bool mwDetectProcessHollowing(HANDLE hThread, ApiCall* call)
 	res = res && mwDetectProcessHollowing4(hThread);
 
 	if (res == true)
-	{
 		call->setMalwareId(MalwareId::ProcessHollowing);
-		call->setReturnValue(STATUS_ACCESS_DENIED);
-		call->skipCall(true);
-	}
 
 	return res;
 }
@@ -70,11 +58,7 @@ bool mwDetectSimpleProcessInjection(HANDLE hProcess, ApiCall* call)
 	bool res = RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, hProcess);
 
 	if (res == true)
-	{
 		call->setMalwareId(MalwareId::SimpleProcessInjection);
-		call->setReturnValue(STATUS_ACCESS_DENIED);
-		call->skipCall(true);
-	}
 
 	return res;
 }
@@ -92,11 +76,7 @@ bool mwDetectThreadHijacking(HANDLE hThread, ApiCall* call)
 	res = res && mwDetectThreadHijacking2(hThread);
 
 	if (res == true)
-	{
 		call->setMalwareId(MalwareId::ThreadHijacking);
-		call->setReturnValue(STATUS_ACCESS_DENIED);
-		call->skipCall(true);
-	}
 
 	return res;
 }
@@ -106,11 +86,7 @@ bool mwDetectApcInjection(HANDLE ApcRoutine, ApiCall* call)
 	bool res = RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, ApcRoutine);
 
 	if (res == true)
-	{
 		call->setMalwareId(MalwareId::ApcInjection);
-		call->setReturnValue(STATUS_ACCESS_DENIED);
-		call->skipCall(true);
-	}
 
 	return res;
 }
@@ -126,11 +102,7 @@ bool mwDetectEarlyBird(HANDLE hThread, PVOID ApcRoutine, ApiCall* call)
 	res = res && RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, ApcRoutine);
 
 	if (res == true)
-	{
 		call->setMalwareId(MalwareId::EarlyBird);
-		call->setReturnValue(STATUS_ACCESS_DENIED);
-		call->skipCall(true);
-	}
 
 	return res;
 }

@@ -39,32 +39,27 @@ HANDLE HandleBorneGetChild(HANDLE parent)
 	return NULL;
 }
 
-void HandleBorneEraseReqursive(HANDLE node,
-	std::function<void(HANDLE)> onDelete)
+void HandleBorneEraseReqursive(HANDLE node)
 {
 	lock_guard<mutex> guard(g_hb_lock);
-	HandleBorneEraseParentsReq(node, onDelete);
-	HandleBorneEraseChildrenReq(node, onDelete);
+	HandleBorneEraseParentsReq(node);
+	HandleBorneEraseChildrenReq(node);
 }
 
-void HandleBorneEraseParentsReq(HANDLE node,
-	std::function<void(HANDLE)> onDelete)
+void HandleBorneEraseParentsReq(HANDLE node)
 {
 	auto it_parent = g_child_parent_map.find(node);
 	if (it_parent != g_child_parent_map.end())
-		HandleBorneEraseParentsReq(it_parent->second, onDelete);
+		HandleBorneEraseParentsReq(it_parent->second);
 
-	onDelete(node);
 	g_child_parent_map.erase(node);
 }
 
-void HandleBorneEraseChildrenReq(HANDLE node,
-	std::function<void(HANDLE)> onDelete)
+void HandleBorneEraseChildrenReq(HANDLE node)
 {
 	auto it_parent = g_parent_child_map.find(node);
 	if (it_parent != g_parent_child_map.end())
-		HandleBorneEraseChildrenReq(it_parent->second, onDelete);
+		HandleBorneEraseChildrenReq(it_parent->second);
 
-	onDelete(node);
 	g_parent_child_map.erase(node);
 }
