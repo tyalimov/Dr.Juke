@@ -3,7 +3,7 @@
 #include "ref_handles.h"
 #include "handle_borne.h"
 #include "mw_detect.h"
-#include "string"
+#include <string>
 
 
 #define NT_SUCCESS(status) ((NTSTATUS)(status) >= 0)
@@ -15,6 +15,7 @@ bool IsWhiteListProcess(const wchar_t* image_path, size_t length);
 
 __parent_child__(hProcess, hThread)
 __start_func__(MalwareId::ProcessHollowing)
+__start_func__(MalwareId::EarlyBird)
 void on_NtCreateUserProcess(ApiCall* call)
 {
 	if (call->isPre())
@@ -49,27 +50,44 @@ void on_NtUnmapViewOfSection(ApiCall* call)
 	}
 
 	RefHandlesEmplace(CallId::ntdll_NtUnmapViewOfSection, hProcess);
-	mwDetectProcessHollowing2(hProcess);
+
+	bool detected = false;
+	detected = mwDetectProcessHollowing2(hProcess);
+
+	if (!detected)
+		mwCleanup(hProcess);
 }
 
 __middle_func__(MalwareId::ProcessHollowing, 3)
 __start_func__(MalwareId::SimpleProcessInjection)
+__start_func__(MalwareId::ApcInjection)
+__middle_func__(MalwareId::EarlyBird, 2)
 void on_NtWriteVirtualMemory(ApiCall* call)
 {
 	if (call->isPre())
 		return;
 
 	HANDLE hProcess = (HANDLE)call->getArgument(0);
+	PVOID lpBaseAddress = (HANDLE)call->getArgument(1);
 	if (!NT_SUCCESS(call->getReturnValue()))
 	{
 		mwCleanup(hProcess);
+		mwCleanup(lpBaseAddress);
 		return;
 	}
 
+	RefHandlesEmplace(CallId::ntdll_NtWriteVirtualMemory, lpBaseAddress);
 	RefHandlesEmplace(CallId::ntdll_NtWriteVirtualMemory, hProcess);
-	mwDetectProcessHollowing3(hProcess);
+
+	bool detected = false;
+	detected = detected || mwDetectProcessHollowing3(hProcess);
+	detected = detected || mwDetectEarlyBird2(hProcess);
+
+	if (!detected)
+		mwCleanup(hProcess);
 }
 
+__parent_child__(hThread, lpBaseAddress)
 __middle_func__(MalwareId::ProcessHollowing, 4)
 void on_NtSetContextThread(ApiCall* call)
 {
@@ -77,6 +95,7 @@ void on_NtSetContextThread(ApiCall* call)
 		return;
 
 	HANDLE hThread = (HANDLE)call->getArgument(0);
+
 	if (!NT_SUCCESS(call->getReturnValue()))
 	{
 		mwCleanup(hThread);
@@ -84,17 +103,30 @@ void on_NtSetContextThread(ApiCall* call)
 	}
 
 	RefHandlesEmplace(CallId::ntdll_NtSetContextThread, hThread);
-	mwDetectProcessHollowing4(hThread);
+	
+	bool detected = false;
+	detected = detected || mwDetectProcessHollowing4(hThread);
+	detected = detected || mwDetectThreadHijacking2(hThread);
+
+	if (!detected)
+		mwCleanup(hThread);
 }
 
 __trigger_func__(MalwareId::ProcessHollowing)
+__trigger_func__(MalwareId::ThreadHijacking)
 void on_NtResumeThread(ApiCall* call)
 {
 	if (call->isPost())
 		return;
 
 	HANDLE hThread = (HANDLE)call->getArgument(0);
-	mwDetectProcessHollowing(hThread, call);
+
+	bool detected = false;
+	detected = detected || mwDetectProcessHollowing(hThread, call);
+	detected = detected || mwDetectThreadHijacking(hThread, call);
+
+	if (!detected)
+		mwCleanup(hThread);
 }
 
 __trigger_func__(MalwareId::SimpleProcessInjection)
@@ -104,7 +136,13 @@ void on_NtCreateCreateThreadEx(ApiCall* call)
 		return;
 
 	HANDLE hProcess = (HANDLE)call->getArgument(3);
-	mwDetectSimpleProcessInjection(hProcess, call);
+
+	bool detected = false;
+	detected = mwDetectSimpleProcessInjection(hProcess, call);
+
+	if (!detected)
+		mwCleanup(hProcess);
+	
 }
 
 __trigger_func__(MalwareId::SimpleProcessInjection)
@@ -114,13 +152,58 @@ void on_NtRtlCreateUserThread(ApiCall* call)
 		return;
 
 	HANDLE hProcess = (HANDLE)call->getArgument(0);
-	mwDetectSimpleProcessInjection(hProcess, call);
+
+	bool detected = false;
+	detected = mwDetectSimpleProcessInjection(hProcess, call);
+
+	if (!detected)
+		mwCleanup(hProcess);
 }
 
-// TODO change geistry path, windows 10
+__trigger_func__(MalwareId::ApcInjection)
+__trigger_func__(MalwareId::EarlyBird)
+void on_NtQueueApcThread(ApiCall* call)
+{
+	if (call->isPost())
+		return;
+
+	HANDLE hThread  = (HANDLE)call->getArgument(0);
+	PVOID ApcRoutineContext  = (PVOID)call->getArgument(2);
+
+	bool detected = false;
+	detected = detected || mwDetectApcInjection(ApcRoutineContext, call);
+	detected = detected || mwDetectEarlyBird(hThread, ApcRoutineContext, call);
+
+	if (!detected)
+		mwCleanup(ApcRoutineContext);
+}
+
+__start_func__(MalwareId::ThreadHijacking)
+void on_NtSuspendThread(ApiCall* call)
+{
+	if (call->isPre())
+		return;
+
+	HANDLE hThread = (HANDLE)call->getArgument(0);
+
+	if (!NT_SUCCESS(call->getReturnValue()))
+	{
+		mwCleanup(hThread);
+		return;
+	}
+
+	RefHandlesEmplace(CallId::ntdll_NtSuspendThread, hThread);
+}
+
+// TODO check on windows 10
+// TODO cleanup after malware found
+
 extern "C" __declspec(dllexport) 
 void onApiCall(ApiCall* call, const wchar_t* image_path, size_t length)
 {
+	if (IsWhiteListProcess(image_path, length))
+		return;
+
 	switch (call->getCallId())
 	{
 	case CallId::ntdll_NtCreateUserProcess:
@@ -144,14 +227,14 @@ void onApiCall(ApiCall* call, const wchar_t* image_path, size_t length)
 	case CallId::ntdll_RtlCreateUserThread:
 		on_NtRtlCreateUserThread(call);
 		break;
+	case CallId::ntdll_NtQueueApcThread:
+		on_NtQueueApcThread(call);
+		break;
+	case CallId::ntdll_NtSuspendThread:
+		on_NtSuspendThread(call);
+		break;
 	default:
 		break;
-	}
-
-	if (IsWhiteListProcess(image_path, length))
-	{
-		call->setMalwareId(MalwareId::None);
-		call->skipCall(false);
 	}
 }
 
@@ -177,6 +260,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL,
 
 bool IsWhiteListProcess(const wchar_t* image_path, size_t length)
 {
+	length /= sizeof(wchar_t);
 	std::wstring path(image_path, length);
 
 	for (auto& c : path)
@@ -185,6 +269,8 @@ bool IsWhiteListProcess(const wchar_t* image_path, size_t length)
 	bool is_white = false;
 	is_white = is_white || path.find(L"c:\\program files\\") == 0;
 	is_white = is_white || path.find(L"c:\\program files (x86)\\") == 0;
+	is_white = is_white || path.find(L"c:\\windows\\system32\\") == 0;
+	is_white = is_white || path.find(L"c:\\windows\\syswow64\\") == 0;
 
 	return is_white;
 }

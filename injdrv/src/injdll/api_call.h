@@ -2,8 +2,10 @@
 
 enum class MalwareId {
 	ProcessHollowing,
-	ProcessDoppelganging,
 	SimpleProcessInjection,
+	ThreadHijacking,
+	EarlyBird,
+	ApcInjection,
 	None,
 };
 
@@ -18,6 +20,8 @@ enum class CallId
 	ntdll_NtResumeThread,
 	ntdll_NtCreateThreadEx,
 	ntdll_RtlCreateUserThread,
+	ntdll_NtQueueApcThread,
+	ntdll_NtSuspendThread,
 
 	//----------------------------------->
 	// Dll load notify 

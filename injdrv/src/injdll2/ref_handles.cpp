@@ -19,10 +19,12 @@ ReferencedHandles g_ref_handles[] = {
 	{ CallId::ntdll_NtResumeThread, set<HANDLE>() },
 	{ CallId::ntdll_NtCreateThreadEx, set<HANDLE>() },
 	{ CallId::ntdll_RtlCreateUserThread, set<HANDLE>() },
+	{ CallId::ntdll_NtQueueApcThread, set<HANDLE>() },
+	{ CallId::ntdll_NtSuspendThread, set<HANDLE>() },
 };
 
 CallId idx_start = CallId::ntdll_NtCreateUserProcess;
-CallId idx_end = CallId::ntdll_RtlCreateUserThread;
+CallId idx_end = CallId::ntdll_NtSuspendThread;
 
 void RefHandlesEmplace(CallId id, HANDLE handle)
 {

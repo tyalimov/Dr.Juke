@@ -19,3 +19,13 @@ bool mwDetectProcessHollowing4(HANDLE hThread);
 bool mwDetectProcessHollowing(HANDLE hThread, ApiCall* call);
 
 bool mwDetectSimpleProcessInjection(HANDLE hProcess, ApiCall* call);
+
+bool mwDetectThreadHijacking2(HANDLE hThread);
+
+bool mwDetectThreadHijacking(HANDLE hThread, ApiCall* call);
+
+bool mwDetectApcInjection(HANDLE ApcRoutine, ApiCall* call);
+
+bool mwDetectEarlyBird2(HANDLE hProcess);
+
+bool mwDetectEarlyBird(HANDLE hThread, PVOID ApcRoutine, ApiCall* call);

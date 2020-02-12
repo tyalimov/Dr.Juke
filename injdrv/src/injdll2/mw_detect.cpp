@@ -8,6 +8,10 @@
 // CallId::ntdll_NtSetContextThread
 // CallId::ntdll_NtResumeThread
 
+#pragma warning( disable : 4312 )
+
+#define STATUS_ACCESS_DENIED (ApiCall::arg_t)0xc0000022
+
 #include <functional>
 #include <vector>
 
@@ -23,65 +27,108 @@ void mwCleanup(HANDLE handle)
 		});
 }
 
-bool mwCleanupOnFalsePassOnTrue(HANDLE handle, bool res)
-{
-	if (res == false)
-		mwCleanup(handle);
-
-	return res;
+// Process was create in suspended mode
+bool mwDetectProcessHollowing2(HANDLE hProcess) {
+	return RefHandlesIsReferenced(CallId::ntdll_NtCreateUserProcess, hProcess);
 }
 
-bool mwDetectProcessHollowing2(HANDLE hProcess)
-{
-	bool res = RefHandlesIsReferenced(CallId::ntdll_NtCreateUserProcess, hProcess);
-	return res;
-}
-
+// Unmapped section of suspended process
 bool mwDetectProcessHollowing3(HANDLE hProcess)
 {
 	bool res = RefHandlesIsReferenced(CallId::ntdll_NtUnmapViewOfSection, hProcess);
-
-	if (mwCleanupOnFalsePassOnTrue(hProcess, res))
-		res = mwDetectProcessHollowing2(hProcess);
-
-	return res;
+	return res && mwDetectProcessHollowing2(hProcess);
 }
 
+// shell code was written instead of mapped section
 bool mwDetectProcessHollowing4(HANDLE hThread)
 {
 	HANDLE hProcess = HandleBorneGetParent(hThread);
 	bool res = RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, hProcess);
 
-	if (mwCleanupOnFalsePassOnTrue(hThread, res))
-		res = mwDetectProcessHollowing3(hProcess);
-
-	return res;
+	return res && mwDetectProcessHollowing3(hProcess);
 }
 
+// was set rip to shell code buffer and now resuming thread
 bool mwDetectProcessHollowing(HANDLE hThread, ApiCall* call)
 {
 	bool res = RefHandlesIsReferenced(CallId::ntdll_NtSetContextThread, hThread);
-
-	if (mwCleanupOnFalsePassOnTrue(hThread, res))
-		res = mwDetectProcessHollowing4(hThread);
+	res = res && mwDetectProcessHollowing4(hThread);
 
 	if (res == true)
 	{
 		call->setMalwareId(MalwareId::ProcessHollowing);
+		call->setReturnValue(STATUS_ACCESS_DENIED);
 		call->skipCall(true);
 	}
 
 	return res;
 }
 
+// shell code written to process and thread created in this process
 bool mwDetectSimpleProcessInjection(HANDLE hProcess, ApiCall* call)
 {
 	bool res = RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, hProcess);
-	mwCleanupOnFalsePassOnTrue(hProcess, res);
 
 	if (res == true)
 	{
 		call->setMalwareId(MalwareId::SimpleProcessInjection);
+		call->setReturnValue(STATUS_ACCESS_DENIED);
+		call->skipCall(true);
+	}
+
+	return res;
+}
+
+
+// on SetThreadContext -> is suspended?
+bool mwDetectThreadHijacking2(HANDLE hThread) {
+	return RefHandlesIsReferenced(CallId::ntdll_NtSuspendThread, hThread);
+}
+
+// on ResumeThread
+bool mwDetectThreadHijacking(HANDLE hThread, ApiCall* call)
+{
+	bool res = RefHandlesIsReferenced(CallId::ntdll_NtSetContextThread, hThread);
+	res = res && mwDetectThreadHijacking2(hThread);
+
+	if (res == true)
+	{
+		call->setMalwareId(MalwareId::ThreadHijacking);
+		call->setReturnValue(STATUS_ACCESS_DENIED);
+		call->skipCall(true);
+	}
+
+	return res;
+}
+
+bool mwDetectApcInjection(HANDLE ApcRoutine, ApiCall* call)
+{
+	bool res = RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, ApcRoutine);
+
+	if (res == true)
+	{
+		call->setMalwareId(MalwareId::ApcInjection);
+		call->setReturnValue(STATUS_ACCESS_DENIED);
+		call->skipCall(true);
+	}
+
+	return res;
+}
+
+bool mwDetectEarlyBird2(HANDLE hProcess) {
+	return RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, hProcess);
+}
+
+bool mwDetectEarlyBird(HANDLE hThread, PVOID ApcRoutine, ApiCall* call)
+{
+	HANDLE hProcess = HandleBorneGetParent(hThread);
+	bool res = mwDetectEarlyBird2(hProcess);
+	res = res && RefHandlesIsReferenced(CallId::ntdll_NtWriteVirtualMemory, ApcRoutine);
+
+	if (res == true)
+	{
+		call->setMalwareId(MalwareId::EarlyBird);
+		call->setReturnValue(STATUS_ACCESS_DENIED);
 		call->skipCall(true);
 	}
 

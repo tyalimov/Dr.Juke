@@ -21,6 +21,8 @@ ORIG_DECL(NtResumeThread);
 ORIG_DECL(NtOpenProcess);
 ORIG_DECL(NtCreateThreadEx);
 ORIG_DECL(RtlCreateUserThread);
+ORIG_DECL(NtQueueApcThread);
+ORIG_DECL(NtSuspendThread);
 
 ORIG_DECL(socket);
 ORIG_DECL(closesocket);
@@ -118,6 +120,21 @@ Hooked_RtlCreateUserThread(
     _In_opt_ PVOID Parameter,
     _Out_opt_ PHANDLE Thread,
     _Out_opt_ PCLIENT_ID ClientId
+    );
+
+NTSTATUS NTAPI
+Hooked_NtQueueApcThread(
+    _In_ HANDLE ThreadHandle,
+    _In_ PPS_APC_ROUTINE ApcRoutine,
+    _In_opt_ PVOID ApcArgument1,
+    _In_opt_ PVOID ApcArgument2,
+    _In_opt_ PVOID ApcArgument3
+    );
+
+NTSTATUS NTAPI
+Hooked_NtSuspendThread(
+    _In_ HANDLE ThreadHandle,
+    _Out_opt_ PULONG PreviousSuspendCount
     );
 
 //------------------------------------------------------------//

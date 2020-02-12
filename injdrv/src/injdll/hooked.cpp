@@ -35,11 +35,17 @@ TRetVal HookHandler(CallId id, TFunc f, TArgs&... args)
 			case MalwareId::ProcessHollowing:
 				Trace::logWarning(fmt, L"ProcessHollowing", path);
 				break;
-			case MalwareId::ProcessDoppelganging:
-				Trace::logWarning(fmt, L"ProcessDoppelganging", path);
-				break;
 			case MalwareId::SimpleProcessInjection:
 				Trace::logWarning(fmt, L"SimpleProcessInjection", path);
+				break;
+			case MalwareId::ThreadHijacking:
+				Trace::logWarning(fmt, L"ThreadHijacking", path);
+				break;
+			case MalwareId::EarlyBird:
+				Trace::logWarning(fmt, L"EarlyBird", path);
+				break;
+			case MalwareId::ApcInjection:
+				Trace::logWarning(fmt, L"ApcInjection", path);
 				break;
 			default:
 				break;
@@ -260,6 +266,40 @@ Hooked_RtlCreateUserThread(
 		Parameter,
 		Thread,
 		ClientId
+		);
+}
+
+NTSTATUS NTAPI
+Hooked_NtQueueApcThread(
+	_In_ HANDLE ThreadHandle,
+	_In_ PPS_APC_ROUTINE ApcRoutine,
+	_In_opt_ PVOID ApcArgument1,
+	_In_opt_ PVOID ApcArgument2,
+	_In_opt_ PVOID ApcArgument3
+)
+{
+	return HookHandler<NTSTATUS, decltype(NtQueueApcThread)>(
+		CallId::ntdll_NtQueueApcThread,
+		Orig_NtQueueApcThread,
+		ThreadHandle,
+		ApcRoutine,
+		ApcArgument1,
+		ApcArgument2,
+		ApcArgument3
+		);
+}
+
+NTSTATUS NTAPI
+Hooked_NtSuspendThread(
+	_In_ HANDLE ThreadHandle,
+	_Out_opt_ PULONG PreviousSuspendCount
+)
+{
+	return HookHandler<NTSTATUS, decltype(NtSuspendThread)>(
+		CallId::ntdll_NtSuspendThread,
+		Orig_NtSuspendThread,
+		ThreadHandle,
+		PreviousSuspendCount
 		);
 }
 

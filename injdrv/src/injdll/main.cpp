@@ -73,6 +73,8 @@ EnableDetours(
 		DETOUR_HOOK(NtResumeThread);
 		DETOUR_HOOK(NtCreateThreadEx);
 		DETOUR_HOOK(RtlCreateUserThread);
+		DETOUR_HOOK(NtQueueApcThread);
+		DETOUR_HOOK(NtSuspendThread);
 
 		DETOUR_HOOK(LdrGetDllHandle);
 		DETOUR_HOOK(LdrLoadDll);
@@ -97,6 +99,8 @@ DisableDetours(
 		DETOUR_UNHOOK(NtResumeThread);
 		DETOUR_UNHOOK(NtCreateThreadEx);
 		DETOUR_UNHOOK(RtlCreateUserThread);
+		DETOUR_UNHOOK(NtQueueApcThread);
+		DETOUR_UNHOOK(NtSuspendThread);
 
 		DETOUR_UNHOOK(LdrGetDllHandle);
 		DETOUR_UNHOOK(LdrLoadDll);
