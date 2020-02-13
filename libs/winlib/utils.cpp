@@ -4,6 +4,7 @@
 
 #include <windows.h>
 #include <lmcons.h>
+#include "trace.h"
 
 
 namespace drjuke::winlib::utils
@@ -191,4 +192,15 @@ namespace drjuke::winlib::utils
 
 		return keyPath;
 	}
+
+    void injDrvStartTrace(injdrv::TraceCallback onMessage)
+	{
+		injdrv::TraceStart(onMessage);
+	}
+
+	void injDrvStopTrace()
+	{
+		injdrv::TraceStop();
+	}
+
 }

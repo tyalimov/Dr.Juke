@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\winlib\filesys.h" />
+    <ClInclude Include="..\..\libs\winlib\trace.h" />
     <ClInclude Include="..\..\libs\winlib\utils.h" />
     <ClInclude Include="..\..\libs\winlib\windows_exception.h" />
     <ClInclude Include="..\..\libs\winlib\message_formatter.h" />
@@ -31,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\winlib\filesys.cpp" />
+    <ClCompile Include="..\..\libs\winlib\trace.cpp" />
     <ClCompile Include="..\..\libs\winlib\utils.cpp" />
     <ClCompile Include="..\..\libs\winlib\windows_exception.cpp" />
     <ClCompile Include="..\..\libs\winlib\interprocess.cpp" />

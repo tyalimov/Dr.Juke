@@ -11,6 +11,7 @@
 
 #include <common/aliases.h>
 #include <filesystem>
+#include <thread>
 
 using namespace drjuke;
 using namespace drjuke::winlib;
@@ -104,5 +105,53 @@ TEST(winlib, kernelKeyPathNotExist) try
 catch (const std::exception& ex)
 {
     std::cout << ex.what() << std::endl;
+    SUCCEED();
+}
+
+
+void trace_thread(bool& result, bool& ready)
+{
+    try
+    {
+		ready = true;
+		winlib::utils::injDrvStartTrace(
+			[&result](ULONG pid, ULONG tid, std::wstring msg) {
+
+				std::wcout << "Pid: " << pid << " Tid: " << tid << std::endl;
+				std::wcout << "Message: " << msg.c_str() << std::endl;
+
+				winlib::utils::injDrvStopTrace();
+				result = true;
+			});
+}
+	catch (const std::exception& ex)
+	{
+		std::cout << ex.what() << std::endl;
+	}
+}
+
+
+TEST(winlib, injDrvTrace)
+{
+    bool result = false;
+    bool ready = false;
+
+    std::thread th(trace_thread, std::ref(result), std::ref(ready));
+
+    while (!ready)
+        Sleep(500);
+
+#ifdef _WIN64
+    HMODULE hInj = LoadLibrary(L"injdllx64");
+#else
+    HMODULE hInj = LoadLibrary(L"injdllx86");
+#endif
+
+    if (hInj == NULL)
+        winlib::utils::injDrvStopTrace();
+
+    th.join();
+
+    EXPECT_EQ(result, true);
     SUCCEED();
 }
