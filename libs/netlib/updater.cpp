@@ -22,7 +22,7 @@ namespace drjuke::netlib
         LOG_TRACE(__FUNCTIONW__)
 
         auto local_path = m_destination / m_filename;
-        auto url        = R"(ftp://127.0.0.1:21/)" + m_filename.generic_string();
+        auto url        = R"(ftp://192.168.0.105:21/)" + m_filename.generic_string();
 
         curl_easy_setopt(m_curl.get(), CURLOPT_URL, url.c_str());
 

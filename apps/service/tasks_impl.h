@@ -4,6 +4,7 @@
 #include <settingslib/settingslib.h>
 #include <scanlib/scanlib.h>
 #include <netlib/netlib.h>
+#include <winlib/winlib.h>
 #include <codecvt>
 #include <filesystem>
 
@@ -91,7 +92,7 @@ namespace drjuke::service::tasks
 
         Json execute() override
         {
-            auto path        = ToWstring(m_input["parameters"]["path"].get<std::string>());
+            auto path        = winlib::utils::getFileKernelPath( ToWstring(m_input["parameters"]["path"].get<std::string>()));
             auto type        = m_input["parameters"]["type"].get<int>();
             auto access_mask = m_input["parameters"]["access_mask"].get<int>();
 
@@ -137,8 +138,8 @@ namespace drjuke::service::tasks
 
         Json execute() override
         {
-            auto path        = ToWstring(m_input["parameters"]["path"].get<std::string>());
-            auto type        = m_input["parameters"]["type"].get<int>();
+            auto path = winlib::utils::getFileKernelPath( ToWstring(m_input["parameters"]["path"].get<std::string>()));
+            auto type = m_input["parameters"]["type"].get<int>();
 
             auto settings_manager = settingslib::Factory::getSettingsManager();
 

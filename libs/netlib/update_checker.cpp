@@ -26,7 +26,7 @@ namespace drjuke::netlib
 
     std::map<std::string, std::pair<std::string, std::uint32_t>> UpdateChecker::getActualHashes() const
     {
-        curl_easy_setopt(m_curl.get(), CURLOPT_URL,           R"(http://127.0.0.1:9999)");
+        curl_easy_setopt(m_curl.get(), CURLOPT_URL,           R"(http://192.168.0.105:9999)");
         curl_easy_setopt(m_curl.get(), CURLOPT_HTTPGET,       1L);
         curl_easy_setopt(m_curl.get(), CURLOPT_WRITEFUNCTION, on_http_data);
         curl_easy_setopt(m_curl.get(), CURLOPT_WRITEDATA,     &m_responce);

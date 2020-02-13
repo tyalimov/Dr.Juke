@@ -2,7 +2,7 @@
 
 #include "curl_exception.h"
 
-const std::string kUrl           { R"(ftp://127.0.0.1:21/)" };
+const std::string kUrl           { R"(ftp://192.168.0.105:21/)" };
 const std::string kUploadCommand { "RNFR " };
 
 #pragma warning (disable:4996)

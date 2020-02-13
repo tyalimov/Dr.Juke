@@ -17,7 +17,10 @@ def ProcessRequest(message):
     # result = dict
     print("Got responce: " + responce)
 
-    return json.loads(responce)
+    if len(responce) == 0:
+        return None
+    else:
+        return json.loads(responce)
 
 class App(QMainWindow):
 
@@ -142,7 +145,10 @@ class MyTableWidget(QWidget):
         """
         proc = ProcessRequest(request)
 
-        #proc = {'file1': '0101', 'file2' : '1111', 'file3':'0000', 'file4': '1000'}
+        if proc is None:
+            print("NONE")
+            return
+
         for name, data in proc:
             model.insertRow(0)
             model.setData(model.index(0, self.PATH), name)
@@ -165,7 +171,12 @@ class MyTableWidget(QWidget):
                     "access_mask" :  {1}
                 }}
             }}""".format(path_to_file, proc_mask)
+            request = request.replace('\\', '\\\\')
             resp = ProcessRequest(request)
+
+            if resp is None:
+                return
+
             model = self.dataView1.model()
             self.clear_data(model)
             self.add_file_data(model)
@@ -188,7 +199,9 @@ class MyTableWidget(QWidget):
                     "type"    :  0
                 }}
             }}""".format(path_to_file)
+            request = request.replace('\\', '\\\\')
             resp = ProcessRequest(request)
+
             model = self.dataView1.model()
             self.clear_data(model)
             self.add_file_data(model)
@@ -264,6 +277,9 @@ class MyTableWidget(QWidget):
         """
         proc = ProcessRequest(request)
 
+        if proc is None:
+            return
+
         # TODO получить json с процессами и масками
         #proc = {'proc1111111111111111111111111111111111111111111111111111111111111111111111111': '0101', 'proc2' : '1111', 'proc3':'0000', 'proc4': '1000'}
         for name, data in proc:
@@ -290,6 +306,7 @@ class MyTableWidget(QWidget):
                 }}
             }}
             """.format(path_to_proc, proc_mask)
+            request = request.replace('\\', '\\\\')
             resp = ProcessRequest(request)
 
             model = self.dataView2.model()
@@ -314,6 +331,7 @@ class MyTableWidget(QWidget):
                     "type"    :  2
                 }}
             }}""".format(path_to_proc)
+            request = request.replace('\\', '\\\\')
             resp = ProcessRequest(request)
             model = self.dataView2.model()
             self.clear_data(model)
@@ -384,6 +402,9 @@ class MyTableWidget(QWidget):
         """
         proc = ProcessRequest(request)
 
+        if proc is None:
+            return
+
         #proc = {'key1': '0101', 'key2' : '1111', 'key3':'0000', 'key4': '1000'}
         for name, data in proc:
             model.insertRow(0)
@@ -408,6 +429,7 @@ class MyTableWidget(QWidget):
                 }}
             }}
             """.format(path_to_key, key_mask)
+            request = request.replace('\\', '\\\\')
             resp = ProcessRequest(request)
             model = self.dataView3.model()
             self.clear_data(model)
@@ -432,6 +454,7 @@ class MyTableWidget(QWidget):
                 }}
             }}""".format(path_to_key)
             resp = ProcessRequest(request)
+            request = request.replace('\\', '\\\\')
             model = self.dataView3.model()
             self.clear_data(model)
             self.add_key_data(model)
@@ -501,6 +524,9 @@ class MyTableWidget(QWidget):
         }
         """
         proc = ProcessRequest(request)
+
+        if proc is None:
+            return
 
         # TODO получить json с правилами и масками
         #proc = {'rule1': '0101', 'rule2' : '1111', 'rule3':'0000', 'rule4': '1000'}
@@ -634,6 +660,10 @@ class MyTableWidget(QWidget):
             """.format(path)
             request = request.replace('\\', '\\\\')
             resp = ProcessRequest(request)
+
+            if resp is None:
+                return
+
             for analyzer in resp:
                 if analyzer["name"] == "Yara":
                     self.textboxYARA1.setText(str(analyzer["infected"]))
@@ -691,6 +721,10 @@ class MyTableWidget(QWidget):
             """.format(path)
             request = request.replace('\\', '\\\\')
             resp = ProcessRequest(request)
+
+            if resp is None:
+                return
+
             self.textboxResult1.setText(str(resp["infected"]))
 
 

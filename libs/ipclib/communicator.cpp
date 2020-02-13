@@ -207,7 +207,7 @@ namespace drjuke::ipclib
 	Json Communicator::validateJson(Json&& message)
 	{
 		if (message.size() == 0)
-			throw winlib::WindowsException("Got empty json object");
+			return Json();
 
 		return Json(message);
 	}

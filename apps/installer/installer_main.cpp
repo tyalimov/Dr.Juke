@@ -49,7 +49,7 @@ int main() try
     // Так как это установка, то нам нужно забрать
     // с сервера все, что у него есть
     std::thread thread_progress_bar { ProgressBarThread };
-    std::thread thread_downloader   { DownloaderThread, files, settings_manager->getBinariesDirectory() };
+    std::thread thread_downloader   { DownloaderThread, files, settings_manager->getRootDirectory() };
 
     // Ожидаем завершения скачивания
     thread_progress_bar.join();
