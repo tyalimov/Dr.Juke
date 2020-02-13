@@ -46,6 +46,9 @@
     <ClInclude Include="..\..\libs\winlib\utils.h">
       <Filter>utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\winlib\trace.h">
+      <Filter>utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\winlib\interprocess.cpp">
@@ -67,6 +70,9 @@
       <Filter>filesystem</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libs\winlib\utils.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\winlib\trace.cpp">
       <Filter>utils</Filter>
     </ClCompile>
   </ItemGroup>

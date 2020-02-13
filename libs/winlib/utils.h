@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <windows.h>
+#include <functional>
+#include "trace.h"
 
 namespace drjuke::winlib::utils
 {
@@ -15,4 +17,8 @@ namespace drjuke::winlib::utils
     std::wstring getFileKernelPath(const std::wstring& file_path);
 
     std::wstring getKeyKernelPath(HKEY hBaseKey, const std::wstring& subKey);
+
+    void injDrvStartTrace(injdrv::TraceCallback onMessage);
+
+    void injDrvStopTrace();
 }
