@@ -1,6 +1,7 @@
 #pragma once
 
 #include "queue_consumer.h"
+#include "ipclib/ipclib.h"
 
 namespace drjuke::service
 {
@@ -8,14 +9,14 @@ namespace drjuke::service
         : public QueueConsumerThread
     {
     private:
-        tasklib::TaskQueuePtr m_queue;
+        ipclib::CommunicatorPtr m_communicator;
     public:
-        explicit QueueExecutorThread(tasklib::TaskQueuePtr queue)
-            : QueueConsumerThread(queue)
+        explicit QueueExecutorThread(tasklib::TaskQueuePtr queue, std::mutex& console, ipclib::CommunicatorPtr communicator)
+            : QueueConsumerThread(queue, console)
+            , m_communicator(communicator)
         {}
 
         void run() override;
     };
 
-    void RunQueueExecutor(tasklib::TaskQueuePtr queue);
 }

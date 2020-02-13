@@ -55,7 +55,7 @@ namespace drjuke::ipclib
         //------------------------------------------------------------>
 
         explicit Communicator(const std::wstring& pipe_send, 
-            const std::wstring& pipe_recv, RoleId role, DWORD client_timeout = 1000);
+            const std::wstring& pipe_recv, RoleId role, DWORD client_timeout = 2000);
 
         ~Communicator();
 

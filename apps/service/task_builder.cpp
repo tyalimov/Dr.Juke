@@ -5,7 +5,7 @@ namespace drjuke::service
 {
     enum class TaskId
     {
-        kEnableFirewall,      // +
+        kEnableFirewall,      // -- не будем
         kAddprotectedObject,  // ++
         kAddExclusion,        // ++
         kScan,                // --
@@ -14,7 +14,12 @@ namespace drjuke::service
         kRemoveFirewallRule,  // ++
         kEnableFirewallRule,  // ++
         kDisableFirewallRule, // ++
-        kAddToQuarantine      // --
+        kAddToQuarantine,     // -- не будем
+        kGetRegistryRules,    // ++
+        kGetFilesystemRules,  // ++
+        kGetProcessRules,     // ++
+        kGetFirewall,         // ++
+        kDelProtectedObject   // ++
     };
 
     std::map<std::string, TaskId> TaskBuilder::m_ids
@@ -28,10 +33,15 @@ namespace drjuke::service
         { "remove_firewall_rule",  TaskId::kRemoveFirewallRule  },
         { "enable_firewall_rule",  TaskId::kEnableFirewallRule  },
         { "disable_firewall_rule", TaskId::kDisableFirewallRule },
+        { "get_registry_rules",    TaskId::kGetRegistryRules    },
+        { "get_filesystem_rules",  TaskId::kGetFilesystemRules  },
+        { "get_process_rules",     TaskId::kGetProcessRules     },
+        { "get_firewall_rules",    TaskId::kGetFirewall         },
+        { "del_protected_object",  TaskId::kDelProtectedObject  }
     };
 
 
-    BaseTaskPtr TaskBuilder::getTask(const Json& message)
+    BaseTaskPtr TaskBuilder::buildTask(const Json& message)
     {
         auto name = message["task"].get<std::string>();
         auto id   = m_ids.at(name);
@@ -47,8 +57,13 @@ namespace drjuke::service
             case TaskId::kRemoveFirewallRule  : return std::make_shared<tasks::RemoveFirewallRule>(message);  break;
             case TaskId::kEnableFirewallRule  : return std::make_shared<tasks::EnableFirewallRule>(message);  break;
             case TaskId::kDisableFirewallRule : return std::make_shared<tasks::DisableFirewallRule>(message); break;
+            case TaskId::kGetRegistryRules    : return std::make_shared<tasks::GetRegistry>(message);         break;
+            case TaskId::kGetFilesystemRules  : return std::make_shared<tasks::GetFilesystem>(message);       break;
+            case TaskId::kGetProcessRules     : return std::make_shared<tasks::GetProcesses>(message);        break;
+            case TaskId::kGetFirewall         : return std::make_shared<tasks::GetFirewall>(message);         break;
+            case TaskId::kDelProtectedObject  : return std::make_shared<tasks::DelProtectedObject>(message);  break;
         }
 
-        return std::make_shared<tasklib::EndTask>();
+        return std::make_shared<EndTask>();
     }
 }

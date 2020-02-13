@@ -42,17 +42,17 @@ namespace drjuke::scanlib
 
         std::map<std::underlying_type_t<SignatureStatus::Type>, std::string_view> g_FormattedStatuses 
         {
-            { SignatureStatus::kSuccess                    , kFileSigned           }, 
-            { SignatureStatus::kProviderUnknown            , kFileNotSigned        },
-            { SignatureStatus::kActionUnknown              , kFileNotSigned        },
-            { SignatureStatus::kSubjectFormUnknown         , kFileNotSigned        },
-            { SignatureStatus::kSubjectNotTrusted          , kSignatureNotTrusted  },
-            { SignatureStatus::kSubjectExplicitlyDistrusted, kSignatureNotTrusted  },
-            { SignatureStatus::kFileNotSigned              , kFileNotSigned        },
-            { SignatureStatus::kSignatureOrFileCorrupt     , kFileCorrupted        },
-            { SignatureStatus::kSubjectCertExpired         , kCertificateExpired   },
-            { SignatureStatus::kSubjectCertificateRevoked  , kCertificateRevoked   },
-            { SignatureStatus::kUntrustedRoot              , kRootUntrusted        }
+            { SignatureStatus::kSuccess                    , kFileSigned     }, 
+            { SignatureStatus::kProviderUnknown            , kFileSigned     },
+            { SignatureStatus::kActionUnknown              , kFileSigned     },
+            { SignatureStatus::kSubjectFormUnknown         , kFileSigned     },
+            { SignatureStatus::kSubjectNotTrusted          , kFileSigned     },
+            { SignatureStatus::kSubjectExplicitlyDistrusted, kFileSigned     },
+            { SignatureStatus::kFileNotSigned              , kFileNotSigned  },
+            { SignatureStatus::kSignatureOrFileCorrupt     , kFileCorrupted  },
+            { SignatureStatus::kSubjectCertExpired         , kFileSigned     },
+            { SignatureStatus::kSubjectCertificateRevoked  , kFileSigned     },
+            { SignatureStatus::kUntrustedRoot              , kFileSigned     }
         };
     }
 
@@ -131,7 +131,7 @@ namespace drjuke::scanlib
 
         }
 
-        return std::make_shared<SignatureReport>("suck"); // TODO: fix
+        return std::make_shared<SignatureReport>(kFileNotSigned.data()); 
 
     }
 
@@ -148,24 +148,11 @@ namespace drjuke::scanlib
 
     void SignatureReport::initializeJson()
     {
-        // TODO: задефайнить строки 
-        m_report["resolution"]              = "UNKNOWN";
-        m_report["signer"]                  = "UNKNOWN";
-        m_report["application"]             = "UNKNOWN";
-        m_report["url"]                     = "UNKNOWN";
-        m_report["more_info"]               = "UNKNOWN";
-        m_report["datetime"]["year"]        = -1;
-        m_report["datetime"]["month"]       = -1;
-        m_report["datetime"]["day"]         = -1;
-        m_report["datetime"]["day of week"] = -1;
-        m_report["datetime"]["hour"]        = -1;
-        m_report["datetime"]["minute"]      = -1;
-        m_report["datetime"]["second"]      = -1;
-        m_report["datetime"]["millisecond"] = -1;
     }
 
     void SignatureReport::fillJsonWithStatus()
     {
-        m_report["resolution"] = m_status;
+        m_report["infected"]  = m_status == kFileSigned ? false : true;
+        m_report["name"]      = "Signature";
     }
 }

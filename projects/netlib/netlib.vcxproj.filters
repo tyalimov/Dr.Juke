@@ -13,6 +13,9 @@
     <Filter Include="uploader">
       <UniqueIdentifier>{2968b684-fc04-4eb4-876c-d2fb3b7cc05f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="cloud_scanner">
+      <UniqueIdentifier>{cf319df7-658b-40c6-8c02-0f6a7607dbc8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\libs\netlib\update_checker.h">
@@ -45,6 +48,12 @@
     <ClInclude Include="..\..\libs\netlib\curl_exception.h">
       <Filter>misc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\libs\netlib\icloud_scanner.h">
+      <Filter>cloud_scanner</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\libs\netlib\cloud_scanner.h">
+      <Filter>cloud_scanner</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\libs\netlib\update_checker.cpp">
@@ -61,6 +70,9 @@
     </ClCompile>
     <ClCompile Include="..\..\libs\netlib\curl_exception.cpp">
       <Filter>misc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\libs\netlib\cloud_scanner.cpp">
+      <Filter>cloud_scanner</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

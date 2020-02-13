@@ -18,9 +18,14 @@ namespace drjuke::tasklib
             : m_input(input)
         {}
 
-        virtual void execute()   = 0;
+        virtual Json execute()   = 0;
         virtual bool isEndTask() = 0;
         virtual ~BaseTask()      = default;
+
+        [[nodiscard]] std::string getName() const
+        {
+            return m_input["task"].get<std::string>();
+        }
     };
 
     using BaseTaskPtr = std::shared_ptr<BaseTask>;
@@ -36,7 +41,7 @@ namespace drjuke::tasklib
             : BaseTask(Json{})
         {}
 
-        void execute() override;
-        bool isEndTask() override;
+        Json execute() override { return Json(); } 
+        bool isEndTask() override { return true; }
     };
 }

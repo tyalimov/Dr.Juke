@@ -16,14 +16,16 @@ namespace drjuke::service
         ipclib::CommunicatorPtr m_communicator;
 
     public:
-        explicit IpcListenerThread(tasklib::TaskQueuePtr   queue,
-                                   ipclib::CommunicatorPtr communicator)
-            : QueueConsumerThread(queue)
+        explicit IpcListenerThread
+        (
+            tasklib::TaskQueuePtr   queue,
+            std::mutex&             console,
+            ipclib::CommunicatorPtr communicator
+        )
+            : QueueConsumerThread(queue, console)
             , m_communicator(std::move(communicator))
         {}
 
         void run() override;
     };
-
-    void RunIpcListener(tasklib::TaskQueuePtr queue, ipclib::CommunicatorPtr communicator);
 }

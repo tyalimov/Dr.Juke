@@ -21,14 +21,17 @@ TEST(scanlib, SignatureAnalyzer_Regular) try
 
     EXPECT_TRUE(fs::exists(target));
 
-    auto analyzer =  Factory::getAnalyzer(Factory::AnalyzerId::kDigitalSignature);
+    auto analyzers =  Factory::getAll();
+    Json total_report;
 
-    analyzer->loadResources();
-    auto report = analyzer->getReport(target)->makeJson();
+    for (const auto& analyzer : analyzers)
+    {
+        analyzer->loadResources();
+        total_report += analyzer->getReport(target)->makeJson();
+    }
 
-    std::cout << report.dump() << std::endl;
+    std::cout << total_report.dump() << std::endl;
 
-    // TODO: Проверить ожидаемые значения
     SUCCEED();
 }
 catch (const std::exception &ex)

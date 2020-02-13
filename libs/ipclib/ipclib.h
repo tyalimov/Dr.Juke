@@ -5,15 +5,15 @@
 namespace drjuke::ipclib
 {
 
-	enum class DirectionId
-	{ 
-		kGuiToService,             
-		kServiceToGui,   
-		kReatimeToService,  
-		kServiceToRealtime,
-		kScanToService,
-		kServiceToScan,
-	};
+    enum class DirectionId
+    { 
+        kGuiToService,             
+        kServiceToGui,   
+        kReatimeToService,  
+        kServiceToRealtime,
+        kScanToService,
+        kServiceToScan,
+    };
 
     class Factory
     {

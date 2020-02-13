@@ -27,7 +27,6 @@ namespace drjuke::scanlib
         {
             if (!dir_entry.is_directory() && dir_entry.path().extension() == ".yar")
             {
-                // TODO: залоггировать
                 m_detector.addRuleFile(dir_entry.path().generic_string());
             }
         }
@@ -45,12 +44,7 @@ namespace drjuke::scanlib
 
     YaraReport::YaraReport(const std::vector<yaracpp::YaraRule> &rules)
     {
-        m_report["infected"]      = !rules.empty();
-        m_report["total_matched"] = rules.size();
-
-        for (const auto& rule : rules)
-        {
-            m_report["matched_rules"].push_back(rule.getName());
-        }
+        m_report["infected"]  = !rules.empty();
+        m_report["name"]      = "Yara";
     }
 }

@@ -11,8 +11,10 @@ namespace drjuke::service
 
     class TaskBuilder
     {
+    private:
         static std::map<std::string, TaskId> m_ids;
-
-        tasklib::BaseTaskPtr getTask(const Json& message);
+    
+    public:
+        [[nodiscard]] static tasklib::BaseTaskPtr buildTask(const Json& message);
     };
 }

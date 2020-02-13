@@ -86,3 +86,24 @@ catch (const std::exception& ex)
     std::cout << ex.what() << std::endl;
     FAIL();
 }
+
+TEST(netlib, CloudScanner_Regular) try
+{
+    InitialiseEnvironment();
+
+    drjuke::Path filename = R"(netlib\uploader\test.exe)";
+
+    auto cloud_scanner  = Factory::getCloudScanner();
+    auto uploader       = Factory::getUploader(filename);
+
+    uploader->upload();
+
+    auto res            = cloud_scanner->scanFile(filename);
+
+    SUCCEED();
+}
+catch (const std::exception& ex)
+{
+    std::cout << ex.what() << std::endl;
+    FAIL();
+}

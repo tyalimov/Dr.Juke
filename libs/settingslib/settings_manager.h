@@ -2,6 +2,7 @@
 
 #include <string>
 #include <common/winreg.h>
+#include <common/aliases.h>
 
 namespace drjuke::settingslib
 {
@@ -30,6 +31,13 @@ namespace drjuke::settingslib
         void addFilesystemFilterRule (const std::wstring& path, uint32_t access_mask);
         void addProcessFilterRule    (const std::wstring& path, bool access_mask);
         void addFirewallRule         (const std::wstring& name, const std::wstring& content);
+
+        // rule getters
+        [[nodiscard]] Json getRegistryFilterRules();
+        [[nodiscard]] Json getFilesystemFilterRules();
+        [[nodiscard]] Json getProcessFilterRules();
+        [[nodiscard]] Json getFirewallRules();
+
 
         // special for firewall
         void enableFirewall      (bool enable);
