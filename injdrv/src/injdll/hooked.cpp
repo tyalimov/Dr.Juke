@@ -205,3 +205,27 @@ int WSAAPI Hooked_closesocket(IN SOCKET s)
 		L"ws2_32.dll!closesocket",
 		Orig_closesocket, s);
 }
+
+int WSAAPI
+Hooked_WSASend(
+	_In_ SOCKET s,
+	_In_reads_(dwBufferCount) LPWSABUF lpBuffers,
+	_In_ DWORD dwBufferCount,
+	_Out_opt_ LPDWORD lpNumberOfBytesSent,
+	_In_ DWORD dwFlags,
+	_Inout_opt_ LPWSAOVERLAPPED lpOverlapped,
+	_In_opt_ LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+)
+{
+	return HookHandler<decltype(Orig_WSASend), int>(
+		L"ws2_32.dll!WSASend",
+		Orig_WSASend,
+		s,
+		lpBuffers,
+		dwBufferCount,
+		lpNumberOfBytesSent,
+		dwFlags,
+		lpOverlapped,
+		lpCompletionRoutine
+		);
+}

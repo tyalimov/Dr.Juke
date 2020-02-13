@@ -20,6 +20,8 @@ ORIG_DECL(closesocket);
 ORIG_DECL(connect);
 ORIG_DECL(recv);
 
+ORIG_DECL(WSASend);
+
 NTSTATUS
 NTAPI
 Hooked_NtCreateUserProcess(
@@ -108,3 +110,14 @@ SOCKET WSAAPI Hooked_socket(
 int WSAAPI Hooked_closesocket(
   IN SOCKET s
 );
+
+int WSAAPI
+Hooked_WSASend(
+    _In_ SOCKET s,
+    _In_reads_(dwBufferCount) LPWSABUF lpBuffers,
+    _In_ DWORD dwBufferCount,
+    _Out_opt_ LPDWORD lpNumberOfBytesSent,
+    _In_ DWORD dwFlags,
+    _Inout_opt_ LPWSAOVERLAPPED lpOverlapped,
+    _In_opt_ LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
+    );

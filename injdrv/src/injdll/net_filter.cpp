@@ -123,15 +123,28 @@ namespace netfilter
 			}
 		}
 
+		TreeMap<SOCKET, WinSockInfo>* g_ws2_32 = nullptr;
+		CriticalSection* cs = nullptr;
 
-		TreeMap<SOCKET, WinSockInfo> g_ws2_32;
-		CriticalSection cs;
+		void ws2_32_init()
+		{
+			g_ws2_32 = new TreeMap<SOCKET, WinSockInfo>();
+			cs = new CriticalSection();
+		}
+
+		void ws2_32_exit()
+		{
+			if (g_ws2_32)
+				delete g_ws2_32;
+			if (cs)
+				delete cs;
+		}
 
 		inline void remove_atomic(SOCKET s)
 		{
-			cs.acquire();
-			g_ws2_32.remove(s);
-			cs.release();
+			cs->acquire();
+			g_ws2_32->remove(s);
+			cs->release();
 		}
 
 		// post call handlers
@@ -144,12 +157,12 @@ namespace netfilter
 				{
 					if (prot == IPPROTO_TCP || prot == 0)
 					{
-						cs.acquire();
+						cs->acquire();
 
 						WinSockInfo wsi;
-						g_ws2_32.insert(s, wsi);
+						g_ws2_32->insert(s, wsi);
 
-						cs.release();
+						cs->release();
 					}
 				}
 			}
@@ -161,85 +174,24 @@ namespace netfilter
 
 		void on_connect(SOCKET s, const sockaddr* name, int addr_len)
 		{
-			cs.acquire();
+			cs->acquire();
 
-			WinSockInfo* wsi = g_ws2_32.find(s);
+			WinSockInfo* wsi = g_ws2_32->find(s);
 			if (wsi != nullptr)
 				wsi->setSockAddr(name, addr_len);
 
-			cs.release();
+			cs->release();
 		}
 
-		WinSockInfo* on_recv(SOCKET s, char* buf, int bytes_read)
+		WinSockInfo* on_recv(SOCKET s)
 		{
-			cs.acquire();
-			WinSockInfo* wsi = g_ws2_32.find(s);
-			cs.release();
+			cs->acquire();
+			WinSockInfo* wsi = g_ws2_32->find(s);
+			cs->release();
 			if (wsi == nullptr)
 				return nullptr;
 
-			ChunkedBuffer* cbuf = wsi->chunkedBuffer();
-			if (bytes_read > 0)
-			{
-				// first chunk: check it's plain text data
-				// if so then start tracking else remove
-				if (cbuf->isEmpty())
-				{
-					string headers(buf, bytes_read);
-					headers = ToLowerCase(headers);
-
-					char ct[] = "content-type:";
-					auto i = headers.find(ct);
-					if (i == string::npos)
-					{
-						remove_atomic(s);
-						return nullptr;
-					}
-					
-					i += sizeof(ct);
-					auto j = headers.find("\r\n", i);
-					if (headers.substr(i, j).find("text/") != string::npos)
-						cbuf->addChunk(buf, bytes_read);
-					else
-						remove_atomic(s);
-				}
-				else
-				{
-					// try to append chunked buffer
-					// if max size limit reached then
-					// stop tracking this file and delete buffer
-					bool ok = cbuf->addChunk(buf, bytes_read);
-					if (!ok)
-						remove_atomic(s);
-				}
-
-				return nullptr;
-			}
-
-			// on recv completion
-			PacketBuffer header = cbuf->getFirstChunk();
-			PacketBuffer pbuf = cbuf->toPacketBuffer();
-			header.getData(); header.getLength();
-			pbuf.getData(); pbuf.getLength();
-			bool status = true; // status = malware_filter()
-
-			// cleanup and get ready
-			// for another data
-			cbuf->clear();
 			return wsi;
-		}
-
-		wstring get_bad_sock_info(SOCKET s)
-		{
-			WinSockInfo* wsi = g_ws2_32.find(s);
-			RTL_ASSERT(wsi != nullptr);
-
-			wchar_t buf[256] = { 0 };
-			const wchar_t* fmt = L"{'Detected':true, 'IoC':'%s', 'IP':'%s', 'Port':'%u'}";
-			_snwprintf(buf, sizeof(buf), fmt,
-				L"Mega IoC", wsi->getIP(), wsi->getPort());
-
-			return wstring(buf);
 		}
 	}
 }

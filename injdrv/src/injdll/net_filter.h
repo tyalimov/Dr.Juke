@@ -130,7 +130,7 @@ namespace netfilter
 			}
 
 			WinSockInfo& operator=(const WinSockInfo& other);
-			
+
 			void setSockAddr(const sockaddr* addr, int addr_len);
 
 			const wstring& getIP() const {
@@ -153,10 +153,67 @@ namespace netfilter
 
 		void on_connect(SOCKET s, const sockaddr* name, int addr_len);
 
-		WinSockInfo* on_recv(SOCKET s, char* buf, int bytes_read);
+		WinSockInfo* on_recv(SOCKET s);
 
-		wstring get_bad_sock_info(SOCKET s);
+		void ws2_32_init();
+
+		void ws2_32_exit();
+
 	}
+
+	class HexDeserializer
+	{
+		using u8 = unsigned char;
+		char* mBuffer = nullptr;
+		ULONG mLength = 0;
+
+		inline char substitute(u8 i) {
+			return (i <= 9 ? '0' + i : 'A' - 10 + i);
+		}
+
+		void int2hex(u8 in, char* out)
+		{
+			out[0] = substitute((in & 0xF0) >> 4);
+			out[1] = substitute(in & 0x0F);
+		}
+
+	public:
+
+		HexDeserializer(const char* buffer, ULONG length) 
+		{
+			if (length == 0)
+				return;
+
+			mLength = length * 2;
+			mBuffer = new char[mLength + 1];
+
+			if (mBuffer)
+			{
+				for (ULONG i = 0, j = 0; i < length; i++, j += 2)
+					int2hex(buffer[i], &mBuffer[j]);
+
+				mBuffer[mLength] = '\0';
+			}
+		}
+
+		~HexDeserializer()
+		{
+			if (mBuffer)
+			{
+				delete[] mBuffer;
+				mBuffer = nullptr;
+			}
+		}
+
+		PCHAR getHexText() {
+			return mBuffer;
+		}
+
+		ULONG getLength() {
+			return mLength;
+		}
+	};
+
 }
 
 

@@ -31,6 +31,9 @@
 using namespace ownstl;
 using namespace mwtricks;
 
+using namespace netfilter;
+using namespace netfilter::ws2_32;
+
 MalwareTrickChain* g_mw_tricks = nullptr;
 
 void SetupMalwareFiltering();
@@ -93,6 +96,7 @@ _load_config_used = {
 // by ntdll.lib, which we're linking against.  We have to
 // load them dynamically.
 //
+
 
 #pragma region functions_to_import
 
@@ -412,8 +416,11 @@ void MT_DllUnload()
 		if (call.getName().endsWith(L"LdrUnloadDll") && call.isPre())
 		{
 			PUNICODE_STRING DllName = (PUNICODE_STRING)call.getArgument(2);
-			wstring DllNameStr = !DllName ? L"<null>" : FromUnicodeString(DllName);
-			if (DllNameStr == L"ws2_32.dll" || DllNameStr == L"ws2_32")
+
+			UNICODE_STRING prefix;
+			RtlInitUnicodeString(&prefix, (PWSTR)L"ws2_32");
+
+			if (RtlPrefixUnicodeString(&prefix, DllName, TRUE))
 			{
 				DetourTransactionBegin();
 				{
@@ -421,6 +428,9 @@ void MT_DllUnload()
 					DETOUR_UNHOOK(closesocket);
 					DETOUR_UNHOOK(connect);
 					DETOUR_UNHOOK(recv);
+					DETOUR_UNHOOK(WSASend);
+
+					ws2_32_exit();
 				}
 				DetourTransactionCommit();
 			}
@@ -431,6 +441,7 @@ void MT_DllUnload()
 
 	g_mw_tricks->addTrick(mt_dll_unload);
 }
+
 
 void MT_NetFilterWS2_32()
 {
@@ -447,10 +458,16 @@ void MT_NetFilterWS2_32()
 			if (NT_SUCCESS(call.getReturnValue()) && DllHandle)
 			{
 				LPVOID proc_addr = NULL;
-				if (DllNameStr == L"ws2_32.dll" || DllNameStr == L"ws2_32")
+
+				UNICODE_STRING prefix;
+				RtlInitUnicodeString(&prefix, (PWSTR)L"ws2_32");
+
+				if (RtlPrefixUnicodeString(&prefix, DllName, TRUE))
 				{
 					DetourTransactionBegin();
 					{
+						ws2_32_init();
+
 						ANSI_STRING RoutineName;
 						GET_PROC_ADDR("inet_ntop", DllHandle, _inet_ntop, RoutineName);
 						GET_PROC_ADDR("ntohs", DllHandle, _ntohs, RoutineName);
@@ -458,6 +475,7 @@ void MT_NetFilterWS2_32()
 						DETOUR_HOOK_ON_DLL_LOAD(closesocket, DllHandle, RoutineName);
 						DETOUR_HOOK_ON_DLL_LOAD(connect, DllHandle, RoutineName);
 						DETOUR_HOOK_ON_DLL_LOAD(recv, DllHandle, RoutineName);
+						DETOUR_HOOK_ON_DLL_LOAD(WSASend, DllHandle, RoutineName);
 					}
 					DetourTransactionCommit();
 					EtwEventWriteString(ProviderHandle, 0, 0, L"Loaded ws2_32.dll");
@@ -474,48 +492,91 @@ void MT_NetFilterWS2_32()
 	mt_ws2_32.addCheck([](const FunctionCall& call) {
 
 		wstring call_name = call.getName();
+
 		if (call_name.startsWith(L"ws2_32.dll"))
 		{
 			if (call_name.endsWith(L"closesocket") && call.isPost())
 			{
-				SOCKET s = (SOCKET)call.getArgument(0);
-				netfilter::ws2_32::on_closesocket(s);
+				//SOCKET s = (SOCKET)call.getArgument(0);
+				//netfilter::ws2_32::on_closesocket(s);
 			}
 
 			else if (call_name.endsWith(L"socket") && call.isPost())
 			{
-				SOCKET s = call.getReturnValue();
-				if (s != INVALID_SOCKET)
-				{
-					int af = (int)call.getArgument(0);
-					int type = (int)call.getArgument(1);
-					int prot = (int)call.getArgument(2);
-					netfilter::ws2_32::on_socket(s, af, type, prot);
-				}
+				//SOCKET s = call.getReturnValue();
+				//if (s != INVALID_SOCKET)
+				//{
+				//	int af = (int)call.getArgument(0);
+				//	int type = (int)call.getArgument(1);
+				//	int prot = (int)call.getArgument(2);
+				//	netfilter::ws2_32::on_socket(s, af, type, prot);
+				//}
 			}
 
 
 			else if (call_name.endsWith(L"connect") && call.isPost())
 			{
-				if (call.getReturnValue() == 0)
-				{
-					SOCKET s = (SOCKET)call.getArgument(0);
-					sockaddr* name = (sockaddr*)call.getArgument(1);
-					int addr_len = (int)call.getArgument(2);
-					netfilter::ws2_32::on_connect(s, name, addr_len);
-				}
+				//if (call.getReturnValue() == 0)
+				//{
+				//	SOCKET s = (SOCKET)call.getArgument(0);
+				//	sockaddr* name = (sockaddr*)call.getArgument(1);
+				//	int addr_len = (int)call.getArgument(2);
+				//	netfilter::ws2_32::on_connect(s, name, addr_len);
+				//}
 			}
 
 			else if (call_name.endsWith(L"recv") && call.isPost())
 			{
-				int flags = (int)call.getArgument(3);
-				if (flags == 0)
-				{
-					SOCKET s = (SOCKET)call.getArgument(0);
-					char* buf = (char*)call.getArgument(1);
-					int bytes_read = call.getReturnValue();
+				//int flags = (int)call.getArgument(3);
+				//if (flags == 0)
+				//{
+				//	SOCKET s = (SOCKET)call.getArgument(0);
+				//	char* buf = (char*)call.getArgument(1);
+				//	int bytes_read = call.getReturnValue();
 
-					netfilter::ws2_32::on_recv(s, buf, bytes_read);
+				//	WinSockInfo* wsi = on_recv(s);
+
+				//	if (bytes_read > 40)
+				//		bytes_read = 40;
+
+				//	//HexDeserializer deser(buf, bytes_read);
+				//	//auto np = deser.getLength() - 2;
+				//	//*(wchar_t*)(deser.getHexText() + np) = 0;
+				//	string _s(buf, bytes_read);
+				//	wstring ws = ToWString(_s);
+
+				//	wchar_t buffer[256] = { 0 };
+				//	auto n = _snwprintf(buffer, sizeof(buffer), L"%ws:%u ",
+				//		wsi->getIP(), wsi->getPort());
+
+				//	for (size_t i = 0; i < ws.length(); i++)
+				//		buffer[n + i] = ws[i];
+
+				//	EtwEventWriteString(ProviderHandle, 0, 0, buffer);
+				//}
+			}
+			else if (call_name.endsWith(L"WSASend") && call.isPost())
+			{
+				if (call.getReturnValue() == 0)
+				{
+					LPWSABUF wsa_buf = (LPWSABUF)call.getArgument(1);
+					char* buf = wsa_buf->buf;
+					auto len = wsa_buf->len;
+
+					if (len > 40)
+						len = 40;
+
+					string _s(buf, len);
+					wstring ws = ToWString(_s);
+
+					wchar_t buffer[256] = { 0 };
+					auto n = _snwprintf(buffer, sizeof(buffer), L"WSASend data: ");
+
+					for (size_t i = 0; i < ws.length(); i++)
+						buffer[n + i] = ws[i];
+
+					EtwEventWriteString(ProviderHandle, 0, 0, buffer);
+
 				}
 			}
 		}
